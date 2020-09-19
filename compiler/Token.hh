@@ -5,11 +5,18 @@
 
 enum class TokenKind {
     Add,
+    Arrow,
     Div,
     Eof,
+    Fn,
+    Identifier,
+    LBrace,
+    LParen,
     Mul,
     NumLit,
     Return,
+    RBrace,
+    RParen,
     Semi,
     Sub,
 };
@@ -18,6 +25,7 @@ struct Token {
     TokenKind kind;
     union {
         std::uint64_t num;
+        const char *text;
     };
 };
 

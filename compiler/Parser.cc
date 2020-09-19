@@ -64,7 +64,7 @@ constexpr int compare_op(BinOp op1, BinOp op2) {
 }
 
 template <typename FmtString, typename... Args>
-void error(const FmtString &fmt, const Args &... args) {
+[[noreturn]] void error(const FmtString &fmt, const Args &... args) {
     auto formatted = fmt::format(fmt, args...);
     fmt::print(fmt::fg(fmt::color::orange_red), "parser: {}\n", formatted);
     abort();
@@ -72,11 +72,20 @@ void error(const FmtString &fmt, const Args &... args) {
 
 } // namespace
 
-void Parser::expect(TokenKind kind) {
+bool Parser::consume(TokenKind kind) {
+    if (m_lexer->peek().kind == kind) {
+        m_lexer->next();
+        return true;
+    }
+    return false;
+}
+
+Token Parser::expect(TokenKind kind) {
     auto next = m_lexer->next();
     if (next.kind != kind) {
         error("expected {} but got {} on line {}", tok_str(kind), tok_str(next), m_lexer->line());
     }
+    return next;
 }
 
 AstNode *Parser::parse_expr() {
@@ -117,9 +126,29 @@ AstNode *Parser::parse_expr() {
     return operands.pop();
 }
 
+AstNode *Parser::parse_stmt() {
+    if (consume(TokenKind::Return)) {
+        return new RetStmt(parse_expr());
+    }
+    error("expected stmt but got {} on line {}", tok_str(m_lexer->next()), m_lexer->line());
+}
+
 AstNode *Parser::parse() {
-    expect(TokenKind::Return);
-    auto *expr = parse_expr();
-    expect(TokenKind::Semi);
-    return new RetStmt(expr);
+    expect(TokenKind::Fn);
+    const char *name = expect(TokenKind::Identifier).text;
+    expect(TokenKind::LParen);
+    expect(TokenKind::RParen);
+    expect(TokenKind::Arrow);
+    expect(TokenKind::Identifier);
+    expect(TokenKind::LBrace);
+    auto *func = new FunctionDecl(name);
+    while (m_lexer->has_next()) {
+        if (m_lexer->peek().kind == TokenKind::RBrace) {
+            break;
+        }
+        func->add_stmt(parse_stmt());
+        expect(TokenKind::Semi);
+    }
+    expect(TokenKind::RBrace);
+    return func;
 }

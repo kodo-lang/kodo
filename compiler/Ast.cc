@@ -7,6 +7,9 @@ void AstVisitor::accept(AstNode *node) {
     case NodeKind::BinExpr:
         visit(static_cast<BinExpr *>(node));
         break;
+    case NodeKind::FunctionDecl:
+        visit(static_cast<FunctionDecl *>(node));
+        break;
     case NodeKind::NumLit:
         visit(static_cast<NumLit *>(node));
         break;
@@ -37,6 +40,16 @@ void AstPrinter::visit(BinExpr *bin_expr) {
     std::cout << ", ";
     accept(bin_expr->rhs());
     std::cout << ")";
+}
+
+void AstPrinter::visit(FunctionDecl *function_decl) {
+    std::cout << "FunctionDecl(";
+    std::cout << function_decl->name();
+    std::cout << ")";
+    for (auto *stmt : function_decl->stmts()) {
+        std::cout << "\n  ";
+        accept(stmt);
+    }
 }
 
 void AstPrinter::visit(NumLit *num_lit) {

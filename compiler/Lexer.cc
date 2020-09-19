@@ -13,7 +13,7 @@ namespace {
 template <typename FmtString, typename... Args>
 void error(const FmtString &fmt, const Args &... args) {
     auto formatted = fmt::format(fmt, args...);
-    fmt::print(fmt::fg(fmt::color::orange_red),"lexer: {}\n", formatted);
+    fmt::print(fmt::fg(fmt::color::orange_red), "lexer: {}\n", formatted);
     abort();
 }
 
@@ -33,19 +33,39 @@ Token Lexer::next_token() {
         return token;
     }
 
+    auto consume_if = [&](char ch) {
+        if (m_stream->peek() == ch) {
+            m_stream->next();
+            return true;
+        }
+        return false;
+    };
+
     char ch = m_stream->next();
     switch (ch) {
     case '+':
         token.kind = TokenKind::Add;
         break;
     case '-':
-        token.kind = TokenKind::Sub;
+        token.kind = consume_if('>') ? TokenKind::Arrow : TokenKind::Sub;
         break;
     case '*':
         token.kind = TokenKind::Mul;
         break;
     case '/':
         token.kind = TokenKind::Div;
+        break;
+    case '{':
+        token.kind = TokenKind::LBrace;
+        break;
+    case '}':
+        token.kind = TokenKind::RBrace;
+        break;
+    case '(':
+        token.kind = TokenKind::LParen;
+        break;
+    case ')':
+        token.kind = TokenKind::RParen;
         break;
     case ';':
         token.kind = TokenKind::Semi;
@@ -65,16 +85,26 @@ Token Lexer::next_token() {
             while (std::isalpha(ch = m_stream->peek()) != 0) {
                 buf += m_stream->next();
             }
-            if (buf == "return") {
+            if (buf == "fn") {
+                token.kind = TokenKind::Fn;
+            } else if (buf == "return") {
                 token.kind = TokenKind::Return;
             } else {
-                error("unexpected identifier on line {}", m_line);
+                auto *ptr = new char[buf.size() + 1];
+                std::memcpy(ptr, buf.c_str(), buf.size());
+                ptr[buf.size()] = '\0';
+                token.kind = TokenKind::Identifier;
+                token.text = ptr;
             }
         } else {
             error("unexpected '{}' on line {}", ch, m_line);
         }
     }
     return token;
+}
+
+bool Lexer::has_next() {
+    return m_stream->has_next();
 }
 
 Token Lexer::next() {

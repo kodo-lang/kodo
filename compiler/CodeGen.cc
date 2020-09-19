@@ -2,12 +2,7 @@
 
 #include <cassert>
 
-CodeGen::CodeGen(llvm::Module *module) : m_module(module), m_builder(module->getContext()) {
-    m_function = llvm::Function::Create(llvm::FunctionType::get(llvm::Type::getInt32Ty(module->getContext()), false),
-                                        llvm::Function::ExternalLinkage, "main", module);
-    m_block = llvm::BasicBlock::Create(module->getContext(), "entry", m_function);
-    m_builder.SetInsertPoint(m_block);
-}
+CodeGen::CodeGen(llvm::Module *module) : m_module(module), m_builder(module->getContext()) {}
 
 llvm::Type *CodeGen::llvm_type(const Type &type) {
     switch (type.kind) {
@@ -34,6 +29,16 @@ void CodeGen::visit(BinExpr *bin_expr) {
     accept(bin_expr->rhs());
     accept(bin_expr->lhs());
     m_stack.push(translate(bin_expr));
+}
+
+void CodeGen::visit(FunctionDecl *function_decl) {
+    m_function = llvm::Function::Create(llvm::FunctionType::get(llvm::Type::getInt32Ty(m_module->getContext()), false),
+                                        llvm::Function::ExternalLinkage, function_decl->name(), m_module);
+    m_block = llvm::BasicBlock::Create(m_module->getContext(), "entry", m_function);
+    m_builder.SetInsertPoint(m_block);
+    for (auto *stmt : function_decl->stmts()) {
+        accept(stmt);
+    }
 }
 
 void CodeGen::visit(NumLit *num_lit) {

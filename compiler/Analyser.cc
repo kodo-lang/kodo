@@ -9,6 +9,12 @@ void Analyser::visit(BinExpr *bin_expr) {
     bin_expr->m_type = bin_expr->lhs()->m_type;
 }
 
+void Analyser::visit(FunctionDecl *function_decl) {
+    for (auto *stmt : function_decl->stmts()) {
+        accept(stmt);
+    }
+}
+
 void Analyser::visit(NumLit *num_lit) {
     num_lit->m_type.kind = TypeKind::Int;
     num_lit->m_type.bit_width = 32;

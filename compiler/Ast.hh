@@ -3,9 +3,12 @@
 #include <Type.hh>
 
 #include <cstdint>
+#include <string>
+#include <vector>
 
 enum class NodeKind {
     BinExpr,
+    FunctionDecl,
     NumLit,
     RetStmt,
 };
@@ -44,6 +47,19 @@ public:
     AstNode *rhs() const { return m_rhs; }
 };
 
+class FunctionDecl : public AstNode {
+    std::string m_name;
+    std::vector<AstNode *> m_stmts;
+
+public:
+    explicit FunctionDecl(std::string name) : AstNode(NodeKind::FunctionDecl), m_name(std::move(name)) {}
+
+    void add_stmt(AstNode *stmt) { m_stmts.push_back(stmt); }
+
+    const std::string &name() const { return m_name; }
+    const std::vector<AstNode *> stmts() const { return m_stmts; }
+};
+
 class NumLit : public AstNode {
     std::uint64_t m_value;
 
@@ -65,12 +81,14 @@ public:
 struct AstVisitor {
     void accept(AstNode *node);
     virtual void visit(BinExpr *bin_expr) = 0;
+    virtual void visit(FunctionDecl *function_decl) = 0;
     virtual void visit(NumLit *num_lit) = 0;
     virtual void visit(RetStmt *ret_stmt) = 0;
 };
 
 struct AstPrinter : public AstVisitor {
     void visit(BinExpr *) override;
+    void visit(FunctionDecl *function_decl) override;
     void visit(NumLit *) override;
     void visit(RetStmt *) override;
 };

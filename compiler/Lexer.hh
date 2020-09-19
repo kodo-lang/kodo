@@ -16,6 +16,7 @@ class Lexer {
 public:
     explicit Lexer(CharStream *stream) : m_stream(stream) {}
 
+    bool has_next();
     Token next();
     Token peek();
 
