@@ -9,7 +9,16 @@ CodeGen::CodeGen(llvm::Module *module) : m_module(module), m_builder(module->get
     m_builder.SetInsertPoint(m_block);
 }
 
-void CodeGen::visit(const BinExpr *bin_expr) {
+llvm::Type *CodeGen::llvm_type(const Type &type) {
+    switch (type.kind) {
+    case TypeKind::Invalid:
+        assert(false);
+    case TypeKind::Int:
+        return llvm::Type::getIntNTy(m_module->getContext(), type.bit_width);
+    }
+}
+
+void CodeGen::visit(BinExpr *bin_expr) {
     auto translate = [&](const BinExpr *bin_expr) {
         switch (bin_expr->op()) {
         case BinOp::Add:
@@ -27,8 +36,8 @@ void CodeGen::visit(const BinExpr *bin_expr) {
     m_stack.push(translate(bin_expr));
 }
 
-void CodeGen::visit(const NumLit *num_lit) {
-    m_stack.push(llvm::ConstantInt::get(llvm::Type::getInt32Ty(m_module->getContext()), num_lit->value()));
+void CodeGen::visit(NumLit *num_lit) {
+    m_stack.push(llvm::ConstantInt::get(llvm_type(num_lit->type()), num_lit->value()));
 }
 
 void CodeGen::finish() {

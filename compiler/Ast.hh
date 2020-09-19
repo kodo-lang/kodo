@@ -1,5 +1,7 @@
 #pragma once
 
+#include <Type.hh>
+
 #include <cstdint>
 
 enum class NodeKind {
@@ -8,12 +10,17 @@ enum class NodeKind {
 };
 
 class AstNode {
+    friend class Analyser;
+
+private:
     const NodeKind m_kind;
+    Type m_type{TypeKind::Invalid};
 
 public:
     explicit AstNode(NodeKind kind) : m_kind(kind) {}
 
     NodeKind kind() const { return m_kind; }
+    const Type &type() const { return m_type; }
 };
 
 enum class BinOp {
@@ -46,12 +53,12 @@ public:
 };
 
 struct AstVisitor {
-    void accept(const AstNode *node);
-    virtual void visit(const BinExpr *bin_expr) = 0;
-    virtual void visit(const NumLit *num_lit) = 0;
+    void accept(AstNode *node);
+    virtual void visit(BinExpr *bin_expr) = 0;
+    virtual void visit(NumLit *num_lit) = 0;
 };
 
 struct AstPrinter : public AstVisitor {
-    void visit(const BinExpr *) override;
-    void visit(const NumLit *) override;
+    void visit(BinExpr *) override;
+    void visit(NumLit *) override;
 };

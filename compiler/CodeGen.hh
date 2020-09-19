@@ -15,10 +15,12 @@ class CodeGen : public AstVisitor {
     llvm::Function *m_function;
     Stack<llvm::Value *> m_stack;
 
+    llvm::Type *llvm_type(const Type &type);
+
 public:
     explicit CodeGen(llvm::Module *module);
 
-    void visit(const BinExpr *) override;
-    void visit(const NumLit *) override;
+    void visit(BinExpr *) override;
+    void visit(NumLit *) override;
     void finish();
 };

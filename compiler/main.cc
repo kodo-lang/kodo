@@ -1,3 +1,4 @@
+#include <Analyser.hh>
 #include <Ast.hh>
 #include <CharStream.hh>
 #include <CodeGen.hh>
@@ -24,6 +25,9 @@ int main() {
     Lexer lexer(&stream);
     Parser parser(&lexer);
     auto *node = parser.parse();
+
+    Analyser analyser;
+    analyser.accept(node);
 
     AstPrinter printer;
     printer.accept(node);

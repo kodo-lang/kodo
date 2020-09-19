@@ -2,18 +2,18 @@
 
 #include <iostream>
 
-void AstVisitor::accept(const AstNode *node) {
+void AstVisitor::accept(AstNode *node) {
     switch (node->kind()) {
     case NodeKind::BinExpr:
-        visit(static_cast<const BinExpr *>(node));
+        visit(static_cast<BinExpr *>(node));
         break;
     case NodeKind::NumLit:
-        visit(static_cast<const NumLit *>(node));
+        visit(static_cast<NumLit *>(node));
         break;
     }
 }
 
-void AstPrinter::visit(const BinExpr *bin_expr) {
+void AstPrinter::visit(BinExpr *bin_expr) {
     std::cout << "BinExpr(";
     switch (bin_expr->op()) {
     case BinOp::Add:
@@ -36,6 +36,6 @@ void AstPrinter::visit(const BinExpr *bin_expr) {
     std::cout << ")";
 }
 
-void AstPrinter::visit(const NumLit *num_lit) {
+void AstPrinter::visit(NumLit *num_lit) {
     std::cout << std::to_string(num_lit->value());
 }
