@@ -11,4 +11,4 @@ add_executable(compiler
 target_compile_definitions(compiler PRIVATE ${LLVM_DEFINITIONS})
 target_compile_features(compiler PRIVATE cxx_std_20)
 target_include_directories(compiler PRIVATE . ${LLVM_INCLUDE_DIRS})
-target_link_libraries(compiler PRIVATE LLVM)
+target_link_libraries(compiler PRIVATE fmt::fmt LLVM)
