@@ -28,9 +28,10 @@ Token Lexer::next() {
     default:
         if (ch >= '0' && ch <= '9') {
             std::string buf;
-            do {
-                buf += ch;
-            } while ((ch = m_stream->peek()) >= '0' && ch <= '9');
+            buf += ch;
+            while ((ch = m_stream->peek()) >= '0' && ch <= '9') {
+                buf += m_stream->next();
+            }
             token.kind = TokenKind::NumLit;
             token.num = std::stoi(buf);
         } else {
