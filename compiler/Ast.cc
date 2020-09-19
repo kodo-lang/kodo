@@ -18,6 +18,16 @@ void AstPrinter::visit(const BinExpr *bin_expr) {
     switch (bin_expr->op()) {
     case BinOp::Add:
         std::cout << "Add";
+        break;
+    case BinOp::Sub:
+        std::cout << "Sub";
+        break;
+    case BinOp::Mul:
+        std::cout << "Mul";
+        break;
+    case BinOp::Div:
+        std::cout << "Div";
+        break;
     }
     std::cout << ", ";
     accept(bin_expr->lhs());

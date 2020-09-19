@@ -25,6 +25,15 @@ Token Lexer::next() {
     case '+':
         token.kind = TokenKind::Add;
         break;
+    case '-':
+        token.kind = TokenKind::Sub;
+        break;
+    case '*':
+        token.kind = TokenKind::Mul;
+        break;
+    case '/':
+        token.kind = TokenKind::Div;
+        break;
     default:
         if (ch >= '0' && ch <= '9') {
             std::string buf;

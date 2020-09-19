@@ -5,8 +5,11 @@
 
 enum class TokenKind {
     Add,
+    Div,
     Eof,
+    Mul,
     NumLit,
+    Sub,
 };
 
 struct Token {

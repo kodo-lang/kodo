@@ -18,6 +18,9 @@ public:
 
 enum class BinOp {
     Add,
+    Sub,
+    Mul,
+    Div,
 };
 
 class BinExpr : public AstNode {

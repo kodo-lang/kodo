@@ -29,6 +29,12 @@ constexpr Result<BinOp> token_to_bin_op(const Token &token) {
     switch (token.kind) {
     case TokenKind::Add:
         return BinOp::Add;
+    case TokenKind::Sub:
+        return BinOp::Sub;
+    case TokenKind::Mul:
+        return BinOp::Mul;
+    case TokenKind::Div:
+        return BinOp::Div;
     default:
         return false;
     }
@@ -37,7 +43,11 @@ constexpr Result<BinOp> token_to_bin_op(const Token &token) {
 constexpr int precedence(BinOp op) {
     switch (op) {
     case BinOp::Add:
+    case BinOp::Sub:
         return 1;
+    case BinOp::Mul:
+    case BinOp::Div:
+        return 2;
     }
 }
 

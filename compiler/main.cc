@@ -16,7 +16,7 @@
 #include <sstream>
 
 constexpr const char *INPUT = R"(
-5 + 7
+5 + 8 * 10
 )";
 
 int main() {
