@@ -1,0 +1,21 @@
+---
+Checks: >
+  *,
+  -fuchsia*,
+  -zircon*,
+
+  -bugprone-macro-parentheses,
+  -cppcoreguidelines-avoid-magic-numbers,
+  -cppcoreguidelines-pro-bounds-array-to-pointer-decay,
+  -cppcoreguidelines-pro-bounds-constant-array-index,
+  -cppcoreguidelines-pro-bounds-pointer-arithmetic,
+  -cppcoreguidelines-pro-type-union-access,
+  -cppcoreguidelines-macro-usage,
+  -google-readability-todo,
+  -hicpp-no-array-decay,
+  -llvm-header-guard,
+  -modernize-use-nodiscard,
+  -modernize-use-trailing-return-type,
+  -readability-magic-numbers,
+  -readability-named-parameter,
+FormatStyle: file
