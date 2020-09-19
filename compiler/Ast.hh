@@ -7,6 +7,7 @@
 enum class NodeKind {
     BinExpr,
     NumLit,
+    RetStmt,
 };
 
 class AstNode {
@@ -52,13 +53,24 @@ public:
     std::uint64_t value() const { return m_value; }
 };
 
+class RetStmt : public AstNode {
+    AstNode *m_val;
+
+public:
+    explicit RetStmt(AstNode *val) : AstNode(NodeKind::RetStmt), m_val(val) {}
+
+    AstNode *val() const { return m_val; }
+};
+
 struct AstVisitor {
     void accept(AstNode *node);
     virtual void visit(BinExpr *bin_expr) = 0;
     virtual void visit(NumLit *num_lit) = 0;
+    virtual void visit(RetStmt *ret_stmt) = 0;
 };
 
 struct AstPrinter : public AstVisitor {
     void visit(BinExpr *) override;
     void visit(NumLit *) override;
+    void visit(RetStmt *) override;
 };

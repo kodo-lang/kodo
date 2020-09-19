@@ -10,6 +10,9 @@ void AstVisitor::accept(AstNode *node) {
     case NodeKind::NumLit:
         visit(static_cast<NumLit *>(node));
         break;
+    case NodeKind::RetStmt:
+        visit(static_cast<RetStmt *>(node));
+        break;
     }
 }
 
@@ -38,4 +41,10 @@ void AstPrinter::visit(BinExpr *bin_expr) {
 
 void AstPrinter::visit(NumLit *num_lit) {
     std::cout << std::to_string(num_lit->value());
+}
+
+void AstPrinter::visit(RetStmt *ret_stmt) {
+    std::cout << "RetStmt(";
+    accept(ret_stmt->val());
+    std::cout << ")";
 }

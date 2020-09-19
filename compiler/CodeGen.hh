@@ -22,5 +22,5 @@ public:
 
     void visit(BinExpr *) override;
     void visit(NumLit *) override;
-    void finish();
+    void visit(RetStmt *) override;
 };

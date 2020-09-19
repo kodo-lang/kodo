@@ -40,7 +40,7 @@ void CodeGen::visit(NumLit *num_lit) {
     m_stack.push(llvm::ConstantInt::get(llvm_type(num_lit->type()), num_lit->value()));
 }
 
-void CodeGen::finish() {
-    assert(m_stack.size() == 1);
+void CodeGen::visit(RetStmt *ret_stmt) {
+    accept(ret_stmt->val());
     m_builder.CreateRet(m_stack.pop());
 }

@@ -12,6 +12,10 @@ std::string tok_str(const Token &token) {
         return "*";
     case TokenKind::NumLit:
         return std::to_string(token.num);
+    case TokenKind::Return:
+        return "return";
+    case TokenKind::Semi:
+        return ";";
     case TokenKind::Sub:
         return "-";
     }

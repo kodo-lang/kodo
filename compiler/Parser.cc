@@ -62,20 +62,22 @@ constexpr int compare_op(BinOp op1, BinOp op2) {
 
 } // namespace
 
-AstNode *Parser::parse() {
+AstNode *Parser::parse_expr() {
     Stack<AstNode *> operands;
     Stack<BinOp> operators;
     while (true) {
-        auto token = m_lexer->next();
+        auto token = m_lexer->peek();
         auto op1 = token_to_bin_op(token);
         if (!op1) {
             if (token.kind == TokenKind::NumLit) {
+                m_lexer->next();
                 operands.push(new NumLit(token.num));
                 continue;
             }
             break;
         }
 
+        m_lexer->next();
         while (!operators.empty()) {
             auto op2 = operators.peek();
             if (compare_op(op1, op2) > 0) {
@@ -96,4 +98,11 @@ AstNode *Parser::parse() {
 
     assert(operands.size() == 1);
     return operands.pop();
+}
+
+AstNode *Parser::parse() {
+    assert(m_lexer->next().kind == TokenKind::Return);
+    auto *expr = parse_expr();
+    assert(m_lexer->next().kind == TokenKind::Semi);
+    return new RetStmt(expr);
 }

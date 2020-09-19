@@ -16,7 +16,7 @@
 #include <sstream>
 
 constexpr const char *INPUT = R"(
-5 + 8 * 10
+return 5 + 8 * 10;
 )";
 
 int main() {
@@ -37,7 +37,6 @@ int main() {
     std::unique_ptr<llvm::Module> module(new llvm::Module("main", context));
     CodeGen code_gen(module.get());
     code_gen.accept(node);
-    code_gen.finish();
     auto *function = module->getFunction("main");
     module->print(llvm::errs(), nullptr);
 

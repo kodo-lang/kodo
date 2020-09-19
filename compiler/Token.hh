@@ -9,6 +9,8 @@ enum class TokenKind {
     Eof,
     Mul,
     NumLit,
+    Return,
+    Semi,
     Sub,
 };
 
