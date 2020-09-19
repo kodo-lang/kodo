@@ -67,6 +67,12 @@ Token Lexer::next_token() {
     case ')':
         token.kind = TokenKind::RParen;
         break;
+    case '=':
+        token.kind = TokenKind::Eq;
+        break;
+    case ':':
+        token.kind = TokenKind::Colon;
+        break;
     case ';':
         token.kind = TokenKind::Semi;
         break;
@@ -89,6 +95,8 @@ Token Lexer::next_token() {
                 token.kind = TokenKind::Fn;
             } else if (buf == "return") {
                 token.kind = TokenKind::Return;
+            } else if (buf == "var") {
+                token.kind = TokenKind::Var;
             } else {
                 auto *ptr = new char[buf.size() + 1];
                 std::memcpy(ptr, buf.c_str(), buf.size());

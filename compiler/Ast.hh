@@ -7,10 +7,13 @@
 #include <vector>
 
 enum class NodeKind {
+    AssignStmt,
     BinExpr,
+    DeclStmt,
     FunctionDecl,
     NumLit,
     RetStmt,
+    VarExpr,
 };
 
 class AstNode {
@@ -34,6 +37,17 @@ enum class BinOp {
     Div,
 };
 
+class AssignStmt : public AstNode {
+    std::string m_name;
+    AstNode *m_val;
+
+public:
+    AssignStmt(std::string name, AstNode *val) : AstNode(NodeKind::AssignStmt), m_name(name), m_val(val) {}
+
+    const std::string &name() const { return m_name; }
+    AstNode *val() const { return m_val; }
+};
+
 class BinExpr : public AstNode {
     BinOp m_op;
     AstNode *m_lhs;
@@ -47,6 +61,18 @@ public:
     AstNode *rhs() const { return m_rhs; }
 };
 
+class DeclStmt : public AstNode {
+    std::string m_name;
+    AstNode *m_init_val;
+
+public:
+    DeclStmt(std::string name, AstNode *init_val)
+        : AstNode(NodeKind::DeclStmt), m_name(std::move(name)), m_init_val(init_val) {}
+
+    const std::string &name() const { return m_name; }
+    AstNode *init_val() const { return m_init_val; }
+};
+
 class FunctionDecl : public AstNode {
     std::string m_name;
     std::vector<AstNode *> m_stmts;
@@ -57,7 +83,7 @@ public:
     void add_stmt(AstNode *stmt) { m_stmts.push_back(stmt); }
 
     const std::string &name() const { return m_name; }
-    const std::vector<AstNode *> stmts() const { return m_stmts; }
+    const std::vector<AstNode *> &stmts() const { return m_stmts; }
 };
 
 class NumLit : public AstNode {
@@ -78,17 +104,32 @@ public:
     AstNode *val() const { return m_val; }
 };
 
+class VarExpr : public AstNode {
+    std::string m_name;
+
+public:
+    explicit VarExpr(std::string name) : AstNode(NodeKind::VarExpr), m_name(std::move(name)) {}
+
+    const std::string &name() const { return m_name; }
+};
+
 struct AstVisitor {
     void accept(AstNode *node);
+    virtual void visit(AssignStmt *assign_stmt) = 0;
     virtual void visit(BinExpr *bin_expr) = 0;
+    virtual void visit(DeclStmt *decl_stmt) = 0;
     virtual void visit(FunctionDecl *function_decl) = 0;
     virtual void visit(NumLit *num_lit) = 0;
     virtual void visit(RetStmt *ret_stmt) = 0;
+    virtual void visit(VarExpr *var_expr) = 0;
 };
 
 struct AstPrinter : public AstVisitor {
+    void visit(AssignStmt *) override;
     void visit(BinExpr *) override;
-    void visit(FunctionDecl *function_decl) override;
+    void visit(DeclStmt *decl_stmt) override;
+    void visit(FunctionDecl *) override;
     void visit(NumLit *) override;
     void visit(RetStmt *) override;
+    void visit(VarExpr *) override;
 };

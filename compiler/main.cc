@@ -17,7 +17,9 @@
 
 constexpr const char *INPUT = R"(
 fn main() -> int {
-    return 5 + 8 * 10;
+    var a: int = 5;
+    a = a + 5;
+    return a + 10 * 8;
 }
 )";
 

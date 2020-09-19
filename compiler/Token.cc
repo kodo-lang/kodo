@@ -6,10 +6,14 @@ std::string tok_str(TokenKind kind) {
         return "+";
     case TokenKind::Arrow:
         return "->";
+    case TokenKind::Colon:
+        return ":";
     case TokenKind::Div:
         return "/";
     case TokenKind::Eof:
         return "eof";
+    case TokenKind::Eq:
+        return "=";
     case TokenKind::Fn:
         return "fn";
     case TokenKind::Identifier:
@@ -32,6 +36,8 @@ std::string tok_str(TokenKind kind) {
         return ";";
     case TokenKind::Sub:
         return "-";
+    case TokenKind::Var:
+        return "var";
     }
 }
 

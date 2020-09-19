@@ -6,8 +6,10 @@
 enum class TokenKind {
     Add,
     Arrow,
+    Colon,
     Div,
     Eof,
+    Eq,
     Fn,
     Identifier,
     LBrace,
@@ -19,6 +21,7 @@ enum class TokenKind {
     RParen,
     Semi,
     Sub,
+    Var,
 };
 
 struct Token {

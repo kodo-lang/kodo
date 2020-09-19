@@ -9,24 +9,8 @@
 #include <fmt/core.h>
 
 #include <cassert>
-#include <type_traits>
 
 namespace {
-
-// clang-format off
-template <typename T> requires (!std::is_same_v<bool, T>)
-class Result {
-    // clang-format on
-    bool m_present;
-    T m_value;
-
-public:
-    constexpr Result(bool present) : m_present(present) { assert(!present); }
-    constexpr Result(T value) : m_present(true), m_value(value) {}
-
-    constexpr operator bool() const { return m_present; }
-    constexpr operator T() const { return m_value; }
-};
 
 constexpr Result<BinOp> token_to_bin_op(const Token &token) {
     switch (token.kind) {
@@ -72,10 +56,9 @@ template <typename FmtString, typename... Args>
 
 } // namespace
 
-bool Parser::consume(TokenKind kind) {
+Result<Token> Parser::consume(TokenKind kind) {
     if (m_lexer->peek().kind == kind) {
-        m_lexer->next();
-        return true;
+        return m_lexer->next();
     }
     return false;
 }
@@ -95,7 +78,11 @@ AstNode *Parser::parse_expr() {
         auto token = m_lexer->peek();
         auto op1 = token_to_bin_op(token);
         if (!op1) {
-            if (token.kind == TokenKind::NumLit) {
+            if (token.kind == TokenKind::Identifier) {
+                m_lexer->next();
+                operands.push(new VarExpr(token.text));
+                continue;
+            } else if (token.kind == TokenKind::NumLit) {
                 m_lexer->next();
                 operands.push(new NumLit(token.num));
                 continue;
@@ -127,8 +114,21 @@ AstNode *Parser::parse_expr() {
 }
 
 AstNode *Parser::parse_stmt() {
+    if (auto name = consume(TokenKind::Identifier)) {
+        expect(TokenKind::Eq);
+        return new AssignStmt(name->text, parse_expr());
+    }
     if (consume(TokenKind::Return)) {
         return new RetStmt(parse_expr());
+    }
+    if (consume(TokenKind::Var)) {
+        const char *name = expect(TokenKind::Identifier).text;
+        expect(TokenKind::Colon);
+        expect(TokenKind::Identifier);
+        if (consume(TokenKind::Eq)) {
+            return new DeclStmt(name, parse_expr());
+        }
+        return new DeclStmt(name, nullptr);
     }
     error("expected stmt but got {} on line {}", tok_str(m_lexer->next()), m_lexer->line());
 }
