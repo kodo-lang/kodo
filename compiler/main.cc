@@ -1,18 +1,17 @@
 #include <Ast.hh>
 #include <CharStream.hh>
+#include <CodeGen.hh>
 #include <Lexer.hh>
 #include <Parser.hh>
 
 #include <llvm/ExecutionEngine/MCJIT.h>
-#include <llvm/IR/BasicBlock.h>
-#include <llvm/IR/Constants.h>
-#include <llvm/IR/Function.h>
-#include <llvm/IR/IRBuilder.h>
+#include <llvm/IR/LLVMContext.h>
 #include <llvm/IR/Module.h>
 #include <llvm/Support/TargetSelect.h>
 #include <llvm/Support/raw_ostream.h>
 
 #include <iostream>
+#include <memory>
 #include <sstream>
 
 constexpr const char *INPUT = R"(
@@ -20,14 +19,22 @@ constexpr const char *INPUT = R"(
 )";
 
 int main() {
+    std::istringstream istream(INPUT);
+    CharStream stream(&istream);
+    Lexer lexer(&stream);
+    Parser parser(&lexer);
+    auto *node = parser.parse();
+
+    AstPrinter printer;
+    printer.accept(node);
+    std::cout << '\n';
+
     llvm::LLVMContext context;
     std::unique_ptr<llvm::Module> module(new llvm::Module("main", context));
-    auto *function = llvm::Function::Create(llvm::FunctionType::get(llvm::Type::getInt32Ty(context), false),
-                                            llvm::Function::ExternalLinkage, "main", *module);
-    auto *entry = llvm::BasicBlock::Create(context, "entry", function);
-    llvm::IRBuilder<> builder(context);
-    builder.SetInsertPoint(entry);
-    builder.CreateRet(llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 5));
+    CodeGen code_gen(module.get());
+    code_gen.accept(node);
+    code_gen.finish();
+    auto *function = module->getFunction("main");
     module->print(llvm::errs(), nullptr);
 
     llvm::InitializeAllAsmPrinters();
@@ -37,12 +44,4 @@ int main() {
     engine_builder.setEngineKind(llvm::EngineKind::Either);
     auto *engine = engine_builder.create();
     llvm::errs() << engine->runFunctionAsMain(function, {}, nullptr) << '\n';
-
-    std::istringstream istream(INPUT);
-    CharStream stream(&istream);
-    Lexer lexer(&stream);
-    Parser parser(&lexer);
-    AstPrinter printer;
-    printer.accept(parser.parse());
-    std::cout << '\n';
 }

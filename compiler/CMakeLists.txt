@@ -1,6 +1,7 @@
 add_executable(compiler
     Ast.cc
     CharStream.cc
+    CodeGen.cc
     Lexer.cc
     main.cc
     Parser.cc
