@@ -1,5 +1,7 @@
+#include <Ast.hh>
 #include <CharStream.hh>
 #include <Lexer.hh>
+#include <Parser.hh>
 
 #include <llvm/ExecutionEngine/MCJIT.h>
 #include <llvm/IR/BasicBlock.h>
@@ -38,8 +40,7 @@ int main() {
     std::istringstream istream(INPUT);
     CharStream stream(&istream);
     Lexer lexer(&stream);
-    while (stream.has_next()) {
-        auto token = lexer.next();
-        llvm::errs() << tok_str(token) << '\n';
-    }
+    Parser parser(&lexer);
+    AstPrinter printer;
+    printer.accept(parser.parse());
 }

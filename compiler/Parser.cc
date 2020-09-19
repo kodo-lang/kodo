@@ -1,0 +1,89 @@
+#include <Parser.hh>
+
+#include <Ast.hh>
+#include <Lexer.hh>
+#include <Stack.hh>
+#include <Token.hh>
+
+#include <cassert>
+#include <type_traits>
+
+namespace {
+
+// clang-format off
+template <typename T> requires (!std::is_same_v<bool, T>)
+class Result {
+    // clang-format on
+    bool m_present;
+    T m_value;
+
+public:
+    constexpr Result(bool present) : m_present(present) { assert(!present); }
+    constexpr Result(T value) : m_present(true), m_value(value) {}
+
+    constexpr operator bool() const { return m_present; }
+    constexpr operator T() const { return m_value; }
+};
+
+constexpr Result<BinOp> token_to_bin_op(const Token &token) {
+    switch (token.kind) {
+    case TokenKind::Add:
+        return BinOp::Add;
+    default:
+        return false;
+    }
+}
+
+constexpr int precedence(BinOp op) {
+    switch (op) {
+    case BinOp::Add:
+        return 1;
+    }
+}
+
+constexpr int compare_op(BinOp op1, BinOp op2) {
+    int p1 = precedence(op1);
+    int p2 = precedence(op2);
+    if (p1 == p2) {
+        return 0;
+    }
+    return p1 > p2 ? 1 : -1;
+}
+
+} // namespace
+
+AstNode *Parser::parse() {
+    Stack<AstNode *> operands;
+    Stack<BinOp> operators;
+    while (true) {
+        auto token = m_lexer->next();
+        auto op1 = token_to_bin_op(token);
+        if (!op1) {
+            if (token.kind == TokenKind::NumLit) {
+                operands.push(new NumLit(token.num));
+                continue;
+            }
+            break;
+        }
+
+        while (!operators.empty()) {
+            auto op2 = operators.peek();
+            if (compare_op(op1, op2) > 0) {
+                break;
+            }
+            auto *rhs = operands.pop();
+            auto *lhs = operands.pop();
+            operands.push(new BinExpr(operators.pop(), lhs, rhs));
+        }
+        operators.push(op1);
+    }
+
+    while (!operators.empty()) {
+        auto *rhs = operands.pop();
+        auto *lhs = operands.pop();
+        operands.push(new BinExpr(operators.pop(), lhs, rhs));
+    }
+
+    assert(operands.size() == 1);
+    return operands.pop();
+}
