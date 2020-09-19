@@ -2,9 +2,22 @@
 
 #include <CharStream.hh>
 
+#include <fmt/color.h>
+#include <fmt/core.h>
+
 #include <cctype>
-#include <stdexcept>
 #include <string>
+
+namespace {
+
+template <typename FmtString, typename... Args>
+void error(const FmtString &fmt, const Args &... args) {
+    auto formatted = fmt::format(fmt, args...);
+    fmt::print(fmt::fg(fmt::color::orange_red),"lexer: {}\n", formatted);
+    abort();
+}
+
+} // namespace
 
 Token Lexer::next_token() {
     while (std::isspace(m_stream->peek()) != 0) {
@@ -55,10 +68,10 @@ Token Lexer::next_token() {
             if (buf == "return") {
                 token.kind = TokenKind::Return;
             } else {
-                throw std::runtime_error("Unexpected identifier");
+                error("unexpected identifier on line {}", m_line);
             }
         } else {
-            throw std::runtime_error("Unexpected character");
+            error("unexpected '{}' on line {}", ch, m_line);
         }
     }
     return token;
