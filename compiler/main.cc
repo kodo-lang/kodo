@@ -1,3 +1,6 @@
+#include <CharStream.hh>
+#include <Lexer.hh>
+
 #include <llvm/ExecutionEngine/MCJIT.h>
 #include <llvm/IR/BasicBlock.h>
 #include <llvm/IR/Constants.h>
@@ -6,6 +9,12 @@
 #include <llvm/IR/Module.h>
 #include <llvm/Support/TargetSelect.h>
 #include <llvm/Support/raw_ostream.h>
+
+#include <sstream>
+
+constexpr const char *INPUT = R"(
+5 + 7
+)";
 
 int main() {
     llvm::LLVMContext context;
@@ -25,4 +34,12 @@ int main() {
     engine_builder.setEngineKind(llvm::EngineKind::Either);
     auto *engine = engine_builder.create();
     llvm::errs() << engine->runFunctionAsMain(function, {}, nullptr) << '\n';
+
+    std::istringstream istream(INPUT);
+    CharStream stream(&istream);
+    Lexer lexer(&stream);
+    while (stream.has_next()) {
+        auto token = lexer.next();
+        llvm::errs() << tok_str(token) << '\n';
+    }
 }
