@@ -12,6 +12,7 @@
 #include <llvm/Support/TargetSelect.h>
 #include <llvm/Support/raw_ostream.h>
 
+#include <iostream>
 #include <sstream>
 
 constexpr const char *INPUT = R"(
@@ -43,4 +44,5 @@ int main() {
     Parser parser(&lexer);
     AstPrinter printer;
     printer.accept(parser.parse());
+    std::cout << '\n';
 }

@@ -23,7 +23,7 @@ void AstPrinter::visit(const BinExpr *bin_expr) {
     accept(bin_expr->lhs());
     std::cout << ", ";
     accept(bin_expr->rhs());
-    std::cout << ")\n";
+    std::cout << ")";
 }
 
 void AstPrinter::visit(const NumLit *num_lit) {
