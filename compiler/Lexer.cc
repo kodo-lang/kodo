@@ -77,10 +77,10 @@ Token Lexer::next_token() {
         token.kind = TokenKind::Semi;
         break;
     default:
-        if (ch >= '0' && ch <= '9') {
+        if (std::isdigit(ch) != 0) {
             std::string buf;
             buf += ch;
-            while ((ch = m_stream->peek()) >= '0' && ch <= '9') {
+            while (std::isdigit(m_stream->peek()) != 0) {
                 buf += m_stream->next();
             }
             token.kind = TokenKind::NumLit;
@@ -88,7 +88,7 @@ Token Lexer::next_token() {
         } else if (std::isalpha(ch) != 0) {
             std::string buf;
             buf += ch;
-            while (std::isalpha(ch = m_stream->peek()) != 0) {
+            while (std::isalpha(ch = m_stream->peek()) != 0 || std::isdigit(ch) != 0) {
                 buf += m_stream->next();
             }
             if (buf == "fn") {

@@ -16,8 +16,8 @@
 #include <sstream>
 
 constexpr const char *INPUT = R"(
-fn main() -> int {
-    var a: int = 5;
+fn main() -> i32 {
+    var a: i32 = 5;
     a = a + 5;
     return a + 10 * 8;
 }
