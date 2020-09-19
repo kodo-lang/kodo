@@ -21,4 +21,5 @@ struct Token {
     };
 };
 
+std::string tok_str(TokenKind kind);
 std::string tok_str(const Token &token);

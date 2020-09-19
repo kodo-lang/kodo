@@ -18,4 +18,6 @@ public:
 
     Token next();
     Token peek();
+
+    int line() const { return m_line; }
 };

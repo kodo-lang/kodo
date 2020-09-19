@@ -5,6 +5,9 @@
 #include <Stack.hh>
 #include <Token.hh>
 
+#include <fmt/color.h>
+#include <fmt/core.h>
+
 #include <cassert>
 #include <type_traits>
 
@@ -60,7 +63,21 @@ constexpr int compare_op(BinOp op1, BinOp op2) {
     return p1 > p2 ? 1 : -1;
 }
 
+template <typename FmtString, typename... Args>
+void error(const FmtString &fmt, const Args &... args) {
+    auto formatted = fmt::format(fmt, args...);
+    fmt::print(fmt::fg(fmt::color::orange_red), "parser: {}\n", formatted);
+    abort();
+}
+
 } // namespace
+
+void Parser::expect(TokenKind kind) {
+    auto next = m_lexer->next();
+    if (next.kind != kind) {
+        error("expected {} but got {} on line {}", tok_str(kind), tok_str(next), m_lexer->line());
+    }
+}
 
 AstNode *Parser::parse_expr() {
     Stack<AstNode *> operands;
@@ -101,8 +118,8 @@ AstNode *Parser::parse_expr() {
 }
 
 AstNode *Parser::parse() {
-    assert(m_lexer->next().kind == TokenKind::Return);
+    expect(TokenKind::Return);
     auto *expr = parse_expr();
-    assert(m_lexer->next().kind == TokenKind::Semi);
+    expect(TokenKind::Semi);
     return new RetStmt(expr);
 }
