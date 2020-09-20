@@ -19,7 +19,8 @@ constexpr const char *INPUT = R"(
 fn main(argc: i32, argv: **i8) -> i32 {
     var a: i32 = 5;
     var b: *i32 = &a;
-    return *b + argc;
+    var c: **i32 = &b;
+    return argc + *b + **c;
 }
 )";
 

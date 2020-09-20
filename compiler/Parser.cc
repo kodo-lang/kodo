@@ -119,7 +119,7 @@ AstNode *Parser::parse_expr() {
         m_lexer->next();
         while (!operators.empty()) {
             auto op2 = operators.peek();
-            if (compare_op(op1, op2) > 0) {
+            if (compare_op(op1, op2) > 0 || op1.unary) {
                 break;
             }
             auto op = operators.pop();
@@ -145,7 +145,9 @@ AstNode *Parser::parse_expr() {
         }
     }
 
-    assert(operands.size() == 1);
+    if (operands.size() != 1) {
+        error("unfinished expression on line {}", m_lexer->line());
+    }
     return operands.pop();
 }
 
