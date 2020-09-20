@@ -8,6 +8,8 @@ std::string tok_str(TokenKind kind) {
         return "->";
     case TokenKind::Colon:
         return ":";
+    case TokenKind::Comma:
+        return ",";
     case TokenKind::Div:
         return "/";
     case TokenKind::Eof:

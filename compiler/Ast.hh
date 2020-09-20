@@ -10,6 +10,7 @@ enum class NodeKind {
     AssignStmt,
     BinExpr,
     DeclStmt,
+    FunctionArg,
     FunctionDecl,
     NumLit,
     RetStmt,
@@ -73,16 +74,28 @@ public:
     AstNode *init_val() const { return m_init_val; }
 };
 
+class FunctionArg : public AstNode {
+    std::string m_name;
+
+public:
+    explicit FunctionArg(std::string name) : AstNode(NodeKind::FunctionArg), m_name(std::move(name)) {}
+
+    const std::string &name() { return m_name; }
+};
+
 class FunctionDecl : public AstNode {
     std::string m_name;
+    std::vector<FunctionArg *> m_args;
     std::vector<AstNode *> m_stmts;
 
 public:
     explicit FunctionDecl(std::string name) : AstNode(NodeKind::FunctionDecl), m_name(std::move(name)) {}
 
+    void add_arg(FunctionArg *arg) { m_args.push_back(arg); }
     void add_stmt(AstNode *stmt) { m_stmts.push_back(stmt); }
 
     const std::string &name() const { return m_name; }
+    const std::vector<FunctionArg *> &args() const { return m_args; }
     const std::vector<AstNode *> &stmts() const { return m_stmts; }
 };
 
@@ -118,6 +131,7 @@ struct AstVisitor {
     virtual void visit(AssignStmt *assign_stmt) = 0;
     virtual void visit(BinExpr *bin_expr) = 0;
     virtual void visit(DeclStmt *decl_stmt) = 0;
+    virtual void visit(FunctionArg *function_arg) = 0;
     virtual void visit(FunctionDecl *function_decl) = 0;
     virtual void visit(NumLit *num_lit) = 0;
     virtual void visit(RetStmt *ret_stmt) = 0;
@@ -128,6 +142,7 @@ struct AstPrinter : public AstVisitor {
     void visit(AssignStmt *) override;
     void visit(BinExpr *) override;
     void visit(DeclStmt *decl_stmt) override;
+    void visit(FunctionArg *) override;
     void visit(FunctionDecl *) override;
     void visit(NumLit *) override;
     void visit(RetStmt *) override;

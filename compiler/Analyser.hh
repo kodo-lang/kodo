@@ -6,6 +6,7 @@ struct Analyser : public AstVisitor {
     void visit(AssignStmt *) override;
     void visit(BinExpr *) override;
     void visit(DeclStmt *) override;
+    void visit(FunctionArg *) override;
     void visit(FunctionDecl *) override;
     void visit(NumLit *) override;
     void visit(RetStmt *) override;

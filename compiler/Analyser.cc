@@ -23,7 +23,15 @@ void Analyser::visit(DeclStmt *decl_stmt) {
     decl_stmt->m_type.bit_width = 32;
 }
 
+void Analyser::visit(FunctionArg *function_arg) {
+    function_arg->m_type.kind = TypeKind::Int;
+    function_arg->m_type.bit_width = 32;
+}
+
 void Analyser::visit(FunctionDecl *function_decl) {
+    for (auto *arg : function_decl->args()) {
+        accept(arg);
+    }
     for (auto *stmt : function_decl->stmts()) {
         accept(stmt);
     }

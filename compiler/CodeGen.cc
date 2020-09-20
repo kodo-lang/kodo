@@ -62,13 +62,29 @@ void CodeGen::visit(DeclStmt *decl_stmt) {
     m_scope_stack.peek().put_var(decl_stmt->name(), var);
 }
 
+void CodeGen::visit(FunctionArg *function_arg) {
+    auto *arg_val = m_function->getArg(m_arg_map.at(function_arg));
+    auto *arg_var = m_builder.CreateAlloca(llvm_type(function_arg->type()));
+    m_builder.CreateStore(arg_val, arg_var);
+    m_scope_stack.peek().put_var(function_arg->name(), arg_var);
+}
+
 void CodeGen::visit(FunctionDecl *function_decl) {
-    m_function = llvm::Function::Create(llvm::FunctionType::get(llvm::Type::getInt32Ty(m_module->getContext()), false),
+    m_arg_map.clear();
+    std::vector<llvm::Type *> arg_types;
+    for (int i = 0; auto *arg : function_decl->args()) {
+        arg_types.push_back(llvm_type(arg->type()));
+        m_arg_map.emplace(arg, i++);
+    }
+    m_function = llvm::Function::Create(llvm::FunctionType::get(llvm::Type::getInt32Ty(m_module->getContext()), arg_types, false),
                                         llvm::Function::ExternalLinkage, function_decl->name(), m_module);
     m_block = llvm::BasicBlock::Create(m_module->getContext(), "entry", m_function);
     m_builder.SetInsertPoint(m_block);
     m_scope_stack.clear();
     m_scope_stack.emplace(nullptr);
+    for (auto *arg : function_decl->args()) {
+        accept(arg);
+    }
     for (auto *stmt : function_decl->stmts()) {
         accept(stmt);
     }

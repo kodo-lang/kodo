@@ -13,6 +13,9 @@ void AstVisitor::accept(AstNode *node) {
     case NodeKind::DeclStmt:
         visit(static_cast<DeclStmt *>(node));
         break;
+    case NodeKind::FunctionArg:
+        visit(static_cast<FunctionArg *>(node));
+        break;
     case NodeKind::FunctionDecl:
         visit(static_cast<FunctionDecl *>(node));
         break;
@@ -69,9 +72,19 @@ void AstPrinter::visit(DeclStmt *decl_stmt) {
     std::cout << ")";
 }
 
+void AstPrinter::visit(FunctionArg *function_arg) {
+    std::cout << "FunctionArg(";
+    std::cout << function_arg->name();
+    std::cout << ")";
+}
+
 void AstPrinter::visit(FunctionDecl *function_decl) {
     std::cout << "FunctionDecl(";
     std::cout << function_decl->name();
+    for (auto *arg : function_decl->args()) {
+        std::cout << ", ";
+        accept(arg);
+    }
     std::cout << ")";
     for (auto *stmt : function_decl->stmts()) {
         std::cout << "\n  ";

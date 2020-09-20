@@ -136,12 +136,19 @@ AstNode *Parser::parse_stmt() {
 AstNode *Parser::parse() {
     expect(TokenKind::Fn);
     const char *name = expect(TokenKind::Identifier).text;
+    auto *func = new FunctionDecl(name);
     expect(TokenKind::LParen);
+    while (m_lexer->peek().kind != TokenKind::RParen) {
+        const char *arg_name = expect(TokenKind::Identifier).text;
+        expect(TokenKind::Colon);
+        expect(TokenKind::Identifier);
+        func->add_arg(new FunctionArg(arg_name));
+        consume(TokenKind::Comma);
+    }
     expect(TokenKind::RParen);
     expect(TokenKind::Arrow);
     expect(TokenKind::Identifier);
     expect(TokenKind::LBrace);
-    auto *func = new FunctionDecl(name);
     while (m_lexer->has_next()) {
         if (m_lexer->peek().kind == TokenKind::RBrace) {
             break;

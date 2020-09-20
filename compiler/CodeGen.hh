@@ -24,9 +24,10 @@ public:
 class CodeGen : public AstVisitor {
     llvm::Module *const m_module;
     llvm::IRBuilder<> m_builder;
-
     llvm::BasicBlock *m_block;
     llvm::Function *m_function;
+
+    std::unordered_map<FunctionArg *, int> m_arg_map;
     Stack<llvm::Value *> m_expr_stack;
     Stack<Scope> m_scope_stack;
 
@@ -38,6 +39,7 @@ public:
     void visit(AssignStmt *) override;
     void visit(BinExpr *) override;
     void visit(DeclStmt *) override;
+    void visit(FunctionArg *) override;
     void visit(FunctionDecl *) override;
     void visit(NumLit *) override;
     void visit(RetStmt *) override;

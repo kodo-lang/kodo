@@ -7,6 +7,7 @@ enum class TokenKind {
     Add,
     Arrow,
     Colon,
+    Comma,
     Div,
     Eof,
     Eq,
