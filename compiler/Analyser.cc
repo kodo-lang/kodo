@@ -4,8 +4,7 @@
 
 void Analyser::visit(AssignStmt *assign_stmt) {
     accept(assign_stmt->val());
-    assign_stmt->m_type.kind = TypeKind::Int;
-    assign_stmt->m_type.bit_width = 32;
+    assign_stmt->m_type = new IntType(32);
 }
 
 void Analyser::visit(BinExpr *bin_expr) {
@@ -19,13 +18,11 @@ void Analyser::visit(DeclStmt *decl_stmt) {
     if (decl_stmt->init_val() != nullptr) {
         accept(decl_stmt->init_val());
     }
-    decl_stmt->m_type.kind = TypeKind::Int;
-    decl_stmt->m_type.bit_width = 32;
+    decl_stmt->m_type = new IntType(32);
 }
 
 void Analyser::visit(FunctionArg *function_arg) {
-    function_arg->m_type.kind = TypeKind::Int;
-    function_arg->m_type.bit_width = 32;
+    function_arg->m_type = new IntType(32);
 }
 
 void Analyser::visit(FunctionDecl *function_decl) {
@@ -38,8 +35,7 @@ void Analyser::visit(FunctionDecl *function_decl) {
 }
 
 void Analyser::visit(NumLit *num_lit) {
-    num_lit->m_type.kind = TypeKind::Int;
-    num_lit->m_type.bit_width = 32;
+    num_lit->m_type = new IntType(32);
 }
 
 void Analyser::visit(RetStmt *ret_stmt) {
@@ -48,6 +44,5 @@ void Analyser::visit(RetStmt *ret_stmt) {
 }
 
 void Analyser::visit(VarExpr *var_expr) {
-    var_expr->m_type.kind = TypeKind::Int;
-    var_expr->m_type.bit_width = 32;
+    var_expr->m_type = new IntType(32);
 }

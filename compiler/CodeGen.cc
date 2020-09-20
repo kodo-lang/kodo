@@ -17,12 +17,12 @@ void Scope::put_var(std::string_view name, llvm::Value *value) {
     m_vars.emplace(name, value);
 }
 
-llvm::Type *CodeGen::llvm_type(const Type &type) {
-    switch (type.kind) {
+llvm::Type *CodeGen::llvm_type(Type *type) {
+    switch (type->kind()) {
     case TypeKind::Invalid:
         assert(false);
     case TypeKind::Int:
-        return llvm::Type::getIntNTy(m_module->getContext(), type.bit_width);
+        return llvm::Type::getIntNTy(m_module->getContext(), type->as<IntType>()->bit_width());
     }
 }
 

@@ -31,7 +31,7 @@ class CodeGen : public AstVisitor {
     Stack<llvm::Value *> m_expr_stack;
     Stack<Scope> m_scope_stack;
 
-    llvm::Type *llvm_type(const Type &type);
+    llvm::Type *llvm_type(Type *type);
 
 public:
     explicit CodeGen(llvm::Module *module);

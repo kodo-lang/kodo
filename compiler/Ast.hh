@@ -4,6 +4,7 @@
 
 #include <cstdint>
 #include <string>
+#include <utility>
 #include <vector>
 
 enum class NodeKind {
@@ -22,13 +23,13 @@ class AstNode {
 
 private:
     const NodeKind m_kind;
-    Type m_type{TypeKind::Invalid};
+    Type *m_type{nullptr};
 
 public:
     explicit AstNode(NodeKind kind) : m_kind(kind) {}
 
     NodeKind kind() const { return m_kind; }
-    const Type &type() const { return m_type; }
+    Type *type() const { return m_type; }
 };
 
 enum class BinOp {
@@ -43,7 +44,7 @@ class AssignStmt : public AstNode {
     AstNode *m_val;
 
 public:
-    AssignStmt(std::string name, AstNode *val) : AstNode(NodeKind::AssignStmt), m_name(name), m_val(val) {}
+    AssignStmt(std::string name, AstNode *val) : AstNode(NodeKind::AssignStmt), m_name(std::move(name)), m_val(val) {}
 
     const std::string &name() const { return m_name; }
     AstNode *val() const { return m_val; }
