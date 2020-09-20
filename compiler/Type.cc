@@ -10,5 +10,7 @@ bool operator==(const Type &lhs, const Type &rhs) {
         return true;
     case TypeKind::Int:
         return lhs.as<IntType>()->bit_width() == rhs.as<IntType>()->bit_width();
+    case TypeKind::Pointer:
+        return *lhs.as<PointerType>()->pointee_type() == *rhs.as<PointerType>()->pointee_type();
     }
 }

@@ -70,6 +70,9 @@ Token Lexer::next_token() {
     case '=':
         token.kind = TokenKind::Eq;
         break;
+    case '&':
+        token.kind = TokenKind::Ampersand;
+        break;
     case ':':
         token.kind = TokenKind::Colon;
         break;

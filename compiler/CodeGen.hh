@@ -43,5 +43,6 @@ public:
     void visit(FunctionDecl *) override;
     void visit(NumLit *) override;
     void visit(RetStmt *) override;
+    void visit(UnaryExpr *) override;
     void visit(VarExpr *) override;
 };

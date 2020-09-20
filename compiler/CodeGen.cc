@@ -19,10 +19,12 @@ void Scope::put_var(std::string_view name, llvm::Value *value) {
 
 llvm::Type *CodeGen::llvm_type(Type *type) {
     switch (type->kind()) {
-    case TypeKind::Invalid:
-        assert(false);
     case TypeKind::Int:
         return llvm::Type::getIntNTy(m_module->getContext(), type->as<IntType>()->bit_width());
+    case TypeKind::Pointer:
+        return llvm::PointerType::get(llvm_type(type->as<PointerType>()->pointee_type()), 0);
+    default:
+        assert(false);
     }
 }
 
@@ -97,6 +99,23 @@ void CodeGen::visit(NumLit *num_lit) {
 void CodeGen::visit(RetStmt *ret_stmt) {
     accept(ret_stmt->val());
     m_builder.CreateRet(m_expr_stack.pop());
+}
+
+void CodeGen::visit(UnaryExpr *unary_expr) {
+    accept(unary_expr->val());
+    switch (unary_expr->op()) {
+    case UnaryOp::AddressOf: {
+        auto *val = m_expr_stack.pop();
+        if (auto *load = llvm::dyn_cast<llvm::LoadInst>(val)) {
+            val = load->getPointerOperand();
+        }
+        m_expr_stack.push(val);
+        break;
+    }
+    case UnaryOp::Deref:
+        m_expr_stack.push(m_builder.CreateLoad(m_expr_stack.pop()));
+        break;
+    }
 }
 
 void CodeGen::visit(VarExpr *var_expr) {

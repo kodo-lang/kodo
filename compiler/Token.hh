@@ -5,6 +5,7 @@
 
 enum class TokenKind {
     Add,
+    Ampersand,
     Arrow,
     Colon,
     Comma,

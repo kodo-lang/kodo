@@ -3,6 +3,7 @@
 enum class TypeKind {
     Invalid,
     Int,
+    Pointer,
 };
 
 class Type {
@@ -38,6 +39,17 @@ public:
     explicit IntType(int bit_width) : Type(kind), m_bit_width(bit_width) {}
 
     int bit_width() const { return m_bit_width; }
+};
+
+class PointerType : public Type {
+    Type *m_pointee_type;
+
+public:
+    static constexpr auto kind = TypeKind::Pointer;
+
+    explicit PointerType(Type *pointee_type) : Type(kind), m_pointee_type(pointee_type) {}
+
+    Type *pointee_type() const { return m_pointee_type; }
 };
 
 template <typename T>

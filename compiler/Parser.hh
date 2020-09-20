@@ -6,6 +6,7 @@
 
 class AstNode;
 class Lexer;
+class Type;
 
 // clang-format off
 template <typename T>
@@ -31,6 +32,7 @@ class Parser {
 
     AstNode *parse_expr();
     AstNode *parse_stmt();
+    Type *parse_type();
 
 public:
     explicit Parser(Lexer *lexer) : m_lexer(lexer) {}

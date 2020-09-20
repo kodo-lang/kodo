@@ -4,6 +4,8 @@ std::string tok_str(TokenKind kind) {
     switch (kind) {
     case TokenKind::Add:
         return "+";
+    case TokenKind::Ampersand:
+        return "&";
     case TokenKind::Arrow:
         return "->";
     case TokenKind::Colon:

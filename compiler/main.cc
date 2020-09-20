@@ -16,8 +16,10 @@
 #include <sstream>
 
 constexpr const char *INPUT = R"(
-fn main(argc: i32) -> i32 {
-    return argc;
+fn main(argc: i32, argv: **i8) -> i32 {
+    var a: i32 = 5;
+    var b: *i32 = &a;
+    return *b + argc;
 }
 )";
 
@@ -28,12 +30,12 @@ int main() {
     Parser parser(&lexer);
     auto *node = parser.parse();
 
-    Analyser analyser;
-    analyser.accept(node);
-
     AstPrinter printer;
     printer.accept(node);
     std::cout << '\n';
+
+    Analyser analyser;
+    analyser.accept(node);
 
     llvm::LLVMContext context;
     std::unique_ptr<llvm::Module> module(new llvm::Module("main", context));
@@ -48,5 +50,5 @@ int main() {
     llvm::EngineBuilder engine_builder(std::move(module));
     engine_builder.setEngineKind(llvm::EngineKind::Either);
     auto *engine = engine_builder.create();
-    llvm::errs() << engine->runFunctionAsMain(function, {}, nullptr) << '\n';
+    llvm::errs() << engine->runFunctionAsMain(function, {"hello"}, nullptr) << '\n';
 }

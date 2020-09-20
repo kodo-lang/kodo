@@ -25,6 +25,9 @@ void AstVisitor::accept(AstNode *node) {
     case NodeKind::RetStmt:
         visit(static_cast<RetStmt *>(node));
         break;
+    case NodeKind::UnaryExpr:
+        visit(static_cast<UnaryExpr *>(node));
+        break;
     case NodeKind::VarExpr:
         visit(static_cast<VarExpr *>(node));
         break;
@@ -99,6 +102,21 @@ void AstPrinter::visit(NumLit *num_lit) {
 void AstPrinter::visit(RetStmt *ret_stmt) {
     std::cout << "RetStmt(";
     accept(ret_stmt->val());
+    std::cout << ")";
+}
+
+void AstPrinter::visit(UnaryExpr *unary_expr) {
+    std::cout << "UnaryExpr(";
+    switch (unary_expr->op()) {
+    case UnaryOp::AddressOf:
+        std::cout << "AddressOf";
+        break;
+    case UnaryOp::Deref:
+        std::cout << "Deref";
+        break;
+    }
+    std::cout << ", ";
+    accept(unary_expr->val());
     std::cout << ")";
 }
 

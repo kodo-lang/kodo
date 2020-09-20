@@ -15,28 +15,21 @@ enum class NodeKind {
     FunctionDecl,
     NumLit,
     RetStmt,
+    UnaryExpr,
     VarExpr,
 };
 
 class AstNode {
-    friend class Analyser;
-
-private:
     const NodeKind m_kind;
     Type *m_type{nullptr};
 
 public:
     explicit AstNode(NodeKind kind) : m_kind(kind) {}
 
+    void set_type(Type *type) { m_type = type; }
+
     NodeKind kind() const { return m_kind; }
     Type *type() const { return m_type; }
-};
-
-enum class BinOp {
-    Add,
-    Sub,
-    Mul,
-    Div,
 };
 
 class AssignStmt : public AstNode {
@@ -48,6 +41,13 @@ public:
 
     const std::string &name() const { return m_name; }
     AstNode *val() const { return m_val; }
+};
+
+enum class BinOp {
+    Add,
+    Sub,
+    Mul,
+    Div,
 };
 
 class BinExpr : public AstNode {
@@ -118,6 +118,22 @@ public:
     AstNode *val() const { return m_val; }
 };
 
+enum class UnaryOp {
+    AddressOf,
+    Deref,
+};
+
+class UnaryExpr : public AstNode {
+    UnaryOp m_op;
+    AstNode *m_val;
+
+public:
+    UnaryExpr(UnaryOp op, AstNode *val) : AstNode(NodeKind::UnaryExpr), m_op(op), m_val(val) {}
+
+    UnaryOp op() const { return m_op; }
+    AstNode *val() const { return m_val; }
+};
+
 class VarExpr : public AstNode {
     std::string m_name;
 
@@ -136,16 +152,18 @@ struct AstVisitor {
     virtual void visit(FunctionDecl *function_decl) = 0;
     virtual void visit(NumLit *num_lit) = 0;
     virtual void visit(RetStmt *ret_stmt) = 0;
+    virtual void visit(UnaryExpr *unary_expr) = 0;
     virtual void visit(VarExpr *var_expr) = 0;
 };
 
 struct AstPrinter : public AstVisitor {
     void visit(AssignStmt *) override;
     void visit(BinExpr *) override;
-    void visit(DeclStmt *decl_stmt) override;
+    void visit(DeclStmt *) override;
     void visit(FunctionArg *) override;
     void visit(FunctionDecl *) override;
     void visit(NumLit *) override;
     void visit(RetStmt *) override;
+    void visit(UnaryExpr *) override;
     void visit(VarExpr *) override;
 };
