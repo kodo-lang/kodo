@@ -12,6 +12,7 @@ add_executable(compiler
     CodeGen.cc
     IrGen.cc
     Lexer.cc
+    LLVMGen.cc
     main.cc
     Parser.cc
     Token.cc

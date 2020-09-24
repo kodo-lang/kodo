@@ -1,20 +1,17 @@
-#include <Analyser.hh>
 #include <Ast.hh>
 #include <CharStream.hh>
-#include <CodeGen.hh>
 #include <IrGen.hh>
+#include <LLVMGen.hh>
 #include <Lexer.hh>
 #include <Parser.hh>
 #include <ir/Dumper.hh>
 
 #include <llvm/ExecutionEngine/MCJIT.h>
 #include <llvm/IR/LLVMContext.h>
-#include <llvm/IR/Module.h>
 #include <llvm/Support/TargetSelect.h>
 #include <llvm/Support/raw_ostream.h>
 
 #include <iostream>
-#include <memory>
 #include <sstream>
 
 constexpr const char *INPUT = R"(
@@ -28,21 +25,17 @@ int main() {
     CharStream stream(&istream);
     Lexer lexer(&stream);
     Parser parser(&lexer);
-    auto *ast = parser.parse();
-    auto program = gen_ir(ast);
-    dump_ir(program.get());
 
+    auto *ast = parser.parse();
     AstPrinter printer;
     printer.accept(ast);
     std::cout << '\n';
 
-    Analyser analyser;
-    analyser.accept(ast);
+    auto program = gen_ir(ast);
+    dump_ir(program.get());
 
     llvm::LLVMContext context;
-    std::unique_ptr<llvm::Module> module(new llvm::Module("main", context));
-    CodeGen code_gen(module.get());
-    code_gen.accept(ast);
+    auto module = gen_llvm(program.get(), &context);
     auto *function = module->getFunction("main");
     module->print(llvm::errs(), nullptr);
 
