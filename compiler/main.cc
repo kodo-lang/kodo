@@ -2,8 +2,10 @@
 #include <Ast.hh>
 #include <CharStream.hh>
 #include <CodeGen.hh>
+#include <IrGen.hh>
 #include <Lexer.hh>
 #include <Parser.hh>
+#include <ir/Dumper.hh>
 
 #include <llvm/ExecutionEngine/MCJIT.h>
 #include <llvm/IR/LLVMContext.h>
@@ -16,11 +18,8 @@
 #include <sstream>
 
 constexpr const char *INPUT = R"(
-fn main(argc: i32, argv: **i8) -> i32 {
-    var a: i32 = 5;
-    var b: *i32 = &a;
-    var c: **i32 = &b;
-    return argc + *b + **c;
+fn main() -> i32 {
+    return 5;
 }
 )";
 
@@ -29,19 +28,21 @@ int main() {
     CharStream stream(&istream);
     Lexer lexer(&stream);
     Parser parser(&lexer);
-    auto *node = parser.parse();
+    auto *ast = parser.parse();
+    auto program = gen_ir(ast);
+    dump_ir(program.get());
 
     AstPrinter printer;
-    printer.accept(node);
+    printer.accept(ast);
     std::cout << '\n';
 
     Analyser analyser;
-    analyser.accept(node);
+    analyser.accept(ast);
 
     llvm::LLVMContext context;
     std::unique_ptr<llvm::Module> module(new llvm::Module("main", context));
     CodeGen code_gen(module.get());
-    code_gen.accept(node);
+    code_gen.accept(ast);
     auto *function = module->getFunction("main");
     module->print(llvm::errs(), nullptr);
 
