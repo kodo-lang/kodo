@@ -1,5 +1,7 @@
 #pragma once
 
+#include <Type.hh>
+
 #include <string>
 #include <vector>
 
@@ -9,15 +11,17 @@ concept HasKind = requires(T t) {
 };
 
 enum class ValueKind {
+    Argument,
     BasicBlock,
     Constant,
     Instruction,
+    LocalVar,
 };
 
-// TODO: Kind enum + static_cast for casting instead of dynamic_cast (like type system).
 class Value {
     const ValueKind m_kind;
     std::string m_name;
+    const Type *m_type{nullptr};
     // TODO: Consider small vector optimisation.
     std::vector<Value *> m_users;
 
@@ -48,7 +52,11 @@ public:
     bool has_name() const;
     void set_name(std::string name);
 
-    const std::string &name() const { return m_name; }
+    bool has_type() const;
+    void set_type(const Type *type);
+
+    const std::string &name() const { return m_name;}
+    const Type *type() const { return m_type; }
     const std::vector<Value *> &users() const { return m_users; }
 };
 

@@ -2,6 +2,7 @@ add_executable(compiler
     ir/BasicBlock.cc
     ir/Function.cc
     ir/Instruction.cc
+    ir/Instructions.cc
     ir/Program.cc
     ir/Value.cc
     Analyser.cc

@@ -2,12 +2,21 @@
 
 #include <cassert>
 
+// TODO: List<T>::append()?
+// TODO: Default List<T>::emplace() U param to T.
+
+Argument *Function::append_arg() {
+    return m_args.emplace<Argument>(m_args.end());
+}
+
 BasicBlock *Function::append_block() {
-    // TODO: List<T>::append()?
-    // TODO: Default List<T>::emplace() U param to T.
     auto *block = m_blocks.emplace<BasicBlock>(m_blocks.end());
     block->set_parent(this);
     return block;
+}
+
+LocalVar *Function::append_var() {
+    return m_vars.emplace<LocalVar>(m_vars.end());
 }
 
 BasicBlock *Function::entry() const {

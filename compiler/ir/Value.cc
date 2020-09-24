@@ -40,3 +40,11 @@ bool Value::has_name() const {
 void Value::set_name(std::string name) {
     m_name = std::move(name);
 }
+
+bool Value::has_type() const {
+    return m_type != nullptr;
+}
+
+void Value::set_type(const Type *type) {
+    m_type = type;
+}
