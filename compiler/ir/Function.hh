@@ -8,11 +8,22 @@
 #include <utility>
 
 struct Argument : public Value, public ListNode {
-    Argument() : Value(ValueKind::Argument) {}
+    static constexpr auto KIND = ValueKind::Argument;
+
+    Argument() : Value(KIND) {}
 };
 
-struct LocalVar : public Value, public ListNode {
-    LocalVar() : Value(ValueKind::LocalVar) {}
+class LocalVar : public Value, public ListNode {
+    Type *const m_var_type;
+
+public:
+    static constexpr auto KIND = ValueKind::LocalVar;
+
+    explicit LocalVar(Type *var_type) : Value(KIND), m_var_type(var_type) {
+        set_type(new PointerType(m_var_type));
+    }
+
+    Type *var_type() const { return m_var_type; }
 };
 
 class Function : public ListNode {
@@ -36,7 +47,7 @@ public:
 
     Argument *append_arg();
     BasicBlock *append_block();
-    LocalVar *append_var();
+    LocalVar *append_var(Type *type);
 
     const std::string &name() const { return m_name; }
     const List<Argument> &args() const { return m_args; }

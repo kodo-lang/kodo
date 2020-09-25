@@ -13,8 +13,7 @@
         val->add_user(this);                                                                                           \
     }
 
-BinaryInst::BinaryInst(BinaryOp op, Value *lhs, Value *rhs)
-    : Instruction(InstKind::Binary), m_op(op), m_lhs(lhs), m_rhs(rhs) {
+BinaryInst::BinaryInst(BinaryOp op, Value *lhs, Value *rhs) : Instruction(KIND), m_op(op), m_lhs(lhs), m_rhs(rhs) {
     m_lhs->add_user(this);
     m_rhs->add_user(this);
 }
@@ -36,7 +35,7 @@ void BinaryInst::replace_uses_of_with(Value *orig, Value *repl) {
 } // clang-format on
 
 BranchInst::BranchInst(BasicBlock *dst)
-    : Instruction(InstKind::Branch), m_dst(dst) {
+    : Instruction(KIND), m_dst(dst) {
     m_dst->add_user(this);
 }
 
@@ -53,8 +52,10 @@ void BranchInst::replace_uses_of_with(Value *orig, Value *repl) {
     REPL_VALUE(m_dst)
 }
 
-LoadInst::LoadInst(Value *ptr) : Instruction(InstKind::Load), m_ptr(ptr) {
+LoadInst::LoadInst(Value *ptr) : Instruction(KIND), m_ptr(ptr) {
     m_ptr->add_user(this);
+    assert(m_ptr->type()->is<PointerType>());
+    set_type(m_ptr->type()->as<PointerType>()->pointee_type());
 }
 
 LoadInst::~LoadInst() {
@@ -72,7 +73,7 @@ void LoadInst::replace_uses_of_with(Value *orig, Value *repl) {
 } // clang-format on
 
 StoreInst::StoreInst(Value *ptr, Value *val)
-    : Instruction(InstKind::Store), m_ptr(ptr), m_val(val) {
+    : Instruction(KIND), m_ptr(ptr), m_val(val) {
     m_ptr->add_user(this);
     m_val->add_user(this);
 }
@@ -94,7 +95,7 @@ void StoreInst::replace_uses_of_with(Value *orig, Value *repl) {
 } // clang-format on
 
 RetInst::RetInst(Value *val)
-    : Instruction(InstKind::Ret), m_val(val) {
+    : Instruction(KIND), m_val(val) {
     m_val->add_user(this);
 }
 

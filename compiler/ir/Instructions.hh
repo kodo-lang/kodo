@@ -18,6 +18,8 @@ class BinaryInst : public Instruction {
     Value *m_rhs;
 
 public:
+    static constexpr auto KIND = InstKind::Binary;
+
     BinaryInst(BinaryOp op, Value *lhs, Value *rhs);
     BinaryInst(const BinaryInst &) = delete;
     BinaryInst(BinaryInst &&) = delete;
@@ -38,6 +40,8 @@ class BranchInst : public Instruction {
     BasicBlock *m_dst;
 
 public:
+    static constexpr auto KIND = InstKind::Branch;
+
     explicit BranchInst(BasicBlock *dst);
     BranchInst(const BranchInst &) = delete;
     BranchInst(BranchInst &&) = delete;
@@ -56,6 +60,8 @@ class LoadInst : public Instruction {
     Value *m_ptr;
 
 public:
+    static constexpr auto KIND = InstKind::Load;
+
     explicit LoadInst(Value *ptr);
     LoadInst(const LoadInst &) = delete;
     LoadInst(LoadInst &&) = delete;
@@ -75,6 +81,8 @@ class StoreInst : public Instruction {
     Value *m_val;
 
 public:
+    static constexpr auto KIND = InstKind::Store;
+
     StoreInst(Value *ptr, Value *val);
     StoreInst(const StoreInst &) = delete;
     StoreInst(StoreInst &&) = delete;
@@ -94,6 +102,8 @@ class RetInst : public Instruction {
     Value *m_val;
 
 public:
+    static constexpr auto KIND = InstKind::Ret;
+
     explicit RetInst(Value *val);
     RetInst(const RetInst &) = delete;
     RetInst(RetInst &&) = delete;

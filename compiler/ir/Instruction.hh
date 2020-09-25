@@ -48,6 +48,7 @@ public:
     bool has_parent() const;
     void set_parent(BasicBlock *parent);
 
+    InstKind inst_kind() const { return m_kind; }
     BasicBlock *parent() const { return m_parent; }
 };
 

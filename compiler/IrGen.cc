@@ -36,8 +36,10 @@ public:
     IrGen();
 
     Value *gen_num_lit(NumLit *);
+    Value *gen_var_expr(VarExpr *);
     Value *gen_expr(AstNode *);
 
+    void gen_decl_stmt(DeclStmt *);
     void gen_ret_stmt(RetStmt *);
     void gen_stmt(AstNode *);
 
@@ -69,16 +71,32 @@ Value *IrGen::gen_num_lit(NumLit *num_lit) {
     return constant;
 }
 
+Value *IrGen::gen_var_expr(VarExpr *var_expr) {
+    auto *var = m_scope_stack.peek().find_var(var_expr->name());
+    assert(var != nullptr);
+    return m_block->append<LoadInst>(var);
+}
+
 Value *IrGen::gen_expr(AstNode *expr) {
     switch (expr->kind()) {
     case NodeKind::BinExpr:
     case NodeKind::UnaryExpr:
-    case NodeKind::VarExpr:
-        assert(false);
     case NodeKind::NumLit:
         return gen_num_lit(static_cast<NumLit *>(expr));
+    case NodeKind::VarExpr:
+        return gen_var_expr(static_cast<VarExpr *>(expr));
     default:
         assert(false);
+    }
+}
+
+void IrGen::gen_decl_stmt(DeclStmt *decl_stmt) {
+    assert(decl_stmt->type() != nullptr);
+    auto *var = m_function->append_var(decl_stmt->type());
+    m_scope_stack.peek().put_var(decl_stmt->name(), var);
+    if (decl_stmt->init_val() != nullptr) {
+        auto *init_val = gen_expr(decl_stmt->init_val());
+        m_block->append<StoreInst>(var, init_val);
     }
 }
 
@@ -90,8 +108,10 @@ void IrGen::gen_ret_stmt(RetStmt *ret_stmt) {
 void IrGen::gen_stmt(AstNode *stmt) {
     switch (stmt->kind()) {
     case NodeKind::AssignStmt:
-    case NodeKind::DeclStmt:
         assert(false);
+    case NodeKind::DeclStmt:
+        gen_decl_stmt(static_cast<DeclStmt *>(stmt));
+        break;
     case NodeKind::RetStmt:
         gen_ret_stmt(static_cast<RetStmt *>(stmt));
         break;

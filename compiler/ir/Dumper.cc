@@ -21,6 +21,7 @@ class FunctionDumper : public Visitor {
 
     std::string printable_block(const BasicBlock *block);
     std::string printable_value(const Value *value);
+    std::string type_string(const Type *type);
 
 public:
     void dump(const Function *function);
@@ -54,6 +55,17 @@ std::string FunctionDumper::printable_value(const Value *value) {
     return '%' + std::to_string(m_value_map.at(value));
 }
 
+std::string FunctionDumper::type_string(const Type *type) {
+    switch (type->kind()) {
+    case TypeKind::Invalid:
+        assert(false);
+    case TypeKind::Int:
+        return "i" + std::to_string(type->as<IntType>()->bit_width());
+    case TypeKind::Pointer:
+        return type_string(type->as<PointerType>()->pointee_type()) + "*";
+    }
+}
+
 void FunctionDumper::dump(const Function *function) {
     for (const auto *block : *function) {
         std::cout << printable_block(block) << ":\n";
@@ -82,20 +94,22 @@ void FunctionDumper::visit(CondBranchInst *) {
     assert(false);
 }
 
-void FunctionDumper::visit(LoadInst *) {
-    assert(false);
+void FunctionDumper::visit(LoadInst *load) {
+    std::cout << printable_value(load) << " = ";
+    std::cout << "load " << type_string(load->ptr()->type()) << ' ' << printable_value(load->ptr());
 }
 
 void FunctionDumper::visit(PhiInst *) {
     assert(false);
 }
 
-void FunctionDumper::visit(StoreInst *) {
-    assert(false);
+void FunctionDumper::visit(StoreInst *store) {
+    std::cout << "store " << type_string(store->ptr()->type()) << ' ' << printable_value(store->ptr());
+    std::cout << ", " << type_string(store->val()->type()) << ' ' << printable_value(store->val());
 }
 
 void FunctionDumper::visit(RetInst *ret) {
-    std::cout << "ret "<< printable_value(ret->val());
+    std::cout << "ret " << type_string(ret->val()->type()) << ' ' << printable_value(ret->val());
 }
 
 } // namespace
