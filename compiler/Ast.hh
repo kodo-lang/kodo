@@ -5,6 +5,7 @@
 #include <support/ListNode.hh>
 
 #include <cstdint>
+#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
@@ -36,13 +37,13 @@ public:
 
 class AssignStmt : public AstNode {
     std::string m_name;
-    AstNode *m_val;
+    std::unique_ptr<AstNode> m_val;
 
 public:
     AssignStmt(std::string name, AstNode *val) : AstNode(NodeKind::AssignStmt), m_name(std::move(name)), m_val(val) {}
 
     const std::string &name() const { return m_name; }
-    AstNode *val() const { return m_val; }
+    AstNode *val() const { return m_val.get(); }
 };
 
 enum class BinOp {
@@ -54,27 +55,27 @@ enum class BinOp {
 
 class BinExpr : public AstNode {
     BinOp m_op;
-    AstNode *m_lhs;
-    AstNode *m_rhs;
+    std::unique_ptr<AstNode> m_lhs;
+    std::unique_ptr<AstNode> m_rhs;
 
 public:
     BinExpr(BinOp op, AstNode *lhs, AstNode *rhs) : AstNode(NodeKind::BinExpr), m_op(op), m_lhs(lhs), m_rhs(rhs) {}
 
     BinOp op() const { return m_op; }
-    AstNode *lhs() const { return m_lhs; }
-    AstNode *rhs() const { return m_rhs; }
+    AstNode *lhs() const { return m_lhs.get(); }
+    AstNode *rhs() const { return m_rhs.get(); }
 };
 
 class DeclStmt : public AstNode {
     std::string m_name;
-    AstNode *m_init_val;
+    std::unique_ptr<AstNode> m_init_val;
 
 public:
     DeclStmt(std::string name, AstNode *init_val)
         : AstNode(NodeKind::DeclStmt), m_name(std::move(name)), m_init_val(init_val) {}
 
     const std::string &name() const { return m_name; }
-    AstNode *init_val() const { return m_init_val; }
+    AstNode *init_val() const { return m_init_val.get(); }
 };
 
 class FunctionArg : public AstNode {
@@ -119,12 +120,12 @@ public:
 };
 
 class RetStmt : public AstNode {
-    AstNode *m_val;
+    std::unique_ptr<AstNode> m_val;
 
 public:
     explicit RetStmt(AstNode *val) : AstNode(NodeKind::RetStmt), m_val(val) {}
 
-    AstNode *val() const { return m_val; }
+    AstNode *val() const { return m_val.get(); }
 };
 
 enum class UnaryOp {
@@ -134,13 +135,13 @@ enum class UnaryOp {
 
 class UnaryExpr : public AstNode {
     UnaryOp m_op;
-    AstNode *m_val;
+    std::unique_ptr<AstNode> m_val;
 
 public:
     UnaryExpr(UnaryOp op, AstNode *val) : AstNode(NodeKind::UnaryExpr), m_op(op), m_val(val) {}
 
     UnaryOp op() const { return m_op; }
-    AstNode *val() const { return m_val; }
+    AstNode *val() const { return m_val.get(); }
 };
 
 class VarExpr : public AstNode {
