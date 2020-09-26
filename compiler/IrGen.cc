@@ -136,11 +136,11 @@ Value *IrGen::gen_expr(AstNode *expr) {
 void IrGen::gen_decl_stmt(DeclStmt *decl_stmt) {
     assert(decl_stmt->type() != nullptr);
     auto *var = m_function->append_var(decl_stmt->type());
-    m_scope_stack.peek().put_var(decl_stmt->name(), var);
     if (decl_stmt->init_val() != nullptr) {
         auto *init_val = gen_expr(decl_stmt->init_val());
         m_block->append<StoreInst>(var, init_val);
     }
+    m_scope_stack.peek().put_var(decl_stmt->name(), var);
 }
 
 void IrGen::gen_ret_stmt(RetStmt *ret_stmt) {
