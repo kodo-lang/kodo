@@ -46,12 +46,12 @@ int main() {
         return 1;
     }
 
+    auto *function = module->getFunction("main");
     llvm::InitializeAllAsmPrinters();
     llvm::InitializeAllTargets();
     llvm::InitializeAllTargetMCs();
     llvm::EngineBuilder engine_builder(std::move(module));
     engine_builder.setEngineKind(llvm::EngineKind::Either);
     auto *engine = engine_builder.create();
-    auto *function = module->getFunction("main");
     llvm::errs() << engine->runFunctionAsMain(function, {"hello"}, nullptr) << '\n';
 }
