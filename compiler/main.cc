@@ -8,6 +8,7 @@
 
 #include <llvm/ExecutionEngine/MCJIT.h>
 #include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Verifier.h>
 #include <llvm/Support/TargetSelect.h>
 #include <llvm/Support/raw_ostream.h>
 
@@ -39,8 +40,11 @@ int main() {
 
     llvm::LLVMContext context;
     auto module = gen_llvm(program.get(), &context);
-    auto *function = module->getFunction("main");
     module->print(llvm::errs(), nullptr);
+    if (llvm::verifyModule(*module, &llvm::errs())) {
+        llvm::errs() << '\n';
+        return 1;
+    }
 
     llvm::InitializeAllAsmPrinters();
     llvm::InitializeAllTargets();
@@ -48,5 +52,6 @@ int main() {
     llvm::EngineBuilder engine_builder(std::move(module));
     engine_builder.setEngineKind(llvm::EngineKind::Either);
     auto *engine = engine_builder.create();
+    auto *function = module->getFunction("main");
     llvm::errs() << engine->runFunctionAsMain(function, {"hello"}, nullptr) << '\n';
 }
