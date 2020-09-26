@@ -35,7 +35,11 @@ class IrGen {
 public:
     IrGen();
 
+    Value *gen_address_of(AstNode *);
+    Value *gen_deref(AstNode *);
+
     Value *gen_num_lit(NumLit *);
+    Value *gen_unary_expr(UnaryExpr *);
     Value *gen_var_expr(VarExpr *);
     Value *gen_expr(AstNode *);
 
@@ -65,10 +69,31 @@ IrGen::IrGen() {
     m_program = std::make_unique<Program>();
 }
 
+Value *IrGen::gen_address_of(AstNode *expr) {
+    assert(expr->kind() == NodeKind::VarExpr);
+    auto *var_expr = static_cast<VarExpr *>(expr);
+    auto *var = m_scope_stack.peek().find_var(var_expr->name());
+    assert(var != nullptr);
+    return var;
+}
+
+Value *IrGen::gen_deref(AstNode *expr) {
+    return m_block->append<LoadInst>(gen_expr(expr));
+}
+
 Value *IrGen::gen_num_lit(NumLit *num_lit) {
     auto *constant = new Constant(num_lit->value());
     constant->set_type(new IntType(32));
     return constant;
+}
+
+Value *IrGen::gen_unary_expr(UnaryExpr *unary_expr) {
+    switch (unary_expr->op()) {
+    case UnaryOp::AddressOf:
+        return gen_address_of(unary_expr->val());
+    case UnaryOp::Deref:
+        return gen_deref(unary_expr->val());
+    }
 }
 
 Value *IrGen::gen_var_expr(VarExpr *var_expr) {
@@ -80,9 +105,11 @@ Value *IrGen::gen_var_expr(VarExpr *var_expr) {
 Value *IrGen::gen_expr(AstNode *expr) {
     switch (expr->kind()) {
     case NodeKind::BinExpr:
-    case NodeKind::UnaryExpr:
+        assert(false);
     case NodeKind::NumLit:
         return gen_num_lit(static_cast<NumLit *>(expr));
+    case NodeKind::UnaryExpr:
+        return gen_unary_expr(static_cast<UnaryExpr *>(expr));
     case NodeKind::VarExpr:
         return gen_var_expr(static_cast<VarExpr *>(expr));
     default:
