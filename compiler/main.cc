@@ -13,6 +13,7 @@
 #include <llvm/Support/raw_ostream.h>
 
 #include <iostream>
+#include <memory>
 #include <sstream>
 
 constexpr const char *INPUT = R"(
@@ -52,6 +53,6 @@ int main() {
     llvm::InitializeAllTargetMCs();
     llvm::EngineBuilder engine_builder(std::move(module));
     engine_builder.setEngineKind(llvm::EngineKind::Either);
-    auto *engine = engine_builder.create();
+    std::unique_ptr<llvm::ExecutionEngine> engine(engine_builder.create());
     llvm::errs() << engine->runFunctionAsMain(function, {"hello"}, nullptr) << '\n';
 }
