@@ -6,10 +6,8 @@ add_executable(compiler
     ir/Instructions.cc
     ir/Program.cc
     ir/Value.cc
-    Analyser.cc
     Ast.cc
     CharStream.cc
-    CodeGen.cc
     IrGen.cc
     Lexer.cc
     LLVMGen.cc
