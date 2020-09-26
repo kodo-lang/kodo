@@ -17,7 +17,7 @@
 #include <sstream>
 
 constexpr const char *INPUT = R"(
-fn main() -> i32 {
+fn main() => i32 {
     var foo: i32 = 5;
     var bar: *i32 = &foo;
     var baz: **i32 = &bar;

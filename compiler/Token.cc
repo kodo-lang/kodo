@@ -7,7 +7,7 @@ std::string tok_str(TokenKind kind) {
     case TokenKind::Ampersand:
         return "&";
     case TokenKind::Arrow:
-        return "->";
+        return "=>";
     case TokenKind::Colon:
         return ":";
     case TokenKind::Comma:

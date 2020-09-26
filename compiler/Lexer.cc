@@ -47,7 +47,7 @@ Token Lexer::next_token() {
         token.kind = TokenKind::Add;
         break;
     case '-':
-        token.kind = consume_if('>') ? TokenKind::Arrow : TokenKind::Sub;
+        token.kind = TokenKind::Sub;
         break;
     case '*':
         token.kind = TokenKind::Mul;
@@ -68,7 +68,7 @@ Token Lexer::next_token() {
         token.kind = TokenKind::RParen;
         break;
     case '=':
-        token.kind = TokenKind::Eq;
+        token.kind = consume_if('>') ? TokenKind::Arrow : TokenKind::Eq;
         break;
     case '&':
         token.kind = TokenKind::Ampersand;
