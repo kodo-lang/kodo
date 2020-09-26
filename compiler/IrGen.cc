@@ -99,7 +99,7 @@ Value *IrGen::gen_bin_expr(BinExpr *bin_expr) {
 
 Value *IrGen::gen_num_lit(NumLit *num_lit) {
     auto *constant = new Constant(num_lit->value());
-    constant->set_type(new IntType(32));
+    constant->set_type(IntType::get(32));
     return constant;
 }
 

@@ -20,7 +20,7 @@ public:
     static constexpr auto KIND = ValueKind::LocalVar;
 
     explicit LocalVar(Type *var_type) : Value(KIND), m_var_type(var_type) {
-        set_type(new PointerType(m_var_type));
+        set_type(PointerType::get(var_type));
     }
 
     Type *var_type() const { return m_var_type; }

@@ -35,6 +35,7 @@ class IntType : public Type {
 
 public:
     static constexpr auto kind = TypeKind::Int;
+    static IntType *get(int bit_width);
 
     explicit IntType(int bit_width) : Type(kind), m_bit_width(bit_width) {}
 
@@ -46,6 +47,7 @@ class PointerType : public Type {
 
 public:
     static constexpr auto kind = TypeKind::Pointer;
+    static PointerType *get(Type *pointee_type);
 
     explicit PointerType(Type *pointee_type) : Type(kind), m_pointee_type(pointee_type) {}
 

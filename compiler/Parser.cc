@@ -186,7 +186,7 @@ Type *Parser::parse_type() {
     auto base = std::get<std::string>(expect(TokenKind::Identifier).data);
     Type *base_type = nullptr;
     if (base.starts_with('i')) {
-        base_type = new IntType(std::stoi(base.substr(1)));
+        base_type = IntType::get(std::stoi(base.substr(1)));
     }
 
     if (base_type == nullptr) {
@@ -195,7 +195,7 @@ Type *Parser::parse_type() {
 
     auto *type = base_type;
     for (int i = 0; i < pointer_levels; i++) {
-        type = new PointerType(type);
+        type = PointerType::get(type);
     }
     return type;
 }
