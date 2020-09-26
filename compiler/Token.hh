@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <string>
+#include <variant>
 
 enum class TokenKind {
     Add,
@@ -28,10 +29,7 @@ enum class TokenKind {
 
 struct Token {
     TokenKind kind;
-    union {
-        std::uint64_t num;
-        const char *text;
-    };
+    std::variant<std::uint64_t, std::string> data;
 };
 
 std::string tok_str(TokenKind kind);

@@ -99,11 +99,11 @@ AstNode *Parser::parse_expr() {
             last_was_op = false;
             if (token.kind == TokenKind::Identifier) {
                 m_lexer->next();
-                operands.push(new VarExpr(token.text));
+                operands.push(new VarExpr(std::move(std::get<std::string>(token.data))));
                 continue;
             } else if (token.kind == TokenKind::NumLit) {
                 m_lexer->next();
-                operands.push(new NumLit(token.num));
+                operands.push(new NumLit(std::get<std::uint64_t>(token.data)));
                 continue;
             }
             break;
@@ -151,28 +151,30 @@ AstNode *Parser::parse_expr() {
     return operands.pop();
 }
 
-AstNode *Parser::parse_stmt() {
-    if (auto name = consume(TokenKind::Identifier)) {
+void Parser::parse_stmt(FunctionDecl *func) {
+    switch (m_lexer->peek().kind) {
+    case TokenKind::Identifier: {
+        auto name = std::move(std::get<std::string>(expect(TokenKind::Identifier).data));
         expect(TokenKind::Eq);
-        return new AssignStmt(name->text, parse_expr());
+        func->add_stmt<AssignStmt>(std::move(name), parse_expr());
+        break;
     }
-    if (consume(TokenKind::Return)) {
-        return new RetStmt(parse_expr());
-    }
-    if (consume(TokenKind::Var)) {
-        const char *name = expect(TokenKind::Identifier).text;
+    case TokenKind::Return:
+        consume(TokenKind::Return);
+        func->add_stmt<RetStmt>(parse_expr());
+        break;
+    case TokenKind::Var: {
+        consume(TokenKind::Var);
+        auto name = std::move(std::get<std::string>(expect(TokenKind::Identifier).data));
         expect(TokenKind::Colon);
         auto *type = parse_type();
-        if (consume(TokenKind::Eq)) {
-            auto *stmt = new DeclStmt(name, parse_expr());
-            stmt->set_type(type);
-            return stmt;
-        }
-        auto *stmt = new DeclStmt(name, nullptr);
+        auto *stmt = func->add_stmt<DeclStmt>(std::move(name), consume(TokenKind::Eq) ? parse_expr() : nullptr);
         stmt->set_type(type);
-        return stmt;
+        break;
     }
-    error("expected stmt but got {} on line {}", tok_str(m_lexer->next()), m_lexer->line());
+    default:
+        error("expected stmt but got {} on line {}", tok_str(m_lexer->next()), m_lexer->line());
+    }
 }
 
 Type *Parser::parse_type() {
@@ -181,7 +183,7 @@ Type *Parser::parse_type() {
     while (consume(TokenKind::Mul)) {
         pointer_levels++;
     }
-    std::string base = expect(TokenKind::Identifier).text;
+    auto base = std::get<std::string>(expect(TokenKind::Identifier).data);
     Type *base_type = nullptr;
     if (base.starts_with('i')) {
         base_type = new IntType(std::stoi(base.substr(1)));
@@ -198,17 +200,16 @@ Type *Parser::parse_type() {
     return type;
 }
 
-AstNode *Parser::parse() {
+std::unique_ptr<AstNode> Parser::parse() {
     expect(TokenKind::Fn);
-    const char *name = expect(TokenKind::Identifier).text;
-    auto *func = new FunctionDecl(name);
+    auto name = expect(TokenKind::Identifier);
+    auto func = std::make_unique<FunctionDecl>(std::move(std::get<std::string>(name.data)));
     expect(TokenKind::LParen);
     while (m_lexer->peek().kind != TokenKind::RParen) {
-        const char *arg_name = expect(TokenKind::Identifier).text;
+        auto arg_name = expect(TokenKind::Identifier);
         expect(TokenKind::Colon);
-        auto *arg = new FunctionArg(arg_name);
+        auto *arg = func->add_arg(std::move(std::get<std::string>(arg_name.data)));
         arg->set_type(parse_type());
-        func->add_arg(arg);
         consume(TokenKind::Comma);
     }
     expect(TokenKind::RParen);
@@ -219,9 +220,9 @@ AstNode *Parser::parse() {
         if (m_lexer->peek().kind == TokenKind::RBrace) {
             break;
         }
-        func->add_stmt(parse_stmt());
+        parse_stmt(func.get());
         expect(TokenKind::Semi);
     }
     expect(TokenKind::RBrace);
-    return func;
+    return std::move(func);
 }

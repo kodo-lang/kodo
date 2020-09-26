@@ -1,10 +1,11 @@
 #pragma once
 
+#include <Ast.hh>
 #include <Token.hh>
 
 #include <cassert>
+#include <memory>
 
-class AstNode;
 class Lexer;
 class Type;
 
@@ -31,11 +32,11 @@ class Parser {
     Token expect(TokenKind kind);
 
     AstNode *parse_expr();
-    AstNode *parse_stmt();
+    void parse_stmt(FunctionDecl *);
     Type *parse_type();
 
 public:
     explicit Parser(Lexer *lexer) : m_lexer(lexer) {}
 
-    AstNode *parse();
+    std::unique_ptr<AstNode> parse();
 };

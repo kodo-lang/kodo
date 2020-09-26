@@ -90,7 +90,7 @@ Token Lexer::next_token() {
                 buf += m_stream->next();
             }
             token.kind = TokenKind::NumLit;
-            token.num = std::stoi(buf);
+            token.data = static_cast<std::uint64_t>(std::stol(buf));
         } else if (std::isalpha(ch) != 0) {
             std::string buf;
             buf += ch;
@@ -104,11 +104,8 @@ Token Lexer::next_token() {
             } else if (buf == "var") {
                 token.kind = TokenKind::Var;
             } else {
-                auto *ptr = new char[buf.size() + 1];
-                std::memcpy(ptr, buf.c_str(), buf.size());
-                ptr[buf.size()] = '\0';
                 token.kind = TokenKind::Identifier;
-                token.text = ptr;
+                token.data = std::move(buf);
             }
         } else {
             error("unexpected '{}' on line {}", ch, m_line);

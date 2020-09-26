@@ -1,6 +1,8 @@
 #pragma once
 
 #include <Type.hh>
+#include <support/List.hh>
+#include <support/ListNode.hh>
 
 #include <cstdint>
 #include <string>
@@ -19,7 +21,7 @@ enum class NodeKind {
     VarExpr,
 };
 
-class AstNode {
+class AstNode : public ListNode {
     const NodeKind m_kind;
     Type *m_type{nullptr};
 
@@ -86,18 +88,25 @@ public:
 
 class FunctionDecl : public AstNode {
     std::string m_name;
-    std::vector<FunctionArg *> m_args;
-    std::vector<AstNode *> m_stmts;
+    List<FunctionArg> m_args;
+    List<AstNode> m_stmts;
 
 public:
     explicit FunctionDecl(std::string name) : AstNode(NodeKind::FunctionDecl), m_name(std::move(name)) {}
 
-    void add_arg(FunctionArg *arg) { m_args.push_back(arg); }
-    void add_stmt(AstNode *stmt) { m_stmts.push_back(stmt); }
+    template <typename... Args>
+    FunctionArg *add_arg(Args &&... args) {
+        return m_args.emplace<FunctionArg>(m_args.end(), std::forward<Args>(args)...);
+    }
+
+    template <typename Stmt, typename... Args>
+    Stmt *add_stmt(Args &&... args) {
+        return m_stmts.emplace<Stmt>(m_stmts.end(), std::forward<Args>(args)...);
+    }
 
     const std::string &name() const { return m_name; }
-    const std::vector<FunctionArg *> &args() const { return m_args; }
-    const std::vector<AstNode *> &stmts() const { return m_stmts; }
+    const List<FunctionArg> &args() const { return m_args; }
+    const List<AstNode> &stmts() const { return m_stmts; }
 };
 
 class NumLit : public AstNode {

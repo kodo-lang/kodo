@@ -30,12 +30,12 @@ int main() {
     Lexer lexer(&stream);
     Parser parser(&lexer);
 
-    auto *ast = parser.parse();
+    auto ast = parser.parse();
     AstPrinter printer;
-    printer.accept(ast);
+    printer.accept(ast.get());
     std::cout << '\n';
 
-    auto program = gen_ir(ast);
+    auto program = gen_ir(ast.get());
     dump_ir(program.get());
 
     llvm::LLVMContext context;
