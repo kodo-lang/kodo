@@ -36,7 +36,6 @@ public:
 
     llvm::Value *gen_constant(const Constant *constant);
     llvm::Value *gen_instruction(const Instruction *instruction);
-    llvm::Value *gen_local_var(const LocalVar *local_var);
     llvm::Value *gen_value(const Value *value);
 
     void gen_block(const BasicBlock *block);
@@ -99,31 +98,25 @@ llvm::Value *LLVMGen::gen_instruction(const Instruction *instruction) {
     }
 }
 
-llvm::Value *LLVMGen::gen_local_var(const LocalVar *local_var) {
-    auto ip = m_llvm_builder.saveIP();
-    m_llvm_builder.SetInsertPoint(&m_llvm_function->getEntryBlock());
-    auto *alloca = m_llvm_builder.CreateAlloca(llvm_type(local_var->var_type()));
-    m_llvm_builder.restoreIP(ip);
-    return alloca;
-}
-
 llvm::Value *LLVMGen::gen_value(const Value *value) {
     switch (value->kind()) {
     case ValueKind::Argument:
     case ValueKind::BasicBlock:
+    case ValueKind::LocalVar:
         assert(false);
     case ValueKind::Constant:
         return gen_constant(value->as<Constant>());
     case ValueKind::Instruction:
         return gen_instruction(value->as<Instruction>());
-    case ValueKind::LocalVar:
-        return gen_local_var(value->as<LocalVar>());
     }
 }
 
 void LLVMGen::gen_block(const BasicBlock *block) {
-    m_llvm_block = llvm::BasicBlock::Create(*m_llvm_context, "", m_llvm_function);
-    m_llvm_builder.SetInsertPoint(m_llvm_block);
+    auto *new_block = llvm::BasicBlock::Create(*m_llvm_context, "", m_llvm_function);;
+    if (m_llvm_block->empty() || !m_llvm_block->back().isTerminator()) {
+        m_llvm_builder.CreateBr(new_block);
+    }
+    m_llvm_builder.SetInsertPoint(m_llvm_block = new_block);
     for (const auto *inst : *block) {
         llvm_value(inst);
     }
@@ -133,6 +126,12 @@ void LLVMGen::gen_function(const Function *function) {
     auto *function_type = llvm::FunctionType::get(llvm::Type::getInt32Ty(*m_llvm_context), false);
     m_llvm_function =
         llvm::Function::Create(function_type, llvm::Function::ExternalLinkage, function->name(), *m_llvm_module);
+    m_llvm_block = llvm::BasicBlock::Create(*m_llvm_context, "vars", m_llvm_function);
+    m_llvm_builder.SetInsertPoint(m_llvm_block);
+    for (const auto *var : function->vars()) {
+        auto *alloca = m_llvm_builder.CreateAlloca(llvm_type(var->var_type()));
+        m_value_map.emplace(var, alloca);
+    }
     for (const auto *block : *function) {
         gen_block(block);
     }
