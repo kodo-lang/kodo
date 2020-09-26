@@ -16,6 +16,7 @@
 BinaryInst::BinaryInst(BinaryOp op, Value *lhs, Value *rhs) : Instruction(KIND), m_op(op), m_lhs(lhs), m_rhs(rhs) {
     m_lhs->add_user(this);
     m_rhs->add_user(this);
+    set_type(m_lhs->type());
 }
 
 BinaryInst::~BinaryInst() {

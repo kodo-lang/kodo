@@ -78,8 +78,24 @@ void FunctionDumper::dump(const Function *function) {
     }
 }
 
-void FunctionDumper::visit(BinaryInst *) {
-    assert(false);
+void FunctionDumper::visit(BinaryInst *binary) {
+    std::cout << printable_value(binary) << " = ";
+    switch (binary->op()) {
+    case BinaryOp::Add:
+        std::cout << "add ";
+        break;
+    case BinaryOp::Sub:
+        std::cout << "sub ";
+        break;
+    case BinaryOp::Mul:
+        std::cout << "mul ";
+        break;
+    case BinaryOp::Div:
+        std::cout << "div ";
+        break;
+    }
+    std::cout << type_string(binary->type()) << ' ' << printable_value(binary->lhs());
+    std::cout << ", " << printable_value(binary->rhs());
 }
 
 void FunctionDumper::visit(BranchInst *) {

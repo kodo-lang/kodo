@@ -27,19 +27,20 @@ class LLVMGen {
 public:
     LLVMGen(const Program *program, llvm::LLVMContext *llvm_context);
 
-    llvm::Type *llvm_type(const Type *type);
-    llvm::Value *llvm_value(const Value *value);
+    llvm::Type *llvm_type(const Type *);
+    llvm::Value *llvm_value(const Value *);
 
-    llvm::Value *gen_load(const LoadInst *load);
-    void gen_store(const StoreInst *store);
-    void gen_ret(const RetInst *ret);
+    llvm::Value *gen_binary(const BinaryInst *);
+    llvm::Value *gen_load(const LoadInst *);
+    void gen_store(const StoreInst *);
+    void gen_ret(const RetInst *);
 
-    llvm::Value *gen_constant(const Constant *constant);
-    llvm::Value *gen_instruction(const Instruction *instruction);
-    llvm::Value *gen_value(const Value *value);
+    llvm::Value *gen_constant(const Constant *);
+    llvm::Value *gen_instruction(const Instruction *);
+    llvm::Value *gen_value(const Value *);
 
-    void gen_block(const BasicBlock *block);
-    void gen_function(const Function *function);
+    void gen_block(const BasicBlock *);
+    void gen_function(const Function *);
 
     std::unique_ptr<llvm::Module> module() { return std::move(m_llvm_module); }
 };
@@ -67,6 +68,21 @@ llvm::Value *LLVMGen::llvm_value(const Value *value) {
     return m_value_map.at(value);
 }
 
+llvm::Value *LLVMGen::gen_binary(const BinaryInst *binary) {
+    auto *lhs = llvm_value(binary->lhs());
+    auto *rhs = llvm_value(binary->rhs());
+    switch (binary->op()) {
+    case BinaryOp::Add:
+        return m_llvm_builder.CreateAdd(lhs, rhs);
+    case BinaryOp::Sub:
+        return m_llvm_builder.CreateSub(lhs, rhs);
+    case BinaryOp::Mul:
+        return m_llvm_builder.CreateMul(lhs, rhs);
+    case BinaryOp::Div:
+        return m_llvm_builder.CreateSDiv(lhs, rhs);
+    }
+}
+
 llvm::Value *LLVMGen::gen_load(const LoadInst *load) {
     return m_llvm_builder.CreateLoad(llvm_value(load->ptr()));
 }
@@ -85,6 +101,8 @@ llvm::Value *LLVMGen::gen_constant(const Constant *constant) {
 
 llvm::Value *LLVMGen::gen_instruction(const Instruction *instruction) {
     switch (instruction->inst_kind()) {
+    case InstKind::Binary:
+        return gen_binary(instruction->as<BinaryInst>());
     case InstKind::Load:
         return gen_load(instruction->as<LoadInst>());
     case InstKind::Store:

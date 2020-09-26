@@ -38,6 +38,7 @@ public:
     Value *gen_address_of(AstNode *);
     Value *gen_deref(AstNode *);
 
+    Value *gen_bin_expr(BinExpr *);
     Value *gen_num_lit(NumLit *);
     Value *gen_unary_expr(UnaryExpr *);
     Value *gen_var_expr(VarExpr *);
@@ -81,6 +82,21 @@ Value *IrGen::gen_deref(AstNode *expr) {
     return m_block->append<LoadInst>(gen_expr(expr));
 }
 
+Value *IrGen::gen_bin_expr(BinExpr *bin_expr) {
+    auto *lhs = gen_expr(bin_expr->lhs());
+    auto *rhs = gen_expr(bin_expr->rhs());
+    switch (bin_expr->op()) {
+    case BinOp::Add:
+        return m_block->append<BinaryInst>(BinaryOp::Add, lhs, rhs);
+    case BinOp::Sub:
+        return m_block->append<BinaryInst>(BinaryOp::Sub, lhs, rhs);
+    case BinOp::Mul:
+        return m_block->append<BinaryInst>(BinaryOp::Mul, lhs, rhs);
+    case BinOp::Div:
+        return m_block->append<BinaryInst>(BinaryOp::Div, lhs, rhs);
+    }
+}
+
 Value *IrGen::gen_num_lit(NumLit *num_lit) {
     auto *constant = new Constant(num_lit->value());
     constant->set_type(new IntType(32));
@@ -105,7 +121,7 @@ Value *IrGen::gen_var_expr(VarExpr *var_expr) {
 Value *IrGen::gen_expr(AstNode *expr) {
     switch (expr->kind()) {
     case NodeKind::BinExpr:
-        assert(false);
+        return gen_bin_expr(static_cast<BinExpr *>(expr));
     case NodeKind::NumLit:
         return gen_num_lit(static_cast<NumLit *>(expr));
     case NodeKind::UnaryExpr:
