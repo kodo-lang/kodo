@@ -53,6 +53,12 @@ Token Lexer::next_token() {
         token.kind = TokenKind::Mul;
         break;
     case '/':
+        if (consume_if('/')) {
+            while (m_stream->peek() != '\n') {
+                m_stream->next();
+            }
+            return next_token();
+        }
         token.kind = TokenKind::Div;
         break;
     case '{':
