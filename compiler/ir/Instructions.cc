@@ -10,7 +10,9 @@
     if (val == orig) {                                                                                                 \
         val->remove_user(this);                                                                                        \
         val = static_cast<decltype(val)>(repl);                                                                        \
-        val->add_user(this);                                                                                           \
+        if (val != nullptr) {                                                                                          \
+            val->add_user(this);                                                                                       \
+        }                                                                                                              \
     }
 
 BinaryInst::BinaryInst(BinaryOp op, Value *lhs, Value *rhs) : Instruction(KIND), m_op(op), m_lhs(lhs), m_rhs(rhs) {
@@ -20,8 +22,12 @@ BinaryInst::BinaryInst(BinaryOp op, Value *lhs, Value *rhs) : Instruction(KIND),
 }
 
 BinaryInst::~BinaryInst() {
-    m_lhs->remove_user(this);
-    m_rhs->remove_user(this);
+    if (m_lhs != nullptr) {
+        m_lhs->remove_user(this);
+    }
+    if (m_rhs != nullptr) {
+        m_rhs->remove_user(this);
+    }
 }
 
 void BinaryInst::accept(Visitor *visitor) {
@@ -41,7 +47,9 @@ BranchInst::BranchInst(BasicBlock *dst)
 }
 
 BranchInst::~BranchInst() {
-    m_dst->remove_user(this);
+    if (m_dst != nullptr) {
+        m_dst->remove_user(this);
+    }
 }
 
 void BranchInst::accept(Visitor *visitor) {
@@ -60,7 +68,9 @@ LoadInst::LoadInst(Value *ptr) : Instruction(KIND), m_ptr(ptr) {
 }
 
 LoadInst::~LoadInst() {
-    m_ptr->remove_user(this);
+    if (m_ptr != nullptr) {
+        m_ptr->remove_user(this);
+    }
 }
 
 void LoadInst::accept(Visitor *visitor) {
@@ -80,8 +90,12 @@ StoreInst::StoreInst(Value *ptr, Value *val)
 }
 
 StoreInst::~StoreInst() {
-    m_ptr->remove_user(this);
-    m_val->remove_user(this);
+    if (m_ptr != nullptr) {
+        m_ptr->remove_user(this);
+    }
+    if (m_val != nullptr) {
+        m_val->remove_user(this);
+    }
 }
 
 void StoreInst::accept(Visitor *visitor) {
@@ -101,7 +115,9 @@ RetInst::RetInst(Value *val)
 }
 
 RetInst::~RetInst() {
-    m_val->remove_user(this);
+    if (m_val != nullptr) {
+        m_val->remove_user(this);
+    }
 }
 
 void RetInst::accept(Visitor *visitor) {

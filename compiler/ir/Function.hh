@@ -28,9 +28,11 @@ public:
 
 class Function : public ListNode {
     const std::string m_name;
+
+    // Lists must be in this order to ensure instructions are freed before arguments and local vars.
     List<Argument> m_args;
-    List<BasicBlock> m_blocks;
     List<LocalVar> m_vars;
+    List<BasicBlock> m_blocks;
 
 public:
     using iterator = decltype(m_blocks)::iterator;

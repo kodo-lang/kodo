@@ -4,6 +4,10 @@
 #include <cassert>
 #include <utility>
 
+Value::~Value() {
+    replace_all_uses_with(nullptr);
+}
+
 bool Value::is(ValueKind kind) const {
     return m_kind == kind;
 }

@@ -31,7 +31,7 @@ protected:
 public:
     Value(const Value &) = delete;
     Value(Value &&) = delete;
-    virtual ~Value() = default;
+    virtual ~Value();
 
     Value &operator=(const Value &) = delete;
     Value &operator=(Value &&) = delete;
