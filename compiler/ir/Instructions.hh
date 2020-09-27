@@ -3,7 +3,10 @@
 #include <ir/Instruction.hh>
 #include <ir/Value.hh>
 
+#include <vector>
+
 class BasicBlock;
+class Function;
 
 enum class BinaryOp {
     Add,
@@ -54,6 +57,30 @@ public:
     void replace_uses_of_with(Value *orig, Value *repl) override;
 
     BasicBlock *dst() const { return m_dst; }
+};
+
+class CallInst : public Instruction {
+    Function *m_callee;
+    std::vector<Value *> m_args;
+
+public:
+    static constexpr auto KIND = InstKind::Call;
+
+    explicit CallInst(Function *callee);
+    CallInst(const CallInst &) = delete;
+    CallInst(CallInst &&) = delete;
+    ~CallInst() override;
+
+    CallInst &operator=(const CallInst &) = delete;
+    CallInst &operator=(CallInst &&) = delete;
+
+    void add_arg(Value *arg);
+
+    void accept(Visitor *visitor) override;
+    void replace_uses_of_with(Value *orig, Value *repl) override;
+
+    Function *callee() const { return m_callee; }
+    const std::vector<Value *> &args() const { return m_args; }
 };
 
 class LoadInst : public Instruction {

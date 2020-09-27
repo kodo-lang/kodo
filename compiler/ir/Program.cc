@@ -2,8 +2,8 @@
 
 #include <utility>
 
-Function *Program::append_function(std::string name) {
+Function *Program::append_function(std::string name, Type *return_type) {
     // TODO: List<T>::append()?
     // TODO: Default List<T>::emplace() U param to T.
-    return m_functions.emplace<Function>(m_functions.end(), std::move(name));
+    return m_functions.emplace<Function>(m_functions.end(), std::move(name), return_type);
 }

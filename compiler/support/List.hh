@@ -58,6 +58,7 @@ public:
 
     template <typename U, typename... Args>
     U *emplace(iterator it, Args &&... args) requires std::derived_from<U, T>;
+    void insert(iterator it, T *elem);
     iterator erase(iterator it);
 
     bool empty() const;
@@ -93,12 +94,19 @@ template <typename U, typename... Args>
 U *List<T>::emplace(iterator it, Args &&... args) requires std::derived_from<U, T> {
     // clang-format on
     auto *elem = new U(std::forward<Args>(args)...);
+    insert(it, elem);
+    return elem;
+}
+
+// clang-format off
+template <typename T> requires std::derived_from<T, ListNode>
+void List<T>::insert(iterator it, T *elem) {
+    // clang-format on
     auto *prev = it->prev();
     elem->set_prev(prev);
     elem->set_next(*it);
     it->set_prev(elem);
     prev->set_next(elem);
-    return elem;
 }
 
 // clang-format off

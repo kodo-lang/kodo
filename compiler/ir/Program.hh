@@ -13,5 +13,5 @@ public:
     iterator begin() const { return m_functions.begin(); }
     iterator end() const { return m_functions.end(); }
 
-    Function *append_function(std::string name);
+    Function *append_function(std::string name, Type *return_type);
 };

@@ -17,12 +17,14 @@
 #include <sstream>
 
 constexpr const char *INPUT = R"(
-fn main() => i32 {
+// TODO: extern getchar.
+fn main(argc: i32) => i32 {
     // This is a comment.
+    getchar();
     var foo: i32 = 5;
     var bar: *i32 = &foo;
     var baz: **i32 = &bar;
-    return foo + *bar + **baz;
+    return foo + *bar + **baz * argc;
 }
 )";
 

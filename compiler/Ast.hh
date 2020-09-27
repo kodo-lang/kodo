@@ -13,6 +13,7 @@
 enum class NodeKind {
     AssignStmt,
     BinExpr,
+    CallExpr,
     DeclStmt,
     FunctionArg,
     FunctionDecl,
@@ -66,6 +67,19 @@ public:
     AstNode *rhs() const { return m_rhs.get(); }
 };
 
+class CallExpr : public AstNode {
+    std::string m_name;
+    std::vector<std::unique_ptr<AstNode>> m_args;
+
+public:
+    explicit CallExpr(std::string name) : AstNode(NodeKind::CallExpr), m_name(std::move(name)) {}
+
+    void add_arg(AstNode *arg) { m_args.emplace_back(arg); }
+
+    const std::string &name() const { return m_name; }
+    const std::vector<std::unique_ptr<AstNode>> &args() const { return m_args; }
+};
+
 class DeclStmt : public AstNode {
     std::string m_name;
     std::unique_ptr<AstNode> m_init_val;
@@ -103,6 +117,10 @@ public:
     template <typename Stmt, typename... Args>
     Stmt *add_stmt(Args &&... args) {
         return m_stmts.emplace<Stmt>(m_stmts.end(), std::forward<Args>(args)...);
+    }
+
+    void add_stmt(AstNode *stmt) {
+        m_stmts.insert(m_stmts.end(), stmt);
     }
 
     const std::string &name() const { return m_name; }
@@ -157,6 +175,7 @@ struct AstVisitor {
     void accept(AstNode *node);
     virtual void visit(AssignStmt *assign_stmt) = 0;
     virtual void visit(BinExpr *bin_expr) = 0;
+    virtual void visit(CallExpr *call_expr) = 0;
     virtual void visit(DeclStmt *decl_stmt) = 0;
     virtual void visit(FunctionArg *function_arg) = 0;
     virtual void visit(FunctionDecl *function_decl) = 0;
@@ -169,6 +188,7 @@ struct AstVisitor {
 struct AstPrinter : public AstVisitor {
     void visit(AssignStmt *) override;
     void visit(BinExpr *) override;
+    void visit(CallExpr *) override;
     void visit(DeclStmt *) override;
     void visit(FunctionArg *) override;
     void visit(FunctionDecl *) override;

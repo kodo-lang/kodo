@@ -27,6 +27,7 @@ public:
     void dump(const Function *function);
     void visit(BinaryInst *) override;
     void visit(BranchInst *) override;
+    void visit(CallInst *) override;
     void visit(CompareInst *) override;
     void visit(CondBranchInst *) override;
     void visit(LoadInst *) override;
@@ -44,7 +45,7 @@ std::string FunctionDumper::printable_block(const BasicBlock *block) {
 
 std::string FunctionDumper::printable_value(const Value *value) {
     if (value->has_name()) {
-        return value->name();
+        return '%' + value->name();
     }
     if (const auto *constant = value->as<Constant>()) {
         return std::to_string(constant->value());
@@ -100,6 +101,20 @@ void FunctionDumper::visit(BinaryInst *binary) {
 
 void FunctionDumper::visit(BranchInst *) {
     assert(false);
+}
+
+void FunctionDumper::visit(CallInst *call) {
+    std::cout << printable_value(call) << " = ";
+    std::cout << "call " << type_string(call->callee()->return_type()) << ' ';
+    std::cout << '@' << call->callee()->name() << '(';
+    for (bool first = true; auto *arg : call->args()) {
+        if (!first) {
+            std::cout << ", ";
+        }
+        first = false;
+        std::cout << printable_value(arg);
+    }
+    std::cout << ')';
 }
 
 void FunctionDumper::visit(CompareInst *) {

@@ -10,6 +10,9 @@ void AstVisitor::accept(AstNode *node) {
     case NodeKind::BinExpr:
         visit(static_cast<BinExpr *>(node));
         break;
+    case NodeKind::CallExpr:
+        visit(static_cast<CallExpr *>(node));
+        break;
     case NodeKind::DeclStmt:
         visit(static_cast<DeclStmt *>(node));
         break;
@@ -65,6 +68,16 @@ void AstPrinter::visit(BinExpr *bin_expr) {
     std::cout << ")";
 }
 
+void AstPrinter::visit(CallExpr *call_expr) {
+    std::cout << "CallExpr(";
+    std::cout << call_expr->name();
+    for (const auto &arg : call_expr->args()) {
+        std::cout << ", ";
+        accept(arg.get());
+    }
+    std::cout << ")";
+}
+
 void AstPrinter::visit(DeclStmt *decl_stmt) {
     std::cout << "DeclStmt(";
     std::cout << decl_stmt->name();
@@ -96,7 +109,9 @@ void AstPrinter::visit(FunctionDecl *function_decl) {
 }
 
 void AstPrinter::visit(NumLit *num_lit) {
+    std::cout << "NumLit(";
     std::cout << std::to_string(num_lit->value());
+    std::cout << ")";
 }
 
 void AstPrinter::visit(RetStmt *ret_stmt) {

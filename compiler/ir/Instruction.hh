@@ -15,6 +15,7 @@ enum class InstKind {
 
     // Control flow instructions.
     Branch,
+    Call,
     CondBranch,
     Phi,
     Ret,

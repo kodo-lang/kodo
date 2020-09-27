@@ -99,7 +99,21 @@ AstNode *Parser::parse_expr() {
             last_was_op = false;
             if (token.kind == TokenKind::Identifier) {
                 m_lexer->next();
-                operands.push(new VarExpr(std::move(std::get<std::string>(token.data))));
+                if (m_lexer->peek().kind != TokenKind::LParen) {
+                    operands.push(new VarExpr(std::move(std::get<std::string>(token.data))));
+                    continue;
+                }
+                m_lexer->next();
+                auto *call_expr = new CallExpr(std::move(std::get<std::string>(token.data)));
+                while (m_lexer->has_next()) {
+                    if (m_lexer->peek().kind == TokenKind::RParen) {
+                        break;
+                    }
+                    call_expr->add_arg(parse_expr());
+                    consume(TokenKind::Comma);
+                }
+                expect(TokenKind::RParen);
+                operands.push(call_expr);
                 continue;
             } else if (token.kind == TokenKind::NumLit) {
                 m_lexer->next();
@@ -153,12 +167,12 @@ AstNode *Parser::parse_expr() {
 
 void Parser::parse_stmt(FunctionDecl *func) {
     switch (m_lexer->peek().kind) {
-    case TokenKind::Identifier: {
-        auto name = std::move(std::get<std::string>(expect(TokenKind::Identifier).data));
-        expect(TokenKind::Eq);
-        func->add_stmt<AssignStmt>(std::move(name), parse_expr());
-        break;
-    }
+//    case TokenKind::Identifier: {
+//        auto name = std::move(std::get<std::string>(expect(TokenKind::Identifier).data));
+//        expect(TokenKind::Eq);
+//        func->add_stmt<AssignStmt>(std::move(name), parse_expr());
+//        break;
+//    }
     case TokenKind::Return:
         consume(TokenKind::Return);
         func->add_stmt<RetStmt>(parse_expr());
@@ -173,7 +187,8 @@ void Parser::parse_stmt(FunctionDecl *func) {
         break;
     }
     default:
-        error("expected stmt but got {} on line {}", tok_str(m_lexer->next()), m_lexer->line());
+        func->add_stmt(parse_expr());
+//        error("expected stmt but got {} on line {}", tok_str(m_lexer->next()), m_lexer->line());
     }
 }
 

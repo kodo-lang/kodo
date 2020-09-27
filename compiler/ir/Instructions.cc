@@ -61,6 +61,30 @@ void BranchInst::replace_uses_of_with(Value *orig, Value *repl) {
     REPL_VALUE(m_dst)
 }
 
+CallInst::CallInst(Function *callee) : Instruction(KIND), m_callee(callee) {}
+
+CallInst::~CallInst() {
+    for (auto *arg : m_args) {
+        if (arg != nullptr) {
+            arg->remove_user(this);
+        }
+    }
+}
+
+void CallInst::add_arg(Value *arg) {
+    m_args.push_back(arg);
+}
+
+void CallInst::accept(Visitor *visitor) {
+    visitor->visit(this);
+}
+
+void CallInst::replace_uses_of_with(Value *orig, Value *repl) {
+    for (auto *&arg : m_args) {
+        REPL_VALUE(arg)
+    }
+}
+
 LoadInst::LoadInst(Value *ptr) : Instruction(KIND), m_ptr(ptr) {
     m_ptr->add_user(this);
     assert(m_ptr->type()->is<PointerType>());

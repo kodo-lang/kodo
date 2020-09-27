@@ -11,6 +11,7 @@
 #include <cassert>
 #include <unordered_map>
 #include <utility>
+#include <vector>
 
 namespace {
 
@@ -22,6 +23,8 @@ class LLVMGen {
     llvm::Function *m_llvm_function{nullptr};
     llvm::BasicBlock *m_llvm_block{nullptr};
     llvm::IRBuilder<> m_llvm_builder;
+
+    std::unordered_map<const Argument *, llvm::Argument *> m_arg_map;
     std::unordered_map<const Value *, llvm::Value *> m_value_map;
 
 public:
@@ -31,10 +34,12 @@ public:
     llvm::Value *llvm_value(const Value *);
 
     llvm::Value *gen_binary(const BinaryInst *);
+    llvm::Value *gen_call(const CallInst *);
     llvm::Value *gen_load(const LoadInst *);
     void gen_store(const StoreInst *);
     void gen_ret(const RetInst *);
 
+    llvm::Value *gen_argument(const Argument *);
     llvm::Value *gen_constant(const Constant *);
     llvm::Value *gen_instruction(const Instruction *);
     llvm::Value *gen_value(const Value *);
@@ -65,7 +70,11 @@ llvm::Value *LLVMGen::llvm_value(const Value *value) {
     if (!m_value_map.contains(value)) {
         m_value_map.emplace(value, gen_value(value));
     }
-    return m_value_map.at(value);
+    auto *llvm_value = m_value_map.at(value);
+    if (value->has_name()) {
+        llvm_value->setName(value->name());
+    }
+    return llvm_value;
 }
 
 llvm::Value *LLVMGen::gen_binary(const BinaryInst *binary) {
@@ -83,6 +92,15 @@ llvm::Value *LLVMGen::gen_binary(const BinaryInst *binary) {
     }
 }
 
+llvm::Value *LLVMGen::gen_call(const CallInst *call) {
+    std::vector<llvm::Value *> args(call->args().size());
+    for (auto *arg : call->args()) {
+        args.push_back(llvm_value(arg));
+    }
+    auto *callee = m_llvm_module->getFunction(call->callee()->name());
+    return m_llvm_builder.CreateCall(callee, args);
+}
+
 llvm::Value *LLVMGen::gen_load(const LoadInst *load) {
     return m_llvm_builder.CreateLoad(llvm_value(load->ptr()));
 }
@@ -95,6 +113,10 @@ void LLVMGen::gen_ret(const RetInst *ret) {
     m_llvm_builder.CreateRet(llvm_value(ret->val()));
 }
 
+llvm::Value *LLVMGen::gen_argument(const Argument *argument) {
+    return m_arg_map.at(argument);
+}
+
 llvm::Value *LLVMGen::gen_constant(const Constant *constant) {
     return llvm::ConstantInt::get(llvm_type(constant->type()), constant->value());
 }
@@ -103,6 +125,8 @@ llvm::Value *LLVMGen::gen_instruction(const Instruction *instruction) {
     switch (instruction->inst_kind()) {
     case InstKind::Binary:
         return gen_binary(instruction->as<BinaryInst>());
+    case InstKind::Call:
+        return gen_call(instruction->as<CallInst>());
     case InstKind::Load:
         return gen_load(instruction->as<LoadInst>());
     case InstKind::Store:
@@ -118,10 +142,11 @@ llvm::Value *LLVMGen::gen_instruction(const Instruction *instruction) {
 
 llvm::Value *LLVMGen::gen_value(const Value *value) {
     switch (value->kind()) {
-    case ValueKind::Argument:
     case ValueKind::BasicBlock:
     case ValueKind::LocalVar:
         assert(false);
+    case ValueKind::Argument:
+        return gen_argument(value->as<Argument>());
     case ValueKind::Constant:
         return gen_constant(value->as<Constant>());
     case ValueKind::Instruction:
@@ -130,7 +155,8 @@ llvm::Value *LLVMGen::gen_value(const Value *value) {
 }
 
 void LLVMGen::gen_block(const BasicBlock *block) {
-    auto *new_block = llvm::BasicBlock::Create(*m_llvm_context, "", m_llvm_function);;
+    auto *new_block = llvm::BasicBlock::Create(*m_llvm_context, "", m_llvm_function);
+    ;
     if (m_llvm_block->empty() || !m_llvm_block->back().isTerminator()) {
         m_llvm_builder.CreateBr(new_block);
     }
@@ -141,11 +167,27 @@ void LLVMGen::gen_block(const BasicBlock *block) {
 }
 
 void LLVMGen::gen_function(const Function *function) {
-    auto *function_type = llvm::FunctionType::get(llvm::Type::getInt32Ty(*m_llvm_context), false);
+    std::vector<llvm::Type *> arg_types;
+    for (const auto *arg : function->args()) {
+        assert(arg->has_type());
+        arg_types.push_back(llvm_type(arg->type()));
+    }
+
+    auto *function_type = llvm::FunctionType::get(llvm_type(function->return_type()), arg_types, false);
     m_llvm_function =
         llvm::Function::Create(function_type, llvm::Function::ExternalLinkage, function->name(), *m_llvm_module);
+
+    // If the function has no blocks, return early.
+    if (function->begin() == function->end()) {
+        assert(function->vars().empty());
+        return;
+    }
+
     m_llvm_block = llvm::BasicBlock::Create(*m_llvm_context, "vars", m_llvm_function);
     m_llvm_builder.SetInsertPoint(m_llvm_block);
+    for (int i = 0; const auto *arg : function->args()) {
+        m_arg_map.emplace(arg, m_llvm_function->getArg(i++));
+    }
     for (const auto *var : function->vars()) {
         auto *alloca = m_llvm_builder.CreateAlloca(llvm_type(var->var_type()));
         m_value_map.emplace(var, alloca);

@@ -28,6 +28,7 @@ public:
 
 class Function : public ListNode {
     const std::string m_name;
+    Type *const m_return_type;
 
     // Lists must be in this order to ensure instructions are freed before arguments and local vars.
     List<Argument> m_args;
@@ -39,7 +40,7 @@ public:
     iterator begin() const { return m_blocks.begin(); }
     iterator end() const { return m_blocks.end(); }
 
-    explicit Function(std::string name) : m_name(std::move(name)) {}
+    Function(std::string name, Type *return_type) : m_name(std::move(name)), m_return_type(return_type) {}
     Function(const Function &) = delete;
     Function(Function &&) = delete;
     ~Function() override = default;
@@ -52,6 +53,7 @@ public:
     LocalVar *append_var(Type *type);
 
     const std::string &name() const { return m_name; }
+    Type *return_type() const { return m_return_type; }
     const List<Argument> &args() const { return m_args; }
     const List<LocalVar> &vars() const { return m_vars; }
     BasicBlock *entry() const;

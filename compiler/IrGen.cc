@@ -8,6 +8,7 @@
 #include <ir/Instructions.hh>
 #include <ir/Program.hh>
 
+#include <algorithm>
 #include <cassert>
 #include <string_view>
 #include <unordered_map>
@@ -39,6 +40,7 @@ public:
     Value *gen_deref(AstNode *);
 
     Value *gen_bin_expr(BinExpr *);
+    Value *gen_call_expr(CallExpr *);
     Value *gen_num_lit(NumLit *);
     Value *gen_unary_expr(UnaryExpr *);
     Value *gen_var_expr(VarExpr *);
@@ -68,6 +70,7 @@ void Scope::put_var(std::string_view name, Value *value) {
 
 IrGen::IrGen() {
     m_program = std::make_unique<Program>();
+    m_program->append_function("getchar", IntType::get(32));
 }
 
 Value *IrGen::gen_address_of(AstNode *expr) {
@@ -95,6 +98,18 @@ Value *IrGen::gen_bin_expr(BinExpr *bin_expr) {
     case BinOp::Div:
         return m_block->append<BinaryInst>(BinaryOp::Div, lhs, rhs);
     }
+}
+
+Value *IrGen::gen_call_expr(CallExpr *call_expr) {
+    auto it = std::find_if(m_program->begin(), m_program->end(), [call_expr](const Function *function) {
+        return function->name() == call_expr->name();
+    });
+    assert(it != m_program->end());
+    auto *call = m_block->append<CallInst>(*it);
+    for (const auto &ast_arg : call_expr->args()) {
+        call->add_arg(gen_expr(ast_arg.get()));
+    }
+    return call;
 }
 
 Value *IrGen::gen_num_lit(NumLit *num_lit) {
@@ -152,6 +167,9 @@ void IrGen::gen_stmt(AstNode *stmt) {
     switch (stmt->kind()) {
     case NodeKind::AssignStmt:
         assert(false);
+    case NodeKind::CallExpr:
+        gen_call_expr(static_cast<CallExpr *>(stmt));
+        break;
     case NodeKind::DeclStmt:
         gen_decl_stmt(static_cast<DeclStmt *>(stmt));
         break;
@@ -164,16 +182,20 @@ void IrGen::gen_stmt(AstNode *stmt) {
 }
 
 void IrGen::gen_function_decl(FunctionDecl *function_decl) {
-    m_function = m_program->append_function(function_decl->name());
+    m_function = m_program->append_function(function_decl->name(), IntType::get(32));
     m_block = m_function->append_block();
+
+    m_scope_stack.clear();
+    m_scope_stack.emplace(/* parent */ nullptr);
     for (auto *ast_arg : function_decl->args()) {
         auto *arg = m_function->append_arg();
         arg->set_name(ast_arg->name());
         arg->set_type(ast_arg->type());
+        auto *arg_var = m_function->append_var(ast_arg->type());
+        m_block->append<StoreInst>(arg_var, arg);
+        m_scope_stack.peek().put_var(ast_arg->name(), arg_var);
     }
 
-    m_scope_stack.clear();
-    m_scope_stack.emplace(/* parent */ nullptr);
     for (auto *stmt : function_decl->stmts()) {
         gen_stmt(stmt);
     }
