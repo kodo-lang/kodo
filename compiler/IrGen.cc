@@ -151,8 +151,7 @@ Value *IrGen::gen_expr(const ast::Node *expr) {
 
 void IrGen::gen_decl_stmt(const ast::DeclStmt *decl_stmt) {
     assert(decl_stmt->type() != nullptr);
-    // TODO: Fix IR const-correctness here.
-    auto *var = m_function->append_var(const_cast<Type *>(decl_stmt->type()));
+    auto *var = m_function->append_var(decl_stmt->type());
     if (decl_stmt->init_val() != nullptr) {
         auto *init_val = gen_expr(decl_stmt->init_val());
         m_block->append<StoreInst>(var, init_val);
@@ -184,8 +183,7 @@ void IrGen::gen_stmt(const ast::Node *stmt) {
 }
 
 void IrGen::gen_function_decl(const ast::FunctionDecl *function_decl) {
-    // TODO: Fix IR const-correctness here.
-    m_function = m_program->append_function(function_decl->name(), const_cast<Type *>(function_decl->type()));
+    m_function = m_program->append_function(function_decl->name(), function_decl->type());
     for (const auto *ast_arg : function_decl->args()) {
         auto *arg = m_function->append_arg();
         arg->set_name(ast_arg->name());
@@ -200,8 +198,7 @@ void IrGen::gen_function_decl(const ast::FunctionDecl *function_decl) {
     m_scope_stack.clear();
     m_scope_stack.emplace(/* parent */ nullptr);
     for (auto *arg : m_function->args()) {
-        // TODO: Fix IR const-correctness here.
-        auto *arg_var = m_function->append_var(const_cast<Type *>(arg->type()));
+        auto *arg_var = m_function->append_var(arg->type());
         m_block->append<StoreInst>(arg_var, arg);
         m_scope_stack.peek().put_var(arg->name(), arg_var);
     }

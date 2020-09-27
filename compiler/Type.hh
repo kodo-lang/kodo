@@ -19,9 +19,6 @@ public:
     Type &operator=(Type &&) = delete;
 
     template <typename T>
-    T *as();
-
-    template <typename T>
     const T *as() const;
 
     template <typename T>
@@ -31,11 +28,11 @@ public:
 };
 
 class IntType : public Type {
-    int m_bit_width;
+    const int m_bit_width;
 
 public:
     static constexpr auto kind = TypeKind::Int;
-    static IntType *get(int bit_width);
+    static const IntType *get(int bit_width);
 
     explicit IntType(int bit_width) : Type(kind), m_bit_width(bit_width) {}
 
@@ -43,24 +40,16 @@ public:
 };
 
 class PointerType : public Type {
-    Type *m_pointee_type;
+    const Type *m_pointee_type;
 
 public:
     static constexpr auto kind = TypeKind::Pointer;
-    static PointerType *get(Type *pointee_type);
+    static const PointerType *get(const Type *pointee_type);
 
-    explicit PointerType(Type *pointee_type) : Type(kind), m_pointee_type(pointee_type) {}
+    explicit PointerType(const Type *pointee_type) : Type(kind), m_pointee_type(pointee_type) {}
 
-    Type *pointee_type() const { return m_pointee_type; }
+    const Type *pointee_type() const { return m_pointee_type; }
 };
-
-template <typename T>
-T *Type::as() {
-    if (!is<T>()) {
-        return nullptr;
-    }
-    return static_cast<T *>(this);
-}
 
 template <typename T>
 const T *Type::as() const {

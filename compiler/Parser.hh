@@ -33,7 +33,7 @@ class Parser {
 
     ast::Node *parse_expr();
     void parse_stmt(ast::FunctionDecl *);
-    Type *parse_type();
+    const Type *parse_type();
 
 public:
     explicit Parser(Lexer *lexer) : m_lexer(lexer) {}

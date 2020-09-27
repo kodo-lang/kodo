@@ -191,14 +191,14 @@ void Parser::parse_stmt(ast::FunctionDecl *func) {
     }
 }
 
-Type *Parser::parse_type() {
+const Type *Parser::parse_type() {
     // TODO: TokenKind::Mul misleading.
     int pointer_levels = 0;
     while (consume(TokenKind::Mul)) {
         pointer_levels++;
     }
     auto base = std::get<std::string>(expect(TokenKind::Identifier).data);
-    Type *base_type = nullptr;
+    const Type *base_type = nullptr;
     if (base.starts_with('i')) {
         base_type = IntType::get(std::stoi(base.substr(1)));
     }
@@ -207,7 +207,7 @@ Type *Parser::parse_type() {
         error("invalid type {}", base);
     }
 
-    auto *type = base_type;
+    const auto *type = base_type;
     for (int i = 0; i < pointer_levels; i++) {
         type = PointerType::get(type);
     }
