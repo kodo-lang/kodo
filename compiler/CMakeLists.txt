@@ -15,7 +15,8 @@ add_executable(compiler
     main.cc
     Parser.cc
     Token.cc
-    Type.cc)
+    Type.cc
+    TypeChecker.cc)
 target_compile_definitions(compiler PRIVATE ${LLVM_DEFINITIONS})
 target_compile_features(compiler PRIVATE cxx_std_20)
 target_include_directories(compiler PRIVATE . ${LLVM_INCLUDE_DIRS})

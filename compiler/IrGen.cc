@@ -134,11 +134,11 @@ Value *IrGen::gen_call_expr(const ast::CallExpr *call_expr) {
         return function->name() == call_expr->name();
     });
     assert(it != m_program->end());
-    auto *call = m_block->append<CallInst>(*it);
+    std::vector<Value *> args;
     for (const auto *ast_arg : call_expr->args()) {
-        call->add_arg(gen_expr(ast_arg));
+        args.push_back(gen_expr(ast_arg));
     }
-    return call;
+    return m_block->append<CallInst>(*it, std::move(args));
 }
 
 Value *IrGen::gen_num_lit(const ast::NumLit *num_lit) {

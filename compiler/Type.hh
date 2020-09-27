@@ -63,5 +63,3 @@ template <typename T>
 bool Type::is() const {
     return m_kind == T::kind;
 }
-
-bool operator==(const Type &lhs, const Type &rhs);

@@ -19,7 +19,6 @@
 BinaryInst::BinaryInst(BinaryOp op, Value *lhs, Value *rhs) : Instruction(KIND), m_op(op), m_lhs(lhs), m_rhs(rhs) {
     m_lhs->add_user(this);
     m_rhs->add_user(this);
-    set_type(m_lhs->type());
 }
 
 BinaryInst::~BinaryInst() {
@@ -62,9 +61,8 @@ void BranchInst::replace_uses_of_with(Value *orig, Value *repl) {
     REPL_VALUE(m_dst)
 }
 
-CallInst::CallInst(Function *callee) : Instruction(KIND), m_callee(callee) {
-    set_type(m_callee->return_type());
-}
+CallInst::CallInst(Function *callee, std::vector<Value *> args)
+    : Instruction(KIND), m_callee(callee), m_args(std::move(args)) {}
 
 CallInst::~CallInst() {
     for (auto *arg : m_args) {
@@ -72,10 +70,6 @@ CallInst::~CallInst() {
             arg->remove_user(this);
         }
     }
-}
-
-void CallInst::add_arg(Value *arg) {
-    m_args.push_back(arg);
 }
 
 void CallInst::accept(Visitor *visitor) {
@@ -90,8 +84,6 @@ void CallInst::replace_uses_of_with(Value *orig, Value *repl) {
 
 LoadInst::LoadInst(Value *ptr) : Instruction(KIND), m_ptr(ptr) {
     m_ptr->add_user(this);
-    assert(m_ptr->type()->is<PointerType>());
-    set_type(m_ptr->type()->as<PointerType>()->pointee_type());
 }
 
 LoadInst::~LoadInst() {

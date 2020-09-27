@@ -19,9 +19,7 @@ class LocalVar : public Value, public ListNode {
 public:
     static constexpr auto KIND = ValueKind::LocalVar;
 
-    explicit LocalVar(const Type *var_type) : Value(KIND), m_var_type(var_type) {
-        set_type(PointerType::get(var_type));
-    }
+    explicit LocalVar(const Type *var_type) : Value(KIND), m_var_type(var_type) {}
 
     const Type *var_type() const { return m_var_type; }
 };

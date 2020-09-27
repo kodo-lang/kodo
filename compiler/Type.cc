@@ -22,18 +22,3 @@ const PointerType *PointerType::get(const Type *pointee_type) {
     }
     return &s_pointer_types.at(pointee_type);
 }
-
-// TODO: Just compare types by pointer.
-bool operator==(const Type &lhs, const Type &rhs) {
-    if (lhs.kind() != rhs.kind()) {
-        return false;
-    }
-    switch (lhs.kind()) {
-    case TypeKind::Invalid:
-        return true;
-    case TypeKind::Int:
-        return lhs.as<IntType>()->bit_width() == rhs.as<IntType>()->bit_width();
-    case TypeKind::Pointer:
-        return *lhs.as<PointerType>()->pointee_type() == *rhs.as<PointerType>()->pointee_type();
-    }
-}

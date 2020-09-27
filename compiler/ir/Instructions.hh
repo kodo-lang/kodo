@@ -66,15 +66,13 @@ class CallInst : public Instruction {
 public:
     static constexpr auto KIND = InstKind::Call;
 
-    explicit CallInst(Function *callee);
+    CallInst(Function *callee, std::vector<Value *> args);
     CallInst(const CallInst &) = delete;
     CallInst(CallInst &&) = delete;
     ~CallInst() override;
 
     CallInst &operator=(const CallInst &) = delete;
     CallInst &operator=(CallInst &&) = delete;
-
-    void add_arg(Value *arg);
 
     void accept(Visitor *visitor) override;
     void replace_uses_of_with(Value *orig, Value *repl) override;

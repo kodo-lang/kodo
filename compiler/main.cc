@@ -3,6 +3,7 @@
 #include <LLVMGen.hh>
 #include <Lexer.hh>
 #include <Parser.hh>
+#include <TypeChecker.hh>
 #include <ast/Dumper.hh>
 #include <ir/Dumper.hh>
 
@@ -47,6 +48,7 @@ int main() {
     std::cout << '\n';
 
     auto program = gen_ir(ast.get());
+    type_check(program.get());
     dump_ir(program.get());
 
     llvm::LLVMContext context;
