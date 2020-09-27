@@ -43,6 +43,7 @@ template <typename T> requires std::derived_from<T, ListNode>
 class List {
     // clang-format on
     // Store ListNode here to allow for abstract Ts.
+    // TODO: Use unique_ptr here?
     ListNode *m_end{nullptr};
 
 public:
@@ -81,7 +82,7 @@ List<T>::List() {
 template <typename T> requires std::derived_from<T, ListNode>
 List<T>::~List() {
     // clang-format on
-    std::vector<std::unique_ptr<ListNode>> to_delete;
+    std::vector<std::unique_ptr<T>> to_delete;
     for (auto *elem : *this) {
         to_delete.emplace_back(elem);
     }
