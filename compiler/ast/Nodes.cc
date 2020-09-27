@@ -4,7 +4,7 @@
 
 namespace ast {
 
-void AssignStmt::accept(Visitor *visitor) const {
+void AssignExpr::accept(Visitor *visitor) const {
     visitor->visit(this);
 }
 

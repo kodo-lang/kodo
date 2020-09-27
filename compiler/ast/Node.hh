@@ -8,7 +8,7 @@ namespace ast {
 class Visitor;
 
 enum class NodeKind {
-    AssignStmt,
+    AssignExpr,
     BinExpr,
     CallExpr,
     DeclStmt,

@@ -39,6 +39,7 @@ public:
     Value *gen_address_of(const ast::Node *);
     Value *gen_deref(const ast::Node *);
 
+    Value *gen_assign_expr(const ast::AssignExpr *);
     Value *gen_bin_expr(const ast::BinExpr *);
     Value *gen_call_expr(const ast::CallExpr *);
     Value *gen_num_lit(const ast::NumLit *);
@@ -82,6 +83,13 @@ Value *IrGen::gen_address_of(const ast::Node *expr) {
 
 Value *IrGen::gen_deref(const ast::Node *expr) {
     return m_block->append<LoadInst>(gen_expr(expr));
+}
+
+Value *IrGen::gen_assign_expr(const ast::AssignExpr *assign_expr) {
+    auto *var = m_scope_stack.peek().find_var(assign_expr->name());
+    assert(var != nullptr);
+    m_block->append<StoreInst>(var, gen_expr(assign_expr->val()));
+    return var;
 }
 
 Value *IrGen::gen_bin_expr(const ast::BinExpr *bin_expr) {
@@ -166,8 +174,9 @@ void IrGen::gen_ret_stmt(const ast::RetStmt *ret_stmt) {
 
 void IrGen::gen_stmt(const ast::Node *stmt) {
     switch (stmt->kind()) {
-    case ast::NodeKind::AssignStmt:
-        assert(false);
+    case ast::NodeKind::AssignExpr:
+        gen_assign_expr(static_cast<const ast::AssignExpr *>(stmt));
+        break;
     case ast::NodeKind::CallExpr:
         gen_call_expr(static_cast<const ast::CallExpr *>(stmt));
         break;

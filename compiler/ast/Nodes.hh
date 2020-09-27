@@ -9,14 +9,14 @@
 
 namespace ast {
 
-class AssignStmt : public Node {
+class AssignExpr : public Node {
     const std::string m_name;
     const std::unique_ptr<const Node> m_val;
 
 public:
-    static constexpr auto KIND = NodeKind::AssignStmt;
+    static constexpr auto KIND = NodeKind::AssignExpr;
 
-    AssignStmt(std::string name, const Node *val) : Node(KIND), m_name(std::move(name)), m_val(val) {}
+    AssignExpr(std::string name, const Node *val) : Node(KIND), m_name(std::move(name)), m_val(val) {}
 
     void accept(Visitor *visitor) const override;
 

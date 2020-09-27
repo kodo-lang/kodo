@@ -10,7 +10,7 @@ namespace ast {
 namespace {
 
 struct Dumper : public Visitor {
-    void visit(const AssignStmt *) override;
+    void visit(const AssignExpr *) override;
     void visit(const BinExpr *) override;
     void visit(const CallExpr *) override;
     void visit(const DeclStmt *) override;
@@ -23,8 +23,8 @@ struct Dumper : public Visitor {
     void visit(const VarExpr *) override;
 };
 
-void Dumper::visit(const AssignStmt *assign_stmt) {
-    std::cout << "AssignStmt(";
+void Dumper::visit(const AssignExpr *assign_stmt) {
+    std::cout << "AssignExpr(";
     std::cout << assign_stmt->name() << ", ";
     assign_stmt->val()->accept(this);
     std::cout << ')';

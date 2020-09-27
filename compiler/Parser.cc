@@ -8,8 +8,6 @@
 #include <fmt/color.h>
 #include <fmt/core.h>
 
-#include <cassert>
-
 namespace {
 
 struct Op {
@@ -82,6 +80,27 @@ Token Parser::expect(TokenKind kind) {
     return next;
 }
 
+ast::AssignExpr *Parser::parse_assign_expr(std::string name) {
+    return new ast::AssignExpr(std::move(name), parse_expr());
+}
+
+ast::CallExpr *Parser::parse_call_expr(std::string name) {
+    auto *call_expr = new ast::CallExpr(std::move(name));
+    while (m_lexer->has_next()) {
+        if (m_lexer->peek().kind == TokenKind::RParen) {
+            break;
+        }
+        call_expr->add_arg(parse_expr());
+        consume(TokenKind::Comma);
+    }
+    expect(TokenKind::RParen);
+    return call_expr;
+}
+
+ast::VarExpr *Parser::parse_var_expr(std::string name) {
+    return new ast::VarExpr(std::move(name));
+}
+
 ast::Node *Parser::parse_expr() {
     Stack<ast::Node *> operands;
     Stack<Op> operators;
@@ -97,22 +116,20 @@ ast::Node *Parser::parse_expr() {
         if (!bin_op) {
             last_was_op = false;
             if (token.kind == TokenKind::Identifier) {
-                m_lexer->next();
-                if (m_lexer->peek().kind != TokenKind::LParen) {
-                    operands.push(new ast::VarExpr(std::move(std::get<std::string>(token.data))));
-                    continue;
+                auto ident = std::move(std::get<std::string>(m_lexer->next().data));
+                switch (m_lexer->peek().kind) {
+                case TokenKind::Eq:
+                    m_lexer->next();
+                    operands.push(parse_assign_expr(std::move(ident)));
+                    break;
+                case TokenKind::LParen:
+                    m_lexer->next();
+                    operands.push(parse_call_expr(std::move(ident)));
+                    break;
+                default:
+                    operands.push(parse_var_expr(std::move(ident)));
+                    break;
                 }
-                m_lexer->next();
-                auto *call_expr = new ast::CallExpr(std::move(std::get<std::string>(token.data)));
-                while (m_lexer->has_next()) {
-                    if (m_lexer->peek().kind == TokenKind::RParen) {
-                        break;
-                    }
-                    call_expr->add_arg(parse_expr());
-                    consume(TokenKind::Comma);
-                }
-                expect(TokenKind::RParen);
-                operands.push(call_expr);
                 continue;
             } else if (token.kind == TokenKind::NumLit) {
                 m_lexer->next();
@@ -166,12 +183,6 @@ ast::Node *Parser::parse_expr() {
 
 void Parser::parse_stmt(ast::FunctionDecl *func) {
     switch (m_lexer->peek().kind) {
-//    case TokenKind::Identifier: {
-//        auto name = std::move(std::get<std::string>(expect(TokenKind::Identifier).data));
-//        expect(TokenKind::Eq);
-//        func->add_stmt<AssignStmt>(std::move(name), parse_expr());
-//        break;
-//    }
     case TokenKind::Return:
         consume(TokenKind::Return);
         func->add_stmt<ast::RetStmt>(parse_expr());
@@ -180,14 +191,14 @@ void Parser::parse_stmt(ast::FunctionDecl *func) {
         consume(TokenKind::Var);
         auto name = std::move(std::get<std::string>(expect(TokenKind::Identifier).data));
         expect(TokenKind::Colon);
-        auto *type = parse_type();
+        const auto *type = parse_type();
         auto *stmt = func->add_stmt<ast::DeclStmt>(std::move(name), consume(TokenKind::Eq) ? parse_expr() : nullptr);
         stmt->set_type(type);
         break;
     }
     default:
         func->add_stmt(parse_expr());
-//        error("expected stmt but got {} on line {}", tok_str(m_lexer->next()), m_lexer->line());
+        break;
     }
 }
 

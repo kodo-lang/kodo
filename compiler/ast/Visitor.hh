@@ -2,7 +2,7 @@
 
 namespace ast {
 
-class AssignStmt;
+class AssignExpr;
 class BinExpr;
 class CallExpr;
 class DeclStmt;
@@ -15,7 +15,7 @@ class UnaryExpr;
 class VarExpr;
 
 struct Visitor {
-    virtual void visit(const AssignStmt *) = 0;
+    virtual void visit(const AssignExpr *) = 0;
     virtual void visit(const BinExpr *) = 0;
     virtual void visit(const CallExpr *) = 0;
     virtual void visit(const DeclStmt *) = 0;
