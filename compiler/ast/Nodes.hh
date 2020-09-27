@@ -1,5 +1,6 @@
 #pragma once
 
+#include <Type.hh>
 #include <ast/Node.hh>
 #include <support/List.hh>
 
@@ -66,34 +67,40 @@ public:
 
 class DeclStmt : public Node {
     const std::string m_name;
+    const Type *const m_type;
     const std::unique_ptr<const Node> m_init_val;
 
 public:
     static constexpr auto KIND = NodeKind::DeclStmt;
 
-    DeclStmt(std::string name, const Node *init_val) : Node(KIND), m_name(std::move(name)), m_init_val(init_val) {}
+    DeclStmt(std::string name, const Type *type, const Node *init_val)
+        : Node(KIND), m_name(std::move(name)), m_type(type), m_init_val(init_val) {}
 
     void accept(Visitor *visitor) const override;
 
     const std::string &name() const { return m_name; }
+    const Type *type() const { return m_type; }
     const Node *init_val() const { return m_init_val.get(); }
 };
 
 class FunctionArg : public Node {
     const std::string m_name;
+    const Type *const m_type;
 
 public:
     static constexpr auto KIND = NodeKind::FunctionArg;
 
-    explicit FunctionArg(std::string name) : Node(KIND), m_name(std::move(name)) {}
+    FunctionArg(std::string name, const Type *type) : Node(KIND), m_name(std::move(name)), m_type(type) {}
 
     void accept(Visitor *visitor) const override;
 
     const std::string &name() const { return m_name; }
+    const Type *type() const { return m_type; }
 };
 
 class FunctionDecl : public Node {
     const std::string m_name;
+    const Type *m_return_type;
     const bool m_externed;
     List<const FunctionArg> m_args;
     List<const Node> m_stmts;
@@ -104,15 +111,14 @@ public:
     FunctionDecl(std::string name, bool externed) : Node(KIND), m_name(std::move(name)), m_externed(externed) {}
 
     void accept(Visitor *visitor) const override;
+    void set_return_type(const Type *return_type) { m_return_type = return_type; }
 
     template <typename... Args>
     FunctionArg *add_arg(Args &&... args) {
         return m_args.emplace<FunctionArg>(m_args.end(), std::forward<Args>(args)...);
     }
 
-    void add_stmt(const Node *stmt) {
-        m_stmts.insert(m_stmts.end(), stmt);
-    }
+    void add_stmt(const Node *stmt) { m_stmts.insert(m_stmts.end(), stmt); }
 
     // TODO: Remove this.
     template <typename Stmt, typename... Args>
@@ -121,6 +127,7 @@ public:
     }
 
     const std::string &name() const { return m_name; }
+    const Type *return_type() const { return m_return_type; }
     bool externed() const { return m_externed; }
     const List<const FunctionArg> &args() const { return m_args; }
     const List<const Node> &stmts() const { return m_stmts; }

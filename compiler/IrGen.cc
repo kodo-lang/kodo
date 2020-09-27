@@ -104,7 +104,7 @@ Value *IrGen::gen_deref(const ast::Node *expr) {
 }
 
 Value *IrGen::gen_assign_expr(const ast::AssignExpr *assign_expr) {
-    Value *lhs;
+    Value *lhs = nullptr;
     {
         StateChanger deref_state_changer(m_deref_state, DerefState::DontDeref);
         lhs = gen_expr(assign_expr->lhs());
@@ -214,7 +214,7 @@ void IrGen::gen_stmt(const ast::Node *stmt) {
 }
 
 void IrGen::gen_function_decl(const ast::FunctionDecl *function_decl) {
-    m_function = m_program->append_function(function_decl->name(), function_decl->type());
+    m_function = m_program->append_function(function_decl->name(), function_decl->return_type());
     for (const auto *ast_arg : function_decl->args()) {
         auto *arg = m_function->append_arg();
         arg->set_name(ast_arg->name());

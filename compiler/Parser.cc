@@ -197,8 +197,8 @@ void Parser::parse_stmt(ast::FunctionDecl *func) {
         auto name = std::move(std::get<std::string>(expect(TokenKind::Identifier).data));
         expect(TokenKind::Colon);
         const auto *type = parse_type();
-        auto *stmt = func->add_stmt<ast::DeclStmt>(std::move(name), consume(TokenKind::Eq) ? parse_expr() : nullptr);
-        stmt->set_type(type);
+        const auto *init_val = consume(TokenKind::Eq) ? parse_expr() : nullptr;
+        func->add_stmt<ast::DeclStmt>(std::move(name), type, init_val);
         break;
     }
     default:
@@ -241,13 +241,12 @@ std::unique_ptr<ast::Root> Parser::parse() {
         while (m_lexer->peek().kind != TokenKind::RParen) {
             auto arg_name = expect(TokenKind::Identifier);
             expect(TokenKind::Colon);
-            auto *arg = func->add_arg(std::move(std::get<std::string>(arg_name.data)));
-            arg->set_type(parse_type());
+            auto *arg = func->add_arg(std::move(std::get<std::string>(arg_name.data)), parse_type());
             consume(TokenKind::Comma);
         }
         expect(TokenKind::RParen);
         expect(TokenKind::Arrow);
-        func->set_type(parse_type());
+        func->set_return_type(parse_type());
         if (externed) {
             expect(TokenKind::Semi);
             continue;
