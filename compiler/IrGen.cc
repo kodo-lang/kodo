@@ -16,6 +16,22 @@
 
 namespace {
 
+template <typename T>
+class StateChanger {
+    T &m_state;
+    T m_old_state;
+
+public:
+    StateChanger(T &state, T new_state) : m_state(state) {
+        m_old_state = state;
+        m_state = new_state;
+    }
+
+    ~StateChanger() {
+        m_state = m_old_state;
+    }
+};
+
 class Scope {
     const Scope *const m_parent;
     std::unordered_map<std::string_view, Value *> m_vars;
@@ -33,6 +49,11 @@ class IrGen {
     BasicBlock *m_block{nullptr};
     Stack<Scope> m_scope_stack;
 
+    enum class DerefState {
+        Deref,
+        DontDeref,
+    } m_deref_state {DerefState::Deref};
+
 public:
     IrGen();
 
@@ -43,8 +64,8 @@ public:
     Value *gen_bin_expr(const ast::BinExpr *);
     Value *gen_call_expr(const ast::CallExpr *);
     Value *gen_num_lit(const ast::NumLit *);
+    Value *gen_symbol(const ast::Symbol *);
     Value *gen_unary_expr(const ast::UnaryExpr *);
-    Value *gen_var_expr(const ast::VarExpr *);
     Value *gen_expr(const ast::Node *);
 
     void gen_decl_stmt(const ast::DeclStmt *);
@@ -74,11 +95,8 @@ IrGen::IrGen() {
 }
 
 Value *IrGen::gen_address_of(const ast::Node *expr) {
-    assert(expr->kind() == ast::NodeKind::VarExpr);
-    const auto *var_expr = static_cast<const ast::VarExpr *>(expr);
-    auto *var = m_scope_stack.peek().find_var(var_expr->name());
-    assert(var != nullptr);
-    return var;
+    StateChanger deref_state_changer(m_deref_state, DerefState::DontDeref);
+    return gen_expr(expr);
 }
 
 Value *IrGen::gen_deref(const ast::Node *expr) {
@@ -86,10 +104,14 @@ Value *IrGen::gen_deref(const ast::Node *expr) {
 }
 
 Value *IrGen::gen_assign_expr(const ast::AssignExpr *assign_expr) {
-    auto *var = m_scope_stack.peek().find_var(assign_expr->name());
-    assert(var != nullptr);
-    m_block->append<StoreInst>(var, gen_expr(assign_expr->val()));
-    return var;
+    Value *lhs;
+    {
+        StateChanger deref_state_changer(m_deref_state, DerefState::DontDeref);
+        lhs = gen_expr(assign_expr->lhs());
+    }
+    auto *rhs = gen_expr(assign_expr->rhs());
+    m_block->append<StoreInst>(lhs, rhs);
+    return lhs;
 }
 
 Value *IrGen::gen_bin_expr(const ast::BinExpr *bin_expr) {
@@ -125,6 +147,12 @@ Value *IrGen::gen_num_lit(const ast::NumLit *num_lit) {
     return constant;
 }
 
+Value *IrGen::gen_symbol(const ast::Symbol *symbol) {
+    auto *var = m_scope_stack.peek().find_var(symbol->name());
+    assert(var != nullptr);
+    return m_deref_state == DerefState::Deref ? m_block->append<LoadInst>(var) : var;
+}
+
 Value *IrGen::gen_unary_expr(const ast::UnaryExpr *unary_expr) {
     switch (unary_expr->op()) {
     case ast::UnaryOp::AddressOf:
@@ -132,12 +160,6 @@ Value *IrGen::gen_unary_expr(const ast::UnaryExpr *unary_expr) {
     case ast::UnaryOp::Deref:
         return gen_deref(unary_expr->val());
     }
-}
-
-Value *IrGen::gen_var_expr(const ast::VarExpr *var_expr) {
-    auto *var = m_scope_stack.peek().find_var(var_expr->name());
-    assert(var != nullptr);
-    return m_block->append<LoadInst>(var);
 }
 
 Value *IrGen::gen_expr(const ast::Node *expr) {
@@ -148,10 +170,10 @@ Value *IrGen::gen_expr(const ast::Node *expr) {
         return gen_call_expr(static_cast<const ast::CallExpr *>(expr));
     case ast::NodeKind::NumLit:
         return gen_num_lit(static_cast<const ast::NumLit *>(expr));
+    case ast::NodeKind::Symbol:
+        return gen_symbol(static_cast<const ast::Symbol *>(expr));
     case ast::NodeKind::UnaryExpr:
         return gen_unary_expr(static_cast<const ast::UnaryExpr *>(expr));
-    case ast::NodeKind::VarExpr:
-        return gen_var_expr(static_cast<const ast::VarExpr *>(expr));
     default:
         assert(false);
     }

@@ -40,11 +40,11 @@ void Root::accept(Visitor *visitor) const {
     visitor->visit(this);
 }
 
-void UnaryExpr::accept(Visitor *visitor) const {
+void Symbol::accept(Visitor *visitor) const {
     visitor->visit(this);
 }
 
-void VarExpr::accept(Visitor *visitor) const {
+void UnaryExpr::accept(Visitor *visitor) const {
     visitor->visit(this);
 }
 

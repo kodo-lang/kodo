@@ -17,11 +17,22 @@
 #include <sstream>
 
 constexpr const char *INPUT = R"(
+extern fn getchar() => i32;
+extern fn malloc(size: i32) => *i32;
+extern fn putchar(character: i32) => i32;
+
 fn main() => i32 {
-    // This is a comment.
-    var foo: i32 = 5;
-    foo = 6;
-    return foo;
+    var h: *i32 = malloc(1);
+    var i: *i32 = malloc(1);
+    var newline: *i32 = malloc(1);
+    *h = 72;
+    *i = 105;
+    *newline = 10;
+    putchar(*h);
+    putchar(*i);
+    putchar(*newline);
+    getchar();
+    return 0;
 }
 )";
 

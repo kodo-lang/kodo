@@ -11,8 +11,8 @@ class FunctionDecl;
 class NumLit;
 class RetStmt;
 class Root;
+class Symbol;
 class UnaryExpr;
-class VarExpr;
 
 struct Visitor {
     virtual void visit(const AssignExpr *) = 0;
@@ -24,8 +24,8 @@ struct Visitor {
     virtual void visit(const NumLit *) = 0;
     virtual void visit(const RetStmt *) = 0;
     virtual void visit(const Root *) = 0;
+    virtual void visit(const Symbol *) = 0;
     virtual void visit(const UnaryExpr *) = 0;
-    virtual void visit(const VarExpr *) = 0;
 };
 
 } // namespace ast

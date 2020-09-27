@@ -17,8 +17,8 @@ enum class NodeKind {
     NumLit,
     RetStmt,
     Root,
+    Symbol,
     UnaryExpr,
-    VarExpr,
 };
 
 class Node : public ListNode {

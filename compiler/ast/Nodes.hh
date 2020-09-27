@@ -10,18 +10,18 @@
 namespace ast {
 
 class AssignExpr : public Node {
-    const std::string m_name;
-    const std::unique_ptr<const Node> m_val;
+    const std::unique_ptr<const Node> m_lhs;
+    const std::unique_ptr<const Node> m_rhs;
 
 public:
     static constexpr auto KIND = NodeKind::AssignExpr;
 
-    AssignExpr(std::string name, const Node *val) : Node(KIND), m_name(std::move(name)), m_val(val) {}
+    AssignExpr(const Node *lhs, const Node *rhs) : Node(KIND), m_lhs(lhs), m_rhs(rhs) {}
 
     void accept(Visitor *visitor) const override;
 
-    const std::string &name() const { return m_name; }
-    const Node *val() const { return m_val.get(); }
+    const Node *lhs() const { return m_lhs.get(); }
+    const Node *rhs() const { return m_rhs.get(); }
 };
 
 enum class BinOp {
@@ -170,6 +170,19 @@ public:
     const List<const FunctionDecl> &functions() const { return m_functions; }
 };
 
+class Symbol : public Node {
+    const std::string m_name;
+
+public:
+    static constexpr auto KIND = NodeKind::Symbol;
+
+    explicit Symbol(std::string name) : Node(KIND), m_name(std::move(name)) {}
+
+    void accept(Visitor *visitor) const override;
+
+    const std::string &name() const { return m_name; }
+};
+
 enum class UnaryOp {
     AddressOf,
     Deref,
@@ -188,20 +201,6 @@ public:
 
     UnaryOp op() const { return m_op; }
     const Node *val() const { return m_val.get(); }
-};
-
-// TODO: Rename this, maybe to Symbol?
-class VarExpr : public Node {
-    const std::string m_name;
-
-public:
-    static constexpr auto KIND = NodeKind::VarExpr;
-
-    explicit VarExpr(std::string name) : Node(KIND), m_name(std::move(name)) {}
-
-    void accept(Visitor *visitor) const override;
-
-    const std::string &name() const { return m_name; }
 };
 
 } // namespace ast

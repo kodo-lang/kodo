@@ -10,40 +10,34 @@
 
 namespace {
 
-struct Op {
-    bool unary;
-    union {
-        ast::BinOp bin_op;
-        ast::UnaryOp unary_op;
-    };
+enum class Op {
+    // Binary operators.
+    Add,
+    Sub,
+    Mul,
+    Div,
+
+    // Unary operators.
+    AddressOf,
+    Deref,
+
+    // Other operators.
+    Assign,
 };
 
-constexpr Result<ast::BinOp> token_to_bin_op(const Token &token) {
-    switch (token.kind) {
-    case TokenKind::Add:
-        return ast::BinOp::Add;
-    case TokenKind::Sub:
-        return ast::BinOp::Sub;
-    case TokenKind::Mul:
-        return ast::BinOp::Mul;
-    case TokenKind::Div:
-        return ast::BinOp::Div;
-    default:
-        return false;
-    }
-}
-
 constexpr int precedence(Op op) {
-    if (op.unary) {
-        return 3;
-    }
-    switch (op.bin_op) {
-    case ast::BinOp::Add:
-    case ast::BinOp::Sub:
+    switch (op) {
+    case Op::Assign:
+        return 0;
+    case Op::Add:
+    case Op::Sub:
         return 1;
-    case ast::BinOp::Mul:
-    case ast::BinOp::Div:
+    case Op::Mul:
+    case Op::Div:
         return 2;
+    case Op::AddressOf:
+    case Op::Deref:
+        return 3;
     }
 }
 
@@ -56,6 +50,33 @@ constexpr int compare_op(Op op1, Op op2) {
     return p1 > p2 ? 1 : -1;
 }
 
+ast::Node *create_expr(Op op, Stack<ast::Node *> *operands) {
+    auto *rhs = operands->pop();
+    switch (op) {
+    case Op::AddressOf:
+        return new ast::UnaryExpr(ast::UnaryOp::AddressOf, rhs);
+    case Op::Deref:
+        return new ast::UnaryExpr(ast::UnaryOp::Deref, rhs);
+    default:
+        break;
+    }
+    auto *lhs = operands->pop();
+    switch (op) {
+    case Op::Add:
+        return new ast::BinExpr(ast::BinOp::Add, lhs, rhs);
+    case Op::Sub:
+        return new ast::BinExpr(ast::BinOp::Sub, lhs, rhs);
+    case Op::Mul:
+        return new ast::BinExpr(ast::BinOp::Mul, lhs, rhs);
+    case Op::Div:
+        return new ast::BinExpr(ast::BinOp::Div, lhs, rhs);
+    case Op::Assign:
+        return new ast::AssignExpr(lhs, rhs);
+    default:
+        assert(false);
+    }
+}
+
 template <typename FmtString, typename... Args>
 [[noreturn]] void error(const FmtString &fmt, const Args &... args) {
     auto formatted = fmt::format(fmt, args...);
@@ -65,11 +86,11 @@ template <typename FmtString, typename... Args>
 
 } // namespace
 
-Result<Token> Parser::consume(TokenKind kind) {
+std::optional<Token> Parser::consume(TokenKind kind) {
     if (m_lexer->peek().kind == kind) {
         return m_lexer->next();
     }
-    return false;
+    return std::nullopt;
 }
 
 Token Parser::expect(TokenKind kind) {
@@ -80,12 +101,9 @@ Token Parser::expect(TokenKind kind) {
     return next;
 }
 
-ast::AssignExpr *Parser::parse_assign_expr(std::string name) {
-    return new ast::AssignExpr(std::move(name), parse_expr());
-}
-
 ast::CallExpr *Parser::parse_call_expr(std::string name) {
     auto *call_expr = new ast::CallExpr(std::move(name));
+    m_lexer->next();
     while (m_lexer->has_next()) {
         if (m_lexer->peek().kind == TokenKind::RParen) {
             break;
@@ -97,82 +115,69 @@ ast::CallExpr *Parser::parse_call_expr(std::string name) {
     return call_expr;
 }
 
-ast::VarExpr *Parser::parse_var_expr(std::string name) {
-    return new ast::VarExpr(std::move(name));
-}
-
 ast::Node *Parser::parse_expr() {
     Stack<ast::Node *> operands;
     Stack<Op> operators;
-    bool last_was_op = true;
-    while (true) {
-        if (operands.empty() && consume(TokenKind::Ampersand)) {
-            operands.push(new ast::UnaryExpr(ast::UnaryOp::AddressOf, parse_expr()));
+    bool keep_parsing = true;
+    bool last_was_operator = true;
+    while (keep_parsing) {
+        auto token = m_lexer->peek();
+        auto op1 = [&token, last_was_operator]() -> std::optional<Op> {
+            switch (token.kind) {
+            case TokenKind::Add:
+                return Op::Add;
+            case TokenKind::Sub:
+                return Op::Sub;
+            case TokenKind::Mul:
+                return last_was_operator ? Op::Deref : Op::Mul;
+            case TokenKind::Div:
+                return Op::Div;
+            case TokenKind::Ampersand:
+                return Op::AddressOf;
+            case TokenKind::Eq:
+                return Op::Assign;
+            default:
+                return std::nullopt;
+            }
+        }();
+        last_was_operator = op1.has_value();
+        if (!op1) {
+            switch (token.kind) {
+            case TokenKind::Identifier: {
+                // TODO: Handle calls properly.
+                auto name = std::move(std::get<std::string>(m_lexer->next().data));
+                if (m_lexer->peek().kind == TokenKind::LParen) {
+                    operands.push(parse_call_expr(std::move(name)));
+                } else {
+                    operands.push(new ast::Symbol(std::move(name)));
+                }
+                break;
+            }
+            case TokenKind::NumLit:
+                operands.push(new ast::NumLit(std::get<std::uint64_t>(m_lexer->next().data)));
+                break;
+            default:
+                keep_parsing = false;
+                break;
+            }
             continue;
         }
-
-        auto token = m_lexer->peek();
-        auto bin_op = token_to_bin_op(token);
-        if (!bin_op) {
-            last_was_op = false;
-            if (token.kind == TokenKind::Identifier) {
-                auto ident = std::move(std::get<std::string>(m_lexer->next().data));
-                switch (m_lexer->peek().kind) {
-                case TokenKind::Eq:
-                    m_lexer->next();
-                    operands.push(parse_assign_expr(std::move(ident)));
-                    break;
-                case TokenKind::LParen:
-                    m_lexer->next();
-                    operands.push(parse_call_expr(std::move(ident)));
-                    break;
-                default:
-                    operands.push(parse_var_expr(std::move(ident)));
-                    break;
-                }
-                continue;
-            } else if (token.kind == TokenKind::NumLit) {
-                m_lexer->next();
-                operands.push(new ast::NumLit(std::get<std::uint64_t>(token.data)));
-                continue;
-            }
-            break;
-        }
-
-        Op op1 = {false, bin_op};
-        if (op1.bin_op == ast::BinOp::Mul && last_was_op) {
-            op1.unary = true;
-            op1.unary_op = ast::UnaryOp::Deref;
-        }
-        last_was_op = true;
 
         m_lexer->next();
         while (!operators.empty()) {
             auto op2 = operators.peek();
-            if (compare_op(op1, op2) > 0 || op1.unary) {
+            if (compare_op(*op1, op2) >= 0) {
                 break;
             }
             auto op = operators.pop();
-            auto *rhs = operands.pop();
-            if (op.unary) {
-                operands.push(new ast::UnaryExpr(op.unary_op, rhs));
-            } else {
-                auto *lhs = operands.pop();
-                operands.push(new ast::BinExpr(op.bin_op, lhs, rhs));
-            }
+            operands.push(create_expr(op, &operands));
         }
-        operators.push(op1);
+        operators.push(*op1);
     }
 
     while (!operators.empty()) {
         auto op = operators.pop();
-        auto *rhs = operands.pop();
-        if (op.unary) {
-            operands.push(new ast::UnaryExpr(op.unary_op, rhs));
-        } else {
-            auto *lhs = operands.pop();
-            operands.push(new ast::BinExpr(op.bin_op, lhs, rhs));
-        }
+        operands.push(create_expr(op, &operands));
     }
 
     if (operands.size() != 1) {
@@ -228,7 +233,7 @@ const Type *Parser::parse_type() {
 std::unique_ptr<ast::Root> Parser::parse() {
     auto root = std::make_unique<ast::Root>();
     while (m_lexer->has_next() && m_lexer->peek().kind != TokenKind::Eof) {
-        bool externed = consume(TokenKind::Extern);
+        bool externed = consume(TokenKind::Extern).has_value();
         expect(TokenKind::Fn);
         auto name = expect(TokenKind::Identifier);
         auto *func = root->add_function(std::move(std::get<std::string>(name.data)), externed);

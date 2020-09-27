@@ -19,14 +19,15 @@ struct Dumper : public Visitor {
     void visit(const NumLit *) override;
     void visit(const RetStmt *) override;
     void visit(const Root *) override;
+    void visit(const Symbol *) override;
     void visit(const UnaryExpr *) override;
-    void visit(const VarExpr *) override;
 };
 
 void Dumper::visit(const AssignExpr *assign_stmt) {
     std::cout << "AssignExpr(";
-    std::cout << assign_stmt->name() << ", ";
-    assign_stmt->val()->accept(this);
+    assign_stmt->lhs()->accept(this);
+    std::cout << ", ";
+    assign_stmt->rhs()->accept(this);
     std::cout << ')';
 }
 
@@ -112,6 +113,12 @@ void Dumper::visit(const Root *root) {
     }
 }
 
+void Dumper::visit(const Symbol *symbol) {
+    std::cout << "Symbol(";
+    std::cout << symbol->name();
+    std::cout << ')';
+}
+
 void Dumper::visit(const UnaryExpr *unary_expr) {
     std::cout << "UnaryExpr(";
     switch (unary_expr->op()) {
@@ -124,12 +131,6 @@ void Dumper::visit(const UnaryExpr *unary_expr) {
     }
     std::cout << ", ";
     unary_expr->val()->accept(this);
-    std::cout << ')';
-}
-
-void Dumper::visit(const VarExpr *var_expr) {
-    std::cout << "VarExpr(";
-    std::cout << var_expr->name();
     std::cout << ')';
 }
 
