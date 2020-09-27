@@ -93,7 +93,7 @@ llvm::Value *LLVMGen::gen_binary(const BinaryInst *binary) {
 }
 
 llvm::Value *LLVMGen::gen_call(const CallInst *call) {
-    std::vector<llvm::Value *> args(call->args().size());
+    std::vector<llvm::Value *> args;
     for (auto *arg : call->args()) {
         args.push_back(llvm_value(arg));
     }

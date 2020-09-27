@@ -38,5 +38,5 @@ class Parser {
 public:
     explicit Parser(Lexer *lexer) : m_lexer(lexer) {}
 
-    std::unique_ptr<AstNode> parse();
+    std::unique_ptr<RootNode> parse();
 };

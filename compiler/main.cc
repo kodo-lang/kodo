@@ -17,11 +17,20 @@
 #include <sstream>
 
 constexpr const char *INPUT = R"(
-// TODO: extern getchar.
+extern fn putchar(character: i32) => i32;
+extern fn getchar() => i32;
+
+fn val() => i32 {
+    return 2;
+}
+
 fn main(argc: i32) => i32 {
     // This is a comment.
+    putchar(72);
+    putchar(105);
+    putchar(10);
     getchar();
-    var foo: i32 = 5;
+    var foo: i32 = 5 * val();
     var bar: *i32 = &foo;
     var baz: **i32 = &bar;
     return foo + *bar + **baz * argc;

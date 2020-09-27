@@ -19,6 +19,7 @@ enum class NodeKind {
     FunctionDecl,
     NumLit,
     RetStmt,
+    Root,
     UnaryExpr,
     VarExpr,
 };
@@ -69,6 +70,7 @@ public:
 
 class CallExpr : public AstNode {
     std::string m_name;
+    // TODO: Use List?
     std::vector<std::unique_ptr<AstNode>> m_args;
 
 public:
@@ -103,11 +105,12 @@ public:
 
 class FunctionDecl : public AstNode {
     std::string m_name;
+    bool m_externed;
     List<FunctionArg> m_args;
     List<AstNode> m_stmts;
 
 public:
-    explicit FunctionDecl(std::string name) : AstNode(NodeKind::FunctionDecl), m_name(std::move(name)) {}
+    FunctionDecl(std::string name, bool externed) : AstNode(NodeKind::FunctionDecl), m_name(std::move(name)), m_externed(externed) {}
 
     template <typename... Args>
     FunctionArg *add_arg(Args &&... args) {
@@ -124,6 +127,7 @@ public:
     }
 
     const std::string &name() const { return m_name; }
+    bool externed() const { return m_externed; }
     const List<FunctionArg> &args() const { return m_args; }
     const List<AstNode> &stmts() const { return m_stmts; }
 };
@@ -144,6 +148,20 @@ public:
     explicit RetStmt(AstNode *val) : AstNode(NodeKind::RetStmt), m_val(val) {}
 
     AstNode *val() const { return m_val.get(); }
+};
+
+class RootNode : public AstNode {
+    List<FunctionDecl> m_functions;
+
+public:
+    RootNode() : AstNode(NodeKind::Root) {}
+
+    template <typename... Args>
+    FunctionDecl *add_function(Args &&... args) {
+        return m_functions.emplace<FunctionDecl>(m_functions.end(), std::forward<Args>(args)...);
+    }
+
+    const List<FunctionDecl> &functions() const { return m_functions; }
 };
 
 enum class UnaryOp {
@@ -181,6 +199,7 @@ struct AstVisitor {
     virtual void visit(FunctionDecl *function_decl) = 0;
     virtual void visit(NumLit *num_lit) = 0;
     virtual void visit(RetStmt *ret_stmt) = 0;
+    virtual void visit(RootNode *root_node) = 0;
     virtual void visit(UnaryExpr *unary_expr) = 0;
     virtual void visit(VarExpr *var_expr) = 0;
 };
@@ -194,6 +213,7 @@ struct AstPrinter : public AstVisitor {
     void visit(FunctionDecl *) override;
     void visit(NumLit *) override;
     void visit(RetStmt *) override;
+    void visit(RootNode *) override;
     void visit(UnaryExpr *) override;
     void visit(VarExpr *) override;
 };

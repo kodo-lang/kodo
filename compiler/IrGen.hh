@@ -4,6 +4,6 @@
 
 #include <memory>
 
-class AstNode;
+class RootNode;
 
-std::unique_ptr<Program> gen_ir(AstNode *ast);
+std::unique_ptr<Program> gen_ir(RootNode *ast);

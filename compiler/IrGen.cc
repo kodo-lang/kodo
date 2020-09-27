@@ -70,7 +70,6 @@ void Scope::put_var(std::string_view name, Value *value) {
 
 IrGen::IrGen() {
     m_program = std::make_unique<Program>();
-    m_program->append_function("getchar", IntType::get(32));
 }
 
 Value *IrGen::gen_address_of(AstNode *expr) {
@@ -137,6 +136,8 @@ Value *IrGen::gen_expr(AstNode *expr) {
     switch (expr->kind()) {
     case NodeKind::BinExpr:
         return gen_bin_expr(static_cast<BinExpr *>(expr));
+    case NodeKind::CallExpr:
+        return gen_call_expr(static_cast<CallExpr *>(expr));
     case NodeKind::NumLit:
         return gen_num_lit(static_cast<NumLit *>(expr));
     case NodeKind::UnaryExpr:
@@ -182,18 +183,24 @@ void IrGen::gen_stmt(AstNode *stmt) {
 }
 
 void IrGen::gen_function_decl(FunctionDecl *function_decl) {
-    m_function = m_program->append_function(function_decl->name(), IntType::get(32));
-    m_block = m_function->append_block();
-
-    m_scope_stack.clear();
-    m_scope_stack.emplace(/* parent */ nullptr);
+    m_function = m_program->append_function(function_decl->name(), function_decl->type());
     for (auto *ast_arg : function_decl->args()) {
         auto *arg = m_function->append_arg();
         arg->set_name(ast_arg->name());
         arg->set_type(ast_arg->type());
-        auto *arg_var = m_function->append_var(ast_arg->type());
+    }
+
+    if (function_decl->externed()) {
+        return;
+    }
+
+    m_block = m_function->append_block();
+    m_scope_stack.clear();
+    m_scope_stack.emplace(/* parent */ nullptr);
+    for (auto *arg : m_function->args()) {
+        auto *arg_var = m_function->append_var(const_cast<Type *>(arg->type()));
         m_block->append<StoreInst>(arg_var, arg);
-        m_scope_stack.peek().put_var(ast_arg->name(), arg_var);
+        m_scope_stack.peek().put_var(arg->name(), arg_var);
     }
 
     for (auto *stmt : function_decl->stmts()) {
@@ -203,9 +210,10 @@ void IrGen::gen_function_decl(FunctionDecl *function_decl) {
 
 } // namespace
 
-std::unique_ptr<Program> gen_ir(AstNode *ast) {
-    assert(ast->kind() == NodeKind::FunctionDecl);
+std::unique_ptr<Program> gen_ir(RootNode *ast) {
     IrGen gen;
-    gen.gen_function_decl(static_cast<FunctionDecl *>(ast));
+    for (auto *func : ast->functions()) {
+        gen.gen_function_decl(func);
+    }
     return gen.program();
 }

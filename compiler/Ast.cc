@@ -28,6 +28,9 @@ void AstVisitor::accept(AstNode *node) {
     case NodeKind::RetStmt:
         visit(static_cast<RetStmt *>(node));
         break;
+    case NodeKind::Root:
+        visit(static_cast<RootNode *>(node));
+        break;
     case NodeKind::UnaryExpr:
         visit(static_cast<UnaryExpr *>(node));
         break;
@@ -118,6 +121,13 @@ void AstPrinter::visit(RetStmt *ret_stmt) {
     std::cout << "RetStmt(";
     accept(ret_stmt->val());
     std::cout << ")";
+}
+
+void AstPrinter::visit(RootNode *root_node) {
+    for (auto *func : root_node->functions()) {
+        accept(func);
+        std::cout << '\n';
+    }
 }
 
 void AstPrinter::visit(UnaryExpr *unary_expr) {

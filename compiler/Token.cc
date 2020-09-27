@@ -18,6 +18,8 @@ std::string tok_str(TokenKind kind) {
         return "eof";
     case TokenKind::Eq:
         return "=";
+    case TokenKind::Extern:
+        return "extern";
     case TokenKind::Fn:
         return "fn";
     case TokenKind::Identifier:

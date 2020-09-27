@@ -103,7 +103,9 @@ Token Lexer::next_token() {
             while (std::isalpha(ch = m_stream->peek()) != 0 || std::isdigit(ch) != 0) {
                 buf += m_stream->next();
             }
-            if (buf == "fn") {
+            if (buf == "extern") {
+                token.kind = TokenKind::Extern;
+            } else if (buf == "fn") {
                 token.kind = TokenKind::Fn;
             } else if (buf == "return") {
                 token.kind = TokenKind::Return;

@@ -13,6 +13,7 @@ enum class TokenKind {
     Div,
     Eof,
     Eq,
+    Extern,
     Fn,
     Identifier,
     LBrace,

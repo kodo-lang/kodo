@@ -1,6 +1,7 @@
 #include <ir/Instructions.hh>
 
 #include <ir/BasicBlock.hh>
+#include <ir/Function.hh>
 #include <ir/Visitor.hh>
 
 #include <cassert>
@@ -61,7 +62,9 @@ void BranchInst::replace_uses_of_with(Value *orig, Value *repl) {
     REPL_VALUE(m_dst)
 }
 
-CallInst::CallInst(Function *callee) : Instruction(KIND), m_callee(callee) {}
+CallInst::CallInst(Function *callee) : Instruction(KIND), m_callee(callee) {
+    set_type(m_callee->return_type());
+}
 
 CallInst::~CallInst() {
     for (auto *arg : m_args) {
