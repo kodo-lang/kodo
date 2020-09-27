@@ -1,4 +1,6 @@
 add_executable(compiler
+    ast/Dumper.cc
+    ast/Nodes.cc
     ir/BasicBlock.cc
     ir/Dumper.cc
     ir/Function.cc
@@ -6,7 +8,6 @@ add_executable(compiler
     ir/Instructions.cc
     ir/Program.cc
     ir/Value.cc
-    Ast.cc
     CharStream.cc
     IrGen.cc
     Lexer.cc

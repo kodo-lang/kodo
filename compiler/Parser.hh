@@ -1,7 +1,7 @@
 #pragma once
 
-#include <Ast.hh>
 #include <Token.hh>
+#include <ast/Nodes.hh>
 
 #include <cassert>
 #include <memory>
@@ -31,12 +31,12 @@ class Parser {
     Result<Token> consume(TokenKind kind);
     Token expect(TokenKind kind);
 
-    AstNode *parse_expr();
-    void parse_stmt(FunctionDecl *);
+    ast::Node *parse_expr();
+    void parse_stmt(ast::FunctionDecl *);
     Type *parse_type();
 
 public:
     explicit Parser(Lexer *lexer) : m_lexer(lexer) {}
 
-    std::unique_ptr<RootNode> parse();
+    std::unique_ptr<ast::Root> parse();
 };

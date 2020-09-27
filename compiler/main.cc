@@ -1,9 +1,9 @@
-#include <Ast.hh>
 #include <CharStream.hh>
 #include <IrGen.hh>
 #include <LLVMGen.hh>
 #include <Lexer.hh>
 #include <Parser.hh>
+#include <ast/Dumper.hh>
 #include <ir/Dumper.hh>
 
 #include <llvm/ExecutionEngine/MCJIT.h>
@@ -44,8 +44,7 @@ int main() {
     Parser parser(&lexer);
 
     auto ast = parser.parse();
-    AstPrinter printer;
-    printer.accept(ast.get());
+    ast::dump(ast.get());
     std::cout << '\n';
 
     auto program = gen_ir(ast.get());

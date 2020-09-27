@@ -1,6 +1,5 @@
 #include <Parser.hh>
 
-#include <Ast.hh>
 #include <Lexer.hh>
 #include <Stack.hh>
 #include <Token.hh>
@@ -16,21 +15,21 @@ namespace {
 struct Op {
     bool unary;
     union {
-        BinOp bin_op;
-        UnaryOp unary_op;
+        ast::BinOp bin_op;
+        ast::UnaryOp unary_op;
     };
 };
 
-constexpr Result<BinOp> token_to_bin_op(const Token &token) {
+constexpr Result<ast::BinOp> token_to_bin_op(const Token &token) {
     switch (token.kind) {
     case TokenKind::Add:
-        return BinOp::Add;
+        return ast::BinOp::Add;
     case TokenKind::Sub:
-        return BinOp::Sub;
+        return ast::BinOp::Sub;
     case TokenKind::Mul:
-        return BinOp::Mul;
+        return ast::BinOp::Mul;
     case TokenKind::Div:
-        return BinOp::Div;
+        return ast::BinOp::Div;
     default:
         return false;
     }
@@ -41,11 +40,11 @@ constexpr int precedence(Op op) {
         return 3;
     }
     switch (op.bin_op) {
-    case BinOp::Add:
-    case BinOp::Sub:
+    case ast::BinOp::Add:
+    case ast::BinOp::Sub:
         return 1;
-    case BinOp::Mul:
-    case BinOp::Div:
+    case ast::BinOp::Mul:
+    case ast::BinOp::Div:
         return 2;
     }
 }
@@ -83,13 +82,13 @@ Token Parser::expect(TokenKind kind) {
     return next;
 }
 
-AstNode *Parser::parse_expr() {
-    Stack<AstNode *> operands;
+ast::Node *Parser::parse_expr() {
+    Stack<ast::Node *> operands;
     Stack<Op> operators;
     bool last_was_op = true;
     while (true) {
         if (operands.empty() && consume(TokenKind::Ampersand)) {
-            operands.push(new UnaryExpr(UnaryOp::AddressOf, parse_expr()));
+            operands.push(new ast::UnaryExpr(ast::UnaryOp::AddressOf, parse_expr()));
             continue;
         }
 
@@ -100,11 +99,11 @@ AstNode *Parser::parse_expr() {
             if (token.kind == TokenKind::Identifier) {
                 m_lexer->next();
                 if (m_lexer->peek().kind != TokenKind::LParen) {
-                    operands.push(new VarExpr(std::move(std::get<std::string>(token.data))));
+                    operands.push(new ast::VarExpr(std::move(std::get<std::string>(token.data))));
                     continue;
                 }
                 m_lexer->next();
-                auto *call_expr = new CallExpr(std::move(std::get<std::string>(token.data)));
+                auto *call_expr = new ast::CallExpr(std::move(std::get<std::string>(token.data)));
                 while (m_lexer->has_next()) {
                     if (m_lexer->peek().kind == TokenKind::RParen) {
                         break;
@@ -117,16 +116,16 @@ AstNode *Parser::parse_expr() {
                 continue;
             } else if (token.kind == TokenKind::NumLit) {
                 m_lexer->next();
-                operands.push(new NumLit(std::get<std::uint64_t>(token.data)));
+                operands.push(new ast::NumLit(std::get<std::uint64_t>(token.data)));
                 continue;
             }
             break;
         }
 
         Op op1 = {false, bin_op};
-        if (op1.bin_op == BinOp::Mul && last_was_op) {
+        if (op1.bin_op == ast::BinOp::Mul && last_was_op) {
             op1.unary = true;
-            op1.unary_op = UnaryOp::Deref;
+            op1.unary_op = ast::UnaryOp::Deref;
         }
         last_was_op = true;
 
@@ -139,10 +138,10 @@ AstNode *Parser::parse_expr() {
             auto op = operators.pop();
             auto *rhs = operands.pop();
             if (op.unary) {
-                operands.push(new UnaryExpr(op.unary_op, rhs));
+                operands.push(new ast::UnaryExpr(op.unary_op, rhs));
             } else {
                 auto *lhs = operands.pop();
-                operands.push(new BinExpr(op.bin_op, lhs, rhs));
+                operands.push(new ast::BinExpr(op.bin_op, lhs, rhs));
             }
         }
         operators.push(op1);
@@ -152,10 +151,10 @@ AstNode *Parser::parse_expr() {
         auto op = operators.pop();
         auto *rhs = operands.pop();
         if (op.unary) {
-            operands.push(new UnaryExpr(op.unary_op, rhs));
+            operands.push(new ast::UnaryExpr(op.unary_op, rhs));
         } else {
             auto *lhs = operands.pop();
-            operands.push(new BinExpr(op.bin_op, lhs, rhs));
+            operands.push(new ast::BinExpr(op.bin_op, lhs, rhs));
         }
     }
 
@@ -165,7 +164,7 @@ AstNode *Parser::parse_expr() {
     return operands.pop();
 }
 
-void Parser::parse_stmt(FunctionDecl *func) {
+void Parser::parse_stmt(ast::FunctionDecl *func) {
     switch (m_lexer->peek().kind) {
 //    case TokenKind::Identifier: {
 //        auto name = std::move(std::get<std::string>(expect(TokenKind::Identifier).data));
@@ -175,14 +174,14 @@ void Parser::parse_stmt(FunctionDecl *func) {
 //    }
     case TokenKind::Return:
         consume(TokenKind::Return);
-        func->add_stmt<RetStmt>(parse_expr());
+        func->add_stmt<ast::RetStmt>(parse_expr());
         break;
     case TokenKind::Var: {
         consume(TokenKind::Var);
         auto name = std::move(std::get<std::string>(expect(TokenKind::Identifier).data));
         expect(TokenKind::Colon);
         auto *type = parse_type();
-        auto *stmt = func->add_stmt<DeclStmt>(std::move(name), consume(TokenKind::Eq) ? parse_expr() : nullptr);
+        auto *stmt = func->add_stmt<ast::DeclStmt>(std::move(name), consume(TokenKind::Eq) ? parse_expr() : nullptr);
         stmt->set_type(type);
         break;
     }
@@ -215,8 +214,8 @@ Type *Parser::parse_type() {
     return type;
 }
 
-std::unique_ptr<RootNode> Parser::parse() {
-    auto root = std::make_unique<RootNode>();
+std::unique_ptr<ast::Root> Parser::parse() {
+    auto root = std::make_unique<ast::Root>();
     while (m_lexer->has_next() && m_lexer->peek().kind != TokenKind::Eof) {
         bool externed = consume(TokenKind::Extern);
         expect(TokenKind::Fn);
