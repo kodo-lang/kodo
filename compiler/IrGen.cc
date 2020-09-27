@@ -1,12 +1,12 @@
 #include <IrGen.hh>
 
-#include <Stack.hh>
 #include <ast/Nodes.hh>
 #include <ir/BasicBlock.hh>
 #include <ir/Constant.hh>
 #include <ir/Function.hh>
 #include <ir/Instructions.hh>
 #include <ir/Program.hh>
+#include <support/Stack.hh>
 
 #include <algorithm>
 #include <cassert>

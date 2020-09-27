@@ -1,9 +1,9 @@
 #include <Parser.hh>
 
 #include <Lexer.hh>
-#include <Stack.hh>
 #include <Token.hh>
 #include <Type.hh>
+#include <support/Stack.hh>
 
 #include <fmt/color.h>
 #include <fmt/core.h>
