@@ -59,7 +59,7 @@ std::string FunctionDumper::printable_value(const Value *value) {
 std::string FunctionDumper::type_string(const Type *type) {
     switch (type->kind()) {
     case TypeKind::Invalid:
-        assert(false);
+        return "invalid";
     case TypeKind::Int:
         return "i" + std::to_string(type->as<IntType>()->bit_width());
     case TypeKind::Pointer:

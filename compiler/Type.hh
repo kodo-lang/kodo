@@ -27,6 +27,14 @@ public:
     TypeKind kind() const { return m_kind; }
 };
 
+// TODO: Make cast system more like IR.
+struct InvalidType : public Type {
+    static constexpr auto kind = TypeKind::Invalid;
+    static const InvalidType *get();
+
+    InvalidType() noexcept : Type(kind) {}
+};
+
 class IntType : public Type {
     const int m_bit_width;
 

@@ -4,6 +4,10 @@
 #include <cassert>
 #include <utility>
 
+Value::Value(ValueKind kind) : m_kind(kind) {
+    set_type(InvalidType::get());
+}
+
 Value::~Value() {
     replace_all_uses_with(nullptr);
 }
@@ -46,7 +50,8 @@ void Value::set_name(std::string name) {
 }
 
 bool Value::has_type() const {
-    return m_type != nullptr;
+    assert(m_type != nullptr);
+    return !m_type->is<InvalidType>();
 }
 
 void Value::set_type(const Type *type) {

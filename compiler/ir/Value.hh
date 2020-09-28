@@ -26,7 +26,7 @@ class Value {
     std::vector<Value *> m_users;
 
 protected:
-    explicit Value(ValueKind kind) : m_kind(kind) {}
+    explicit Value(ValueKind kind);
 
 public:
     Value(const Value &) = delete;

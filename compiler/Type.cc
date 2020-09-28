@@ -4,10 +4,15 @@
 
 namespace {
 
+InvalidType s_invalid_type;
 std::unordered_map<int, IntType> s_int_types;
 std::unordered_map<const Type *, PointerType> s_pointer_types;
 
 } // namespace
+
+const InvalidType *InvalidType::get() {
+    return &s_invalid_type;
+}
 
 const IntType *IntType::get(int bit_width) {
     if (!s_int_types.contains(bit_width)) {

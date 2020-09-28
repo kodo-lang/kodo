@@ -48,8 +48,8 @@ int main() {
     std::cout << '\n';
 
     auto program = gen_ir(ast.get());
-    type_check(program.get());
     dump_ir(program.get());
+    type_check(program.get());
 
     llvm::LLVMContext context;
     auto module = gen_llvm(program.get(), &context);
