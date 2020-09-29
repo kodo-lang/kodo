@@ -62,7 +62,11 @@ void BranchInst::replace_uses_of_with(Value *orig, Value *repl) {
 }
 
 CallInst::CallInst(Function *callee, std::vector<Value *> args)
-    : Instruction(KIND), m_callee(callee), m_args(std::move(args)) {}
+    : Instruction(KIND), m_callee(callee), m_args(std::move(args)) {
+    for (auto *arg : m_args) {
+        arg->add_user(this);
+    }
+}
 
 CallInst::~CallInst() {
     for (auto *arg : m_args) {

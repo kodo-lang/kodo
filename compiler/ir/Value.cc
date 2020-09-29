@@ -29,6 +29,9 @@ void Value::remove_user(Value *user) {
 }
 
 void Value::replace_all_uses_with(Value *repl) {
+    if (repl == this) {
+        return;
+    }
     for (auto *user : m_users) {
         user->replace_uses_of_with(this, repl);
     }
