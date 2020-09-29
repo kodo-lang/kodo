@@ -124,8 +124,8 @@ void FunctionDumper::visit(BinaryInst *binary) {
         std::cout << "div ";
         break;
     }
-    std::cout << type_string(binary->type()) << ' ' << printable_value(binary->lhs());
-    std::cout << ", " << printable_value(binary->rhs());
+    std::cout << type_string(binary->lhs()->type()) << ' ' << printable_value(binary->lhs());
+    std::cout << ", " << type_string(binary->rhs()->type()) << ' ' << printable_value(binary->rhs());
 }
 
 void FunctionDumper::visit(BranchInst *) {
@@ -141,6 +141,7 @@ void FunctionDumper::visit(CallInst *call) {
             std::cout << ", ";
         }
         first = false;
+        std::cout << type_string(arg->type()) << ' ';
         std::cout << printable_value(arg);
     }
     std::cout << ')';
