@@ -81,6 +81,35 @@ public:
     const std::vector<Value *> &args() const { return m_args; }
 };
 
+enum class CastOp {
+    Extend,
+    IntToPtr,
+    PtrToInt,
+    Truncate,
+};
+
+class CastInst : public Instruction {
+    CastOp m_op;
+    Value *m_val;
+
+public:
+    static constexpr auto KIND = InstKind::Cast;
+
+    CastInst(CastOp op, const Type *type, Value *val);
+    CastInst(const CastInst &) = delete;
+    CastInst(CastInst &&) = delete;
+    ~CastInst() override;
+
+    CastInst &operator=(const CastInst &) = delete;
+    CastInst &operator=(CastInst &&) = delete;
+
+    void accept(Visitor *visitor) override;
+    void replace_uses_of_with(Value *orig, Value *repl) override;
+
+    CastOp op() const { return m_op; }
+    Value *val() const { return m_val; }
+};
+
 class LoadInst : public Instruction {
     Value *m_ptr;
 

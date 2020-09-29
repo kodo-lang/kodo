@@ -86,7 +86,30 @@ void CallInst::replace_uses_of_with(Value *orig, Value *repl) {
     }
 }
 
-LoadInst::LoadInst(Value *ptr) : Instruction(KIND), m_ptr(ptr) {
+CastInst::CastInst(CastOp op, const Type *type, Value *val)
+    : Instruction(KIND), m_op(op), m_val(val) {
+    m_val->add_user(this);
+    set_type(type);
+}
+
+CastInst::~CastInst() {
+    if (m_val != nullptr) {
+        m_val->remove_user(this);
+    }
+}
+
+void CastInst::accept(Visitor *visitor) {
+    visitor->visit(this);
+}
+
+// TODO: Figure out what's breaking clang-format here.
+// clang-format off
+void CastInst::replace_uses_of_with(Value *orig, Value *repl) {
+    REPL_VALUE(m_val)
+} // clang-format on
+
+LoadInst::LoadInst(Value *ptr)
+    : Instruction(KIND), m_ptr(ptr) {
     m_ptr->add_user(this);
 }
 

@@ -35,6 +35,7 @@ public:
 
     llvm::Value *gen_binary(const BinaryInst *);
     llvm::Value *gen_call(const CallInst *);
+    llvm::Value *gen_cast(const CastInst *);
     llvm::Value *gen_load(const LoadInst *);
     void gen_store(const StoreInst *);
     void gen_ret(const RetInst *);
@@ -101,6 +102,17 @@ llvm::Value *LLVMGen::gen_call(const CallInst *call) {
     return m_llvm_builder.CreateCall(callee, args);
 }
 
+llvm::Value *LLVMGen::gen_cast(const CastInst *cast) {
+    auto *type = llvm_type(cast->type());
+    auto *value = llvm_value(cast->val());
+    switch (cast->op()) {
+    case CastOp::Extend:
+        return m_llvm_builder.CreateSExt(value, type);
+    default:
+        assert(false);
+    }
+}
+
 llvm::Value *LLVMGen::gen_load(const LoadInst *load) {
     return m_llvm_builder.CreateLoad(llvm_value(load->ptr()));
 }
@@ -127,6 +139,8 @@ llvm::Value *LLVMGen::gen_instruction(const Instruction *instruction) {
         return gen_binary(instruction->as<BinaryInst>());
     case InstKind::Call:
         return gen_call(instruction->as<CallInst>());
+    case InstKind::Cast:
+        return gen_cast(instruction->as<CastInst>());
     case InstKind::Load:
         return gen_load(instruction->as<LoadInst>());
     case InstKind::Store:

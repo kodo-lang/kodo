@@ -21,6 +21,7 @@ public:
     void visit(BinaryInst *) override;
     void visit(BranchInst *) override;
     void visit(CallInst *) override;
+    void visit(CastInst *) override;
     void visit(CompareInst *) override;
     void visit(CondBranchInst *) override;
     void visit(LoadInst *) override;
@@ -64,6 +65,10 @@ void TypeChecker::visit(CallInst *call) {
         assert(arg->type() == param->type());
     }
     call->set_type(callee->return_type());
+}
+
+void TypeChecker::visit(CastInst *) {
+    assert(false);
 }
 
 void TypeChecker::visit(CompareInst *) {

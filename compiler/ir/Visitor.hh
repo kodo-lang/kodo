@@ -3,6 +3,7 @@
 class BinaryInst;
 class BranchInst;
 class CallInst;
+class CastInst;
 class CompareInst;
 class CondBranchInst;
 class LoadInst;
@@ -14,6 +15,7 @@ struct Visitor {
     virtual void visit(BinaryInst *) = 0;
     virtual void visit(BranchInst *) = 0;
     virtual void visit(CallInst *) = 0;
+    virtual void visit(CastInst *) = 0;
     virtual void visit(CompareInst *) = 0;
     virtual void visit(CondBranchInst *) = 0;
     virtual void visit(LoadInst *) = 0;

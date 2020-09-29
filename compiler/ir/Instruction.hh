@@ -11,6 +11,7 @@ class Visitor;
 enum class InstKind {
     // Arithmetic/Logic instructions.
     Binary,
+    Cast,
     Compare,
 
     // Control flow instructions.

@@ -28,6 +28,7 @@ public:
     void visit(BinaryInst *) override;
     void visit(BranchInst *) override;
     void visit(CallInst *) override;
+    void visit(CastInst *) override;
     void visit(CompareInst *) override;
     void visit(CondBranchInst *) override;
     void visit(LoadInst *) override;
@@ -145,6 +146,26 @@ void FunctionDumper::visit(CallInst *call) {
         std::cout << printable_value(arg);
     }
     std::cout << ')';
+}
+
+void FunctionDumper::visit(CastInst *cast) {
+    auto cast_op_string = [](CastOp op) {
+        switch (op) {
+        case CastOp::Extend:
+            return "extend";
+        case CastOp::IntToPtr:
+            return "int_to_ptr";
+        case CastOp::PtrToInt:
+            return "ptr_to_int";
+        case CastOp::Truncate:
+            return "truncate";
+        }
+    };
+    std::cout << printable_value(cast) << " = ";
+    std::cout << "cast " << type_string(cast->val()->type()) << ' ';
+    std::cout << printable_value(cast->val()) << " -> ";
+    std::cout << type_string(cast->type()) << " (";
+    std::cout << cast_op_string(cast->op()) << ')';
 }
 
 void FunctionDumper::visit(CompareInst *) {
