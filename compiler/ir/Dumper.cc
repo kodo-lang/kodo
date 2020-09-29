@@ -68,11 +68,40 @@ std::string FunctionDumper::type_string(const Type *type) {
 }
 
 void FunctionDumper::dump(const Function *function) {
+    std::cout << type_string(function->return_type()) << ' ';
+    std::cout << function->name() << '(';
+    for (bool first = true; const auto *arg : function->args()) {
+        if (!first) {
+            std::cout << ", ";
+        }
+        first = false;
+        std::cout << type_string(arg->type()) << ' ';
+        std::cout << arg->name();
+    }
+    std::cout << ')';
+
+    if (function->vars().empty() && (function->begin() == function->end())) {
+        std::cout << ";\n";
+        return;
+    }
+
+    std::cout << ":\n";
+    std::cout << "  vars = [";
+    for (bool first = true; const auto *var : function->vars()) {
+        if (!first) {
+            std::cout << ", ";
+        }
+        first = false;
+        std::cout << type_string(var->var_type()) << ' ';
+        std::cout << printable_value(var);
+    }
+    std::cout << "]\n";
+
     for (const auto *block : *function) {
-        std::cout << printable_block(block) << ":\n";
+        std::cout << "  " << printable_block(block) << ":\n";
         for (const auto *inst : *block) {
             // TODO: Add const visitor and remove const_cast here.
-            std::cout << "  ";
+            std::cout << "    ";
             const_cast<Instruction *>(inst)->accept(this);
             std::cout << '\n';
         }
