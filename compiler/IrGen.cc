@@ -142,9 +142,7 @@ Value *IrGen::gen_call_expr(const ast::CallExpr *call_expr) {
 }
 
 Value *IrGen::gen_num_lit(const ast::NumLit *num_lit) {
-    auto *constant = new Constant(num_lit->value());
-    constant->set_type(IntType::get(32));
-    return constant;
+    return new Constant(num_lit->value());
 }
 
 Value *IrGen::gen_symbol(const ast::Symbol *symbol) {

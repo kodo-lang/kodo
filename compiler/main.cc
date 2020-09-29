@@ -18,8 +18,8 @@
 #include <sstream>
 
 constexpr const char *INPUT = R"(
-extern fn getchar() => i32;
-extern fn malloc(size: i32) => *i32;
+// extern some libc functions.
+extern fn malloc(size: i64) => *i32;
 extern fn putchar(character: i32) => i32;
 
 fn main() => i32 {
@@ -32,8 +32,11 @@ fn main() => i32 {
     putchar(*h);
     putchar(*i);
     putchar(*newline);
-    getchar();
-    return 0;
+
+    // Implicit int extension cast.
+    var foo: i16 = 5;
+    var bar: i32 = foo + 5;
+    return bar;
 }
 )";
 
@@ -48,8 +51,9 @@ int main() {
     std::cout << '\n';
 
     auto program = gen_ir(ast.get());
-    dump_ir(program.get());
     type_check(program.get());
+    dump_ir(program.get());
+    std::cout << '\n';
 
     llvm::LLVMContext context;
     auto module = gen_llvm(program.get(), &context);

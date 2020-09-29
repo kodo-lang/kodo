@@ -1,6 +1,7 @@
 #include <TypeChecker.hh>
 
 #include <ir/BasicBlock.hh>
+#include <ir/Constant.hh>
 #include <ir/Function.hh>
 #include <ir/Instructions.hh>
 #include <ir/Program.hh>
@@ -13,6 +14,11 @@ namespace {
 class TypeChecker : public Visitor {
     Program *const m_program;
     Function *m_function{nullptr};
+    BasicBlock *m_block{nullptr};
+    BasicBlock::iterator m_insert_pos{nullptr};
+
+    Value *build_coerce_cast(Value *value, const Type *type, CastOp op);
+    Value *coerce(Value *value, const Type *type);
 
 public:
     explicit TypeChecker(Program *program) : m_program(program) {}
@@ -30,6 +36,63 @@ public:
     void visit(RetInst *) override;
 };
 
+const Type *resulting_type(const IntType *lhs, const IntType *rhs) {
+    return lhs->bit_width() > rhs->bit_width() ? lhs : rhs;
+}
+
+const Type *resulting_type(const IntType *lhs, const Type *rhs) {
+    switch (rhs->kind()) {
+    case TypeKind::Invalid:
+        return lhs;
+    case TypeKind::Int:
+        return resulting_type(lhs, rhs->as<IntType>());
+    case TypeKind::Pointer:
+        assert(false);
+    default:
+        assert(false);
+    }
+}
+
+const Type *resulting_type(const Type *lhs, const Type *rhs) {
+    if (lhs == rhs) {
+        return lhs;
+    }
+    switch (lhs->kind()) {
+    case TypeKind::Int:
+        return resulting_type(lhs->as<IntType>(), rhs);
+    case TypeKind::Pointer:
+        assert(false);
+    default:
+        assert(false);
+    }
+}
+
+Value *TypeChecker::build_coerce_cast(Value *value, const Type *type, CastOp op) {
+    if (auto *constant = value->as<Constant>()) {
+        auto new_constant = new Constant(constant->value());
+        new_constant->set_type(type);
+        return new_constant;
+    }
+    return m_block->insert<CastInst>(m_insert_pos, op, type, value);
+}
+
+Value *TypeChecker::coerce(Value *value, const Type *type) {
+    assert(!type->is<InvalidType>());
+    if (value->type() == type) {
+        return value;
+    }
+    if (value->type()->is<InvalidType>()) {
+        return build_coerce_cast(value, type, CastOp::Extend);
+    }
+    if (value->type()->is<IntType>() && type->is<IntType>()) {
+        const auto *from_type = value->type()->as<IntType>();
+        const auto *to_type = type->as<IntType>();
+        assert(to_type->bit_width() > from_type->bit_width());
+        return build_coerce_cast(value, to_type, CastOp::Extend);
+    }
+    assert(false);
+}
+
 void TypeChecker::check(Function *function) {
     m_function = function;
     assert(function->return_type() != nullptr);
@@ -40,17 +103,22 @@ void TypeChecker::check(Function *function) {
         var->set_type(PointerType::get(var->var_type()));
     }
     for (auto *block : *function) {
+        m_block = block;
+        m_insert_pos = m_block->begin();
         for (auto *inst : *block) {
             inst->accept(this);
+            ++m_insert_pos;
         }
     }
 }
 
 void TypeChecker::visit(BinaryInst *binary) {
-    assert(binary->lhs()->has_type());
-    assert(binary->rhs()->has_type());
-    assert(binary->lhs()->type() == binary->rhs()->type());
-    binary->set_type(binary->lhs()->type());
+    auto *lhs = binary->lhs();
+    auto *rhs = binary->rhs();
+    const auto *type = resulting_type(lhs->type(), rhs->type());
+    binary->set_type(type);
+    lhs->replace_all_uses_with(coerce(lhs, type));
+    rhs->replace_all_uses_with(coerce(rhs, type));
 }
 
 void TypeChecker::visit(BranchInst *) {
@@ -62,7 +130,7 @@ void TypeChecker::visit(CallInst *call) {
     assert(call->args().size() == callee->args().size());
     for (int i = 0; auto *param : callee->args()) {
         auto *arg = call->args().at(i++);
-        assert(arg->type() == param->type());
+        call->replace_uses_of_with(arg, coerce(arg, param->type()));
     }
     call->set_type(callee->return_type());
 }
@@ -80,9 +148,9 @@ void TypeChecker::visit(CondBranchInst *) {
 }
 
 void TypeChecker::visit(LoadInst *load) {
-    const auto *ptr_type = load->ptr()->type();
-    assert(ptr_type->is<PointerType>());
-    load->set_type(ptr_type->as<PointerType>()->pointee_type());
+    assert(load->ptr()->type()->is<PointerType>());
+    const auto *ptr_type = load->ptr()->type()->as<PointerType>();
+    load->set_type(ptr_type->pointee_type());
 }
 
 void TypeChecker::visit(PhiInst *) {
@@ -90,12 +158,15 @@ void TypeChecker::visit(PhiInst *) {
 }
 
 void TypeChecker::visit(StoreInst *store) {
-    assert(store->ptr()->type() == PointerType::get(store->val()->type()));
+    assert(store->ptr()->type()->is<PointerType>());
+    const auto *ptr_type = store->ptr()->type()->as<PointerType>();
+    const auto *type = resulting_type(ptr_type->pointee_type(), store->val()->type());
+    store->replace_uses_of_with(store->val(), coerce(store->val(), type));
 }
 
 void TypeChecker::visit(RetInst *ret) {
     const auto *expected_type = m_function->return_type();
-    assert(ret->val()->type() == expected_type);
+    ret->replace_uses_of_with(ret->val(), coerce(ret->val(), expected_type));
 }
 
 } // namespace
