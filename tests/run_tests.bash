@@ -1,8 +1,9 @@
 #!/bin/bash
 
+COMPILER=$1
 run_test() {
     printf "Running test '%s' " $1
-    OUTPUT=$(./build-debug/compiler/compiler --silent tests/$1)
+    OUTPUT=$($COMPILER --silent $(dirname $0)/$1)
     if [ $2 -ne $? ] || [ "$3" != "$OUTPUT" ]
     then
         printf "\u001b[31mFAILED\u001b[0m\n"
