@@ -13,36 +13,18 @@
 #include <llvm/Support/TargetSelect.h>
 #include <llvm/Support/raw_ostream.h>
 
+#include <fstream>
 #include <iostream>
 #include <memory>
-#include <sstream>
 
-constexpr const char *INPUT = R"(
-// extern some libc functions.
-extern fn malloc(size: i64) => *i32;
-extern fn putchar(character: i32) => i32;
+int main(int argc, char **argv) {
+    if (argc != 2) {
+        std::cout << "Usage: " << argv[0] << " <source>\n";
+        exit(1);
+    }
 
-fn main() => i32 {
-    var h: *i32 = malloc(1);
-    var i: *i32 = malloc(1);
-    var newline: *i32 = malloc(1);
-    *h = 72;
-    *i = 105;
-    *newline = 10;
-    putchar(*h);
-    putchar(*i);
-    putchar(*newline);
-
-    // Implicit int extension cast.
-    var foo: i16 = 5;
-    var bar: i32 = foo + 5;
-    return bar;
-}
-)";
-
-int main() {
-    std::istringstream istream(INPUT);
-    CharStream stream(&istream);
+    std::ifstream ifstream(argv[1]);
+    CharStream stream(&ifstream);
     Lexer lexer(&stream);
     Parser parser(&lexer);
 
