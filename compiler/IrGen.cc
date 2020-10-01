@@ -146,16 +146,16 @@ Value *IrGen::gen_bin_expr(const ast::BinExpr *bin_expr) {
 }
 
 Value *IrGen::gen_call_expr(const ast::CallExpr *call_expr) {
+    std::vector<Value *> args;
+    for (const auto *ast_arg : call_expr->args()) {
+        args.push_back(gen_expr(ast_arg));
+    }
     auto it = std::find_if(m_program->begin(), m_program->end(), [call_expr](const Function *function) {
         return function->name() == call_expr->name();
     });
     if (it == m_program->end()) {
         add_node_error(call_expr, "no function named '{}' in current context", call_expr->name());
         return new Constant(0);
-    }
-    std::vector<Value *> args;
-    for (const auto *ast_arg : call_expr->args()) {
-        args.push_back(gen_expr(ast_arg));
     }
     return m_block->append<CallInst>(*it, std::move(args));
 }
