@@ -17,7 +17,7 @@ class AssignExpr : public Node {
 public:
     static constexpr auto KIND = NodeKind::AssignExpr;
 
-    AssignExpr(const Node *lhs, const Node *rhs) : Node(KIND), m_lhs(lhs), m_rhs(rhs) {}
+    AssignExpr(int line, const Node *lhs, const Node *rhs) : Node(KIND, line), m_lhs(lhs), m_rhs(rhs) {}
 
     void accept(Visitor *visitor) const override;
 
@@ -40,7 +40,7 @@ class BinExpr : public Node {
 public:
     static constexpr auto KIND = NodeKind::BinExpr;
 
-    BinExpr(BinOp op, const Node *lhs, const Node *rhs) : Node(KIND), m_op(op), m_lhs(lhs), m_rhs(rhs) {}
+    BinExpr(int line, BinOp op, const Node *lhs, const Node *rhs) : Node(KIND, line), m_op(op), m_lhs(lhs), m_rhs(rhs) {}
 
     void accept(Visitor *visitor) const override;
 
@@ -56,7 +56,7 @@ class CallExpr : public Node {
 public:
     static constexpr auto KIND = NodeKind::CallExpr;
 
-    explicit CallExpr(std::string name) : Node(KIND), m_name(std::move(name)) {}
+    CallExpr(int line, std::string name) : Node(KIND, line), m_name(std::move(name)) {}
 
     void accept(Visitor *visitor) const override;
     void add_arg(const Node *arg) { m_args.insert(m_args.end(), arg); }
@@ -73,8 +73,8 @@ class DeclStmt : public Node {
 public:
     static constexpr auto KIND = NodeKind::DeclStmt;
 
-    DeclStmt(std::string name, const Type *type, const Node *init_val)
-        : Node(KIND), m_name(std::move(name)), m_type(type), m_init_val(init_val) {}
+    DeclStmt(int line, std::string name, const Type *type, const Node *init_val)
+        : Node(KIND, line), m_name(std::move(name)), m_type(type), m_init_val(init_val) {}
 
     void accept(Visitor *visitor) const override;
 
@@ -90,7 +90,7 @@ class FunctionArg : public Node {
 public:
     static constexpr auto KIND = NodeKind::FunctionArg;
 
-    FunctionArg(std::string name, const Type *type) : Node(KIND), m_name(std::move(name)), m_type(type) {}
+    FunctionArg(int line, std::string name, const Type *type) : Node(KIND, line), m_name(std::move(name)), m_type(type) {}
 
     void accept(Visitor *visitor) const override;
 
@@ -108,7 +108,7 @@ class FunctionDecl : public Node {
 public:
     static constexpr auto KIND = NodeKind::FunctionDecl;
 
-    FunctionDecl(std::string name, bool externed) : Node(KIND), m_name(std::move(name)), m_externed(externed) {}
+    FunctionDecl(int line, std::string name, bool externed) : Node(KIND, line), m_name(std::move(name)), m_externed(externed) {}
 
     void accept(Visitor *visitor) const override;
     void set_return_type(const Type *return_type) { m_return_type = return_type; }
@@ -139,7 +139,7 @@ class NumLit : public Node {
 public:
     static constexpr auto KIND = NodeKind::NumLit;
 
-    explicit NumLit(std::uint64_t value) : Node(KIND), m_value(value) {}
+    NumLit(int line, std::uint64_t value) : Node(KIND, line), m_value(value) {}
 
     void accept(Visitor *visitor) const override;
 
@@ -152,7 +152,7 @@ class RetStmt : public Node {
 public:
     static constexpr auto KIND = NodeKind::RetStmt;
 
-    explicit RetStmt(const Node *val) : Node(KIND), m_val(val) {}
+    RetStmt(int line, const Node *val) : Node(KIND, line), m_val(val) {}
 
     void accept(Visitor *visitor) const override;
 
@@ -165,7 +165,7 @@ class Root : public Node {
 public:
     static constexpr auto KIND = NodeKind::Root;
 
-    Root() : Node(KIND) {}
+    Root() : Node(KIND, 0) {}
 
     void accept(Visitor *visitor) const override;
 
@@ -183,7 +183,7 @@ class Symbol : public Node {
 public:
     static constexpr auto KIND = NodeKind::Symbol;
 
-    explicit Symbol(std::string name) : Node(KIND), m_name(std::move(name)) {}
+    Symbol(int line, std::string name) : Node(KIND, line), m_name(std::move(name)) {}
 
     void accept(Visitor *visitor) const override;
 
@@ -202,7 +202,7 @@ class UnaryExpr : public Node {
 public:
     static constexpr auto KIND = NodeKind::UnaryExpr;
 
-    UnaryExpr(UnaryOp op, const Node *val) : Node(KIND), m_op(op), m_val(val) {}
+    UnaryExpr(int line, UnaryOp op, const Node *val) : Node(KIND, line), m_op(op), m_val(val) {}
 
     void accept(Visitor *visitor) const override;
 

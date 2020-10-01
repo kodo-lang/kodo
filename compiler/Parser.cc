@@ -54,34 +54,35 @@ ast::Node *create_expr(Op op, Stack<ast::Node *> *operands) {
     auto *rhs = operands->pop();
     switch (op) {
     case Op::AddressOf:
-        return new ast::UnaryExpr(ast::UnaryOp::AddressOf, rhs);
+        return new ast::UnaryExpr(rhs->line(), ast::UnaryOp::AddressOf, rhs);
     case Op::Deref:
-        return new ast::UnaryExpr(ast::UnaryOp::Deref, rhs);
+        return new ast::UnaryExpr(rhs->line(), ast::UnaryOp::Deref, rhs);
     default:
         break;
     }
     auto *lhs = operands->pop();
     switch (op) {
     case Op::Add:
-        return new ast::BinExpr(ast::BinOp::Add, lhs, rhs);
+        return new ast::BinExpr(rhs->line(), ast::BinOp::Add, lhs, rhs);
     case Op::Sub:
-        return new ast::BinExpr(ast::BinOp::Sub, lhs, rhs);
+        return new ast::BinExpr(rhs->line(), ast::BinOp::Sub, lhs, rhs);
     case Op::Mul:
-        return new ast::BinExpr(ast::BinOp::Mul, lhs, rhs);
+        return new ast::BinExpr(rhs->line(), ast::BinOp::Mul, lhs, rhs);
     case Op::Div:
-        return new ast::BinExpr(ast::BinOp::Div, lhs, rhs);
+        return new ast::BinExpr(rhs->line(), ast::BinOp::Div, lhs, rhs);
     case Op::Assign:
-        return new ast::AssignExpr(lhs, rhs);
+        return new ast::AssignExpr(rhs->line(), lhs, rhs);
     default:
         assert(false);
     }
 }
 
-template <typename FmtString, typename... Args>
-[[noreturn]] void error(const FmtString &fmt, const Args &... args) {
+template <typename FmtStr, typename... Args>
+[[noreturn]] void error(const FmtStr &fmt, const Args &... args) {
     auto formatted = fmt::format(fmt, args...);
-    fmt::print(fmt::fg(fmt::color::orange_red), "parser: {}\n", formatted);
-    abort();
+    fmt::print(fmt::fg(fmt::color::orange_red), "error: {}\n", formatted);
+    fmt::print(fmt::fg(fmt::color::orange_red), " note: Aborting due to previous errors\n");
+    exit(1);
 }
 
 } // namespace
@@ -102,7 +103,7 @@ Token Parser::expect(TokenKind kind) {
 }
 
 ast::CallExpr *Parser::parse_call_expr(std::string name) {
-    auto *call_expr = new ast::CallExpr(std::move(name));
+    auto *call_expr = new ast::CallExpr(m_lexer->line(), std::move(name));
     m_lexer->next();
     while (m_lexer->has_next()) {
         if (m_lexer->peek().kind == TokenKind::RParen) {
@@ -149,12 +150,12 @@ ast::Node *Parser::parse_expr() {
                 if (m_lexer->peek().kind == TokenKind::LParen) {
                     operands.push(parse_call_expr(std::move(name)));
                 } else {
-                    operands.push(new ast::Symbol(std::move(name)));
+                    operands.push(new ast::Symbol(m_lexer->line(), std::move(name)));
                 }
                 break;
             }
             case TokenKind::NumLit:
-                operands.push(new ast::NumLit(std::get<std::uint64_t>(m_lexer->next().data)));
+                operands.push(new ast::NumLit(m_lexer->line(), std::get<std::uint64_t>(m_lexer->next().data)));
                 break;
             default:
                 keep_parsing = false;
@@ -190,7 +191,7 @@ void Parser::parse_stmt(ast::FunctionDecl *func) {
     switch (m_lexer->peek().kind) {
     case TokenKind::Return:
         consume(TokenKind::Return);
-        func->add_stmt<ast::RetStmt>(parse_expr());
+        func->add_stmt<ast::RetStmt>(m_lexer->line(), parse_expr());
         break;
     case TokenKind::Var: {
         consume(TokenKind::Var);
@@ -198,7 +199,7 @@ void Parser::parse_stmt(ast::FunctionDecl *func) {
         expect(TokenKind::Colon);
         const auto *type = parse_type();
         const auto *init_val = consume(TokenKind::Eq) ? parse_expr() : nullptr;
-        func->add_stmt<ast::DeclStmt>(std::move(name), type, init_val);
+        func->add_stmt<ast::DeclStmt>(m_lexer->line(), std::move(name), type, init_val);
         break;
     }
     default:
@@ -236,12 +237,12 @@ std::unique_ptr<ast::Root> Parser::parse() {
         bool externed = consume(TokenKind::Extern).has_value();
         expect(TokenKind::Fn);
         auto name = expect(TokenKind::Identifier);
-        auto *func = root->add_function(std::move(std::get<std::string>(name.data)), externed);
+        auto *func = root->add_function(m_lexer->line(), std::move(std::get<std::string>(name.data)), externed);
         expect(TokenKind::LParen);
         while (m_lexer->peek().kind != TokenKind::RParen) {
             auto arg_name = expect(TokenKind::Identifier);
             expect(TokenKind::Colon);
-            auto *arg = func->add_arg(std::move(std::get<std::string>(arg_name.data)), parse_type());
+            func->add_arg(m_lexer->line(), std::move(std::get<std::string>(arg_name.data)), parse_type());
             consume(TokenKind::Comma);
         }
         expect(TokenKind::RParen);

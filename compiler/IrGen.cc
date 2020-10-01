@@ -8,8 +8,12 @@
 #include <ir/Program.hh>
 #include <support/Stack.hh>
 
+#include <fmt/color.h>
+#include <fmt/core.h>
+
 #include <algorithm>
 #include <cassert>
+#include <string>
 #include <string_view>
 #include <unordered_map>
 #include <utility>
@@ -48,11 +52,15 @@ class IrGen {
     Function *m_function{nullptr};
     BasicBlock *m_block{nullptr};
     Stack<Scope> m_scope_stack;
+    std::vector<std::string> m_errors;
 
     enum class DerefState {
         Deref,
         DontDeref,
     } m_deref_state {DerefState::Deref};
+
+    template <typename FmtStr, typename... Args>
+    void add_node_error(const ast::Node *, const FmtStr &, const Args &... args);
 
 public:
     IrGen();
@@ -74,6 +82,7 @@ public:
 
     void gen_function_decl(const ast::FunctionDecl *);
 
+    const std::vector<std::string> &errors() { return m_errors; }
     std::unique_ptr<Program> program() { return std::move(m_program); }
 };
 
@@ -92,6 +101,13 @@ void Scope::put_var(std::string_view name, Value *value) {
 
 IrGen::IrGen() {
     m_program = std::make_unique<Program>();
+}
+
+template <typename FmtStr, typename... Args>
+void IrGen::add_node_error(const ast::Node *node, const FmtStr &fmt, const Args &... args) {
+    auto formatted = fmt::format(fmt, args...);
+    auto error = fmt::format(fmt::fg(fmt::color::orange_red), "error:");
+    m_errors.push_back(fmt::format("{} {} on line {}\n", error, formatted, node->line()));
 }
 
 Value *IrGen::gen_address_of(const ast::Node *expr) {
@@ -133,7 +149,10 @@ Value *IrGen::gen_call_expr(const ast::CallExpr *call_expr) {
     auto it = std::find_if(m_program->begin(), m_program->end(), [call_expr](const Function *function) {
         return function->name() == call_expr->name();
     });
-    assert(it != m_program->end());
+    if (it == m_program->end()) {
+        add_node_error(call_expr, "no function named '{}' in current context", call_expr->name());
+        return new Constant(0);
+    }
     std::vector<Value *> args;
     for (const auto *ast_arg : call_expr->args()) {
         args.push_back(gen_expr(ast_arg));
@@ -147,7 +166,10 @@ Value *IrGen::gen_num_lit(const ast::NumLit *num_lit) {
 
 Value *IrGen::gen_symbol(const ast::Symbol *symbol) {
     auto *var = m_scope_stack.peek().find_var(symbol->name());
-    assert(var != nullptr);
+    if (var == nullptr) {
+        add_node_error(symbol, "no symbol named '{}' in current context", symbol->name());
+        return new Constant(0);
+    }
     return m_deref_state == DerefState::Deref ? m_block->append<LoadInst>(var) : var;
 }
 
@@ -243,6 +265,14 @@ std::unique_ptr<Program> gen_ir(const ast::Root *root) {
     IrGen gen;
     for (const auto *function : root->functions()) {
         gen.gen_function_decl(function);
+    }
+
+    for (const auto &error : gen.errors()) {
+        fmt::print(error);
+    }
+    if (!gen.errors().empty()) {
+        fmt::print(fmt::fg(fmt::color::orange_red), " note: Aborting due to previous errors\n");
+        exit(1);
     }
     return gen.program();
 }
