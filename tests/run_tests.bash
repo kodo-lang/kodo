@@ -4,13 +4,12 @@ COMPILER=$1
 run_test() {
     printf "Running test '%s' " $1
     OUTPUT=$($COMPILER --silent $(dirname $0)/$1)
-    if [ $2 -ne $? ] || [ "$3" != "$OUTPUT" ]
+    RET=$?
+    OUTPUT_STRIPPED=$(echo "$OUTPUT" | sed 's/\x1b\[[0-9;]*m//g')
+    if [ $2 -ne $RET ] || [ "$3" != "$OUTPUT_STRIPPED" ]
     then
         printf "\u001b[31mFAILED\u001b[0m\n"
-        OUTPUT=${OUTPUT::-5}
-        while IFS= read -r line; do
-            printf "  %s\n" "$line"
-        done <<< "$OUTPUT"
+        printf "%s" "$(echo "$OUTPUT" | sed 's/^/  /g')"
         printf "\u001b[0m"
     else
         printf "\u001b[32mOK\u001b[0m\n"
@@ -20,3 +19,6 @@ run_test() {
 run_test "implicit_extension.lang" 10 ""
 run_test "libc_hi.lang" 0 "Hi"
 run_test "malloc.lang" 0 "A"
+run_test "unknown_symbols.lang" 1 "error: no symbol named 'bar' in current context on line 1
+error: no function named 'test' in current context on line 1
+ note: Aborting due to previous errors"
