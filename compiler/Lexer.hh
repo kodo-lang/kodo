@@ -6,7 +6,7 @@ class CharStream;
 
 class Lexer {
     CharStream *const m_stream;
-    int m_line{0};
+    int m_line{1};
 
     bool m_peek_ready{false};
     Token m_peek_token{};
