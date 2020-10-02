@@ -17,6 +17,10 @@ bool Instruction::has_parent() const {
     return m_parent != nullptr;
 }
 
+void Instruction::set_line(int line) {
+    m_line = line;
+}
+
 void Instruction::set_parent(BasicBlock *parent) {
     m_parent = parent;
 }

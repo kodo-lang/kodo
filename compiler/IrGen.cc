@@ -60,7 +60,7 @@ class IrGen {
     } m_deref_state {DerefState::Deref};
 
     template <typename FmtStr, typename... Args>
-    void add_node_error(const ast::Node *, const FmtStr &, const Args &... args);
+    void add_node_error(const ast::Node *node, const FmtStr &fmt, const Args &... args);
 
 public:
     IrGen();
@@ -157,7 +157,9 @@ Value *IrGen::gen_call_expr(const ast::CallExpr *call_expr) {
         add_node_error(call_expr, "no function named '{}' in current context", call_expr->name());
         return new Constant(0);
     }
-    return m_block->append<CallInst>(*it, std::move(args));
+    auto *call = m_block->append<CallInst>(*it, std::move(args));
+    call->set_line(call_expr->line());
+    return call;
 }
 
 Value *IrGen::gen_num_lit(const ast::NumLit *num_lit) {
@@ -170,7 +172,12 @@ Value *IrGen::gen_symbol(const ast::Symbol *symbol) {
         add_node_error(symbol, "no symbol named '{}' in current context", symbol->name());
         return new Constant(0);
     }
-    return m_deref_state == DerefState::Deref ? m_block->append<LoadInst>(var) : var;
+    if (m_deref_state == DerefState::DontDeref) {
+        return var;
+    }
+    auto *load = m_block->append<LoadInst>(var);
+    load->set_line(symbol->line());
+    return load;
 }
 
 Value *IrGen::gen_unary_expr(const ast::UnaryExpr *unary_expr) {
@@ -266,7 +273,6 @@ std::unique_ptr<Program> gen_ir(const ast::Root *root) {
     for (const auto *function : root->functions()) {
         gen.gen_function_decl(function);
     }
-
     for (const auto &error : gen.errors()) {
         fmt::print(error);
     }

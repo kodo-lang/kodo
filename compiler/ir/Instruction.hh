@@ -28,6 +28,7 @@ enum class InstKind {
 
 class Instruction : public Value, public ListNode {
     const InstKind m_kind;
+    int m_line{-1};
     BasicBlock *m_parent{nullptr};
 
 protected:
@@ -48,9 +49,11 @@ public:
     ListIterator<Instruction> remove_from_parent();
 
     bool has_parent() const;
+    void set_line(int line);
     void set_parent(BasicBlock *parent);
 
     InstKind inst_kind() const { return m_kind; }
+    int line() const { return m_line; }
     BasicBlock *parent() const { return m_parent; }
 };
 

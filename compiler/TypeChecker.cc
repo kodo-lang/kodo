@@ -7,7 +7,12 @@
 #include <ir/Program.hh>
 #include <ir/Visitor.hh>
 
+#include <fmt/color.h>
+#include <fmt/core.h>
+
 #include <cassert>
+#include <string>
+#include <vector>
 
 namespace {
 
@@ -15,7 +20,12 @@ class TypeChecker : public Visitor {
     Program *const m_program;
     Function *m_function{nullptr};
     BasicBlock *m_block{nullptr};
+    Instruction *m_instruction{nullptr};
     BasicBlock::iterator m_insert_pos{nullptr};
+    std::vector<std::string> m_errors;
+
+    template <typename FmtStr, typename... Args>
+    void add_error(const Instruction *inst, const FmtStr &fmt, const Args &... args);
 
     Value *build_coerce_cast(Value *value, const Type *type, CastOp op);
     Value *coerce(Value *value, const Type *type);
@@ -34,7 +44,21 @@ public:
     void visit(PhiInst *) override;
     void visit(StoreInst *) override;
     void visit(RetInst *) override;
+
+    const std::vector<std::string> &errors() { return m_errors; }
 };
+
+// TODO: Deduplicate this from dumper!
+std::string type_string(const Type *type) {
+    switch (type->kind()) {
+    case TypeKind::Invalid:
+        return "invalid";
+    case TypeKind::Int:
+        return "i" + std::to_string(type->as<IntType>()->bit_width());
+    case TypeKind::Pointer:
+        return type_string(type->as<PointerType>()->pointee_type()) + "*";
+    }
+}
 
 const Type *resulting_type(const IntType *lhs, const IntType *rhs) {
     return lhs->bit_width() > rhs->bit_width() ? lhs : rhs;
@@ -67,6 +91,13 @@ const Type *resulting_type(const Type *lhs, const Type *rhs) {
     }
 }
 
+template <typename FmtStr, typename... Args>
+void TypeChecker::add_error(const Instruction *inst, const FmtStr &fmt, const Args &... args) {
+    auto formatted = fmt::format(fmt, args...);
+    auto error = fmt::format(fmt::fg(fmt::color::orange_red), "error:");
+    m_errors.push_back(fmt::format("{} {} on line {}\n", error, formatted, inst->line()));
+}
+
 Value *TypeChecker::build_coerce_cast(Value *value, const Type *type, CastOp op) {
     if (auto *constant = value->as<Constant>()) {
         auto new_constant = new Constant(constant->value());
@@ -90,7 +121,13 @@ Value *TypeChecker::coerce(Value *value, const Type *type) {
         assert(to_type->bit_width() > from_type->bit_width());
         return build_coerce_cast(value, to_type, CastOp::Extend);
     }
-    assert(false);
+    auto *inst = value->as<Instruction>();
+    if (inst == nullptr) {
+        inst = m_instruction;
+    }
+    assert(inst != nullptr);
+    add_error(inst, "cannot implicitly cast from '{}' to '{}'", type_string(value->type()), type_string(type));
+    return new Constant(0);
 }
 
 void TypeChecker::check(Function *function) {
@@ -106,6 +143,7 @@ void TypeChecker::check(Function *function) {
         m_block = block;
         m_insert_pos = m_block->begin();
         for (auto *inst : *block) {
+            m_instruction = inst;
             inst->accept(this);
             ++m_insert_pos;
         }
@@ -127,7 +165,11 @@ void TypeChecker::visit(BranchInst *) {
 
 void TypeChecker::visit(CallInst *call) {
     auto *callee = call->callee();
-    assert(call->args().size() == callee->args().size());
+    if (call->args().size() != callee->args().size()) {
+        add_error(call, "'{}' requires {} arguments, but {} were passed", callee->name(), callee->args().size(),
+                  call->args().size());
+        return;
+    }
     for (int i = 0; auto *param : callee->args()) {
         auto *arg = call->args().at(i++);
         call->replace_uses_of_with(arg, coerce(arg, param->type()));
@@ -175,5 +217,12 @@ void type_check(Program *program) {
     TypeChecker checker(program);
     for (auto *function : *program) {
         checker.check(function);
+    }
+    for (const auto &error : checker.errors()) {
+        fmt::print(error);
+    }
+    if (!checker.errors().empty()) {
+        fmt::print(fmt::fg(fmt::color::orange_red), " note: Aborting due to previous errors\n");
+        exit(1);
     }
 }
