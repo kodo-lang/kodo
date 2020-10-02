@@ -36,6 +36,7 @@ public:
     llvm::Value *gen_binary(const BinaryInst *);
     llvm::Value *gen_call(const CallInst *);
     llvm::Value *gen_cast(const CastInst *);
+    llvm::Value *gen_compare(const CompareInst *);
     llvm::Value *gen_load(const LoadInst *);
     void gen_store(const StoreInst *);
     void gen_ret(const RetInst *);
@@ -58,6 +59,8 @@ LLVMGen::LLVMGen(const Program *program, llvm::LLVMContext *llvm_context)
 
 llvm::Type *LLVMGen::llvm_type(const Type *type) {
     switch (type->kind()) {
+    case TypeKind::Bool:
+        return llvm::Type::getInt1Ty(*m_llvm_context);
     case TypeKind::Int:
         return llvm::Type::getIntNTy(*m_llvm_context, type->as<IntType>()->bit_width());
     case TypeKind::Pointer:
@@ -110,8 +113,23 @@ llvm::Value *LLVMGen::gen_cast(const CastInst *cast) {
     auto *type = llvm_type(cast->type());
     auto *value = llvm_value(cast->val());
     switch (cast->op()) {
-    case CastOp::Extend:
+    case CastOp::SignExtend:
         return m_llvm_builder.CreateSExt(value, type);
+    case CastOp::ZeroExtend:
+        return m_llvm_builder.CreateZExt(value, type);
+    default:
+        assert(false);
+    }
+}
+
+llvm::Value *LLVMGen::gen_compare(const CompareInst *compare) {
+    auto *lhs = llvm_value(compare->lhs());
+    auto *rhs = llvm_value(compare->rhs());
+    switch (compare->op()) {
+    case CompareOp::LessThan:
+        return m_llvm_builder.CreateICmpSLT(lhs, rhs);
+    case CompareOp::GreaterThan:
+        return m_llvm_builder.CreateICmpSGT(lhs, rhs);
     default:
         assert(false);
     }
@@ -145,6 +163,8 @@ llvm::Value *LLVMGen::gen_instruction(const Instruction *instruction) {
         return gen_call(instruction->as<CallInst>());
     case InstKind::Cast:
         return gen_cast(instruction->as<CastInst>());
+    case InstKind::Compare:
+        return gen_compare(instruction->as<CompareInst>());
     case InstKind::Load:
         return gen_load(instruction->as<LoadInst>());
     case InstKind::Store:

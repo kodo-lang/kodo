@@ -140,6 +140,10 @@ Value *IrGen::gen_bin_expr(const ast::BinExpr *bin_expr) {
         return m_block->append<BinaryInst>(BinaryOp::Mul, lhs, rhs);
     case ast::BinOp::Div:
         return m_block->append<BinaryInst>(BinaryOp::Div, lhs, rhs);
+    case ast::BinOp::LessThan:
+        return m_block->append<CompareInst>(CompareOp::LessThan, lhs, rhs);
+    case ast::BinOp::GreaterThan:
+        return m_block->append<CompareInst>(CompareOp::GreaterThan, lhs, rhs);
     default:
         assert(false);
     }

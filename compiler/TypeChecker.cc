@@ -67,6 +67,10 @@ const Type *resulting_type(const IntType *lhs, const Type *rhs) {
 
 const Type *resulting_type(const Type *lhs, const Type *rhs) {
     if (lhs == rhs) {
+        // TODO: Hacky. resulting_type should take in two values and have special handling for constants.
+        if (lhs->is<InvalidType>()) {
+            return IntType::get(32);
+        }
         return lhs;
     }
     switch (lhs->kind()) {
@@ -101,13 +105,17 @@ Value *TypeChecker::coerce(Value *value, const Type *type) {
         return value;
     }
     if (value->type()->is<InvalidType>()) {
-        return build_coerce_cast(value, type, CastOp::Extend);
+        return build_coerce_cast(value, type, CastOp::SignExtend);
+    }
+    // TODO: Should the bool -> int implicit cast be a thing?
+    if (value->type()->is<BoolType>() && type->is<IntType>()) {
+        return build_coerce_cast(value, type, CastOp::ZeroExtend);
     }
     if (value->type()->is<IntType>() && type->is<IntType>()) {
         const auto *from_type = value->type()->as<IntType>();
         const auto *to_type = type->as<IntType>();
         assert(to_type->bit_width() > from_type->bit_width());
-        return build_coerce_cast(value, to_type, CastOp::Extend);
+        return build_coerce_cast(value, to_type, CastOp::SignExtend);
     }
     auto *inst = value->as_or_null<Instruction>();
     if (inst == nullptr) {
@@ -169,8 +177,13 @@ void TypeChecker::visit(CastInst *) {
     assert(false);
 }
 
-void TypeChecker::visit(CompareInst *) {
-    assert(false);
+void TypeChecker::visit(CompareInst *compare) {
+    auto *lhs = compare->lhs();
+    auto *rhs = compare->rhs();
+    const auto *type = resulting_type(lhs->type(), rhs->type());
+    lhs->replace_all_uses_with(coerce(lhs, type));
+    rhs->replace_all_uses_with(coerce(rhs, type));
+    compare->set_type(BoolType::get());
 }
 
 void TypeChecker::visit(CondBranchInst *) {

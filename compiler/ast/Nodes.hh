@@ -26,10 +26,15 @@ public:
 };
 
 enum class BinOp {
+    // Arithmetic.
     Add,
     Sub,
     Mul,
     Div,
+
+    // Comparison.
+    LessThan,
+    GreaterThan,
 };
 
 class BinExpr : public Node {

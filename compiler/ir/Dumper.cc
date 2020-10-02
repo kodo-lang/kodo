@@ -141,14 +141,16 @@ void FunctionDumper::visit(CallInst *call) {
 void FunctionDumper::visit(CastInst *cast) {
     auto cast_op_string = [](CastOp op) {
         switch (op) {
-        case CastOp::Extend:
-            return "extend";
         case CastOp::IntToPtr:
             return "int_to_ptr";
         case CastOp::PtrToInt:
             return "ptr_to_int";
+        case CastOp::SignExtend:
+            return "sign_extend";
         case CastOp::Truncate:
             return "truncate";
+        case CastOp::ZeroExtend:
+            return "zero_extend";
         default:
             assert(false);
         }
@@ -160,8 +162,18 @@ void FunctionDumper::visit(CastInst *cast) {
     std::cout << cast_op_string(cast->op()) << ')';
 }
 
-void FunctionDumper::visit(CompareInst *) {
-    assert(false);
+void FunctionDumper::visit(CompareInst *compare) {
+    std::cout << printable_value(compare) << " = ";
+    switch (compare->op()) {
+    case CompareOp::LessThan:
+        std::cout << "cmp_lt ";
+        break;
+    case CompareOp::GreaterThan:
+        std::cout << "cmp_gt ";
+        break;
+    }
+    std::cout << compare->lhs()->type()->to_string() << ' ' << printable_value(compare->lhs());
+    std::cout << ", " << compare->rhs()->type()->to_string() << ' ' << printable_value(compare->rhs());
 }
 
 void FunctionDumper::visit(CondBranchInst *) {

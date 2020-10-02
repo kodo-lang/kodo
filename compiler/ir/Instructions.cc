@@ -107,6 +107,32 @@ void CastInst::replace_uses_of_with(Value *orig, Value *repl) {
     REPL_VALUE(m_val)
 } // clang-format on
 
+CompareInst::CompareInst(CompareOp op, Value *lhs, Value *rhs)
+    : Instruction(KIND), m_op(op), m_lhs(lhs), m_rhs(rhs) {
+    m_lhs->add_user(this);
+    m_rhs->add_user(this);
+}
+
+CompareInst::~CompareInst() {
+    if (m_lhs != nullptr) {
+        m_lhs->remove_user(this);
+    }
+    if (m_rhs != nullptr) {
+        m_rhs->remove_user(this);
+    }
+}
+
+void CompareInst::accept(Visitor *visitor) {
+    visitor->visit(this);
+}
+
+// TODO: Figure out what's breaking clang-format here.
+// clang-format off
+void CompareInst::replace_uses_of_with(Value *orig, Value *repl) {
+    REPL_VALUE(m_lhs)
+    REPL_VALUE(m_rhs)
+} // clang-format on
+
 LoadInst::LoadInst(Value *ptr)
     : Instruction(KIND), m_ptr(ptr) {
     m_ptr->add_user(this);

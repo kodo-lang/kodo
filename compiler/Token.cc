@@ -24,10 +24,14 @@ std::string tok_str(TokenKind kind) {
         return "extern";
     case TokenKind::Fn:
         return "fn";
+    case TokenKind::GreaterThan:
+        return ">";
     case TokenKind::Identifier:
         return "identifier";
     case TokenKind::LBrace:
         return "{";
+    case TokenKind::LessThan:
+        return "<";
     case TokenKind::LParen:
         return "(";
     case TokenKind::Mul:

@@ -5,6 +5,8 @@
 
 #include <vector>
 
+// TODO: Cleanup IR const-correctness.
+
 class BasicBlock;
 class Function;
 
@@ -82,10 +84,11 @@ public:
 };
 
 enum class CastOp {
-    Extend,
     IntToPtr,
     PtrToInt,
+    SignExtend,
     Truncate,
+    ZeroExtend,
 };
 
 class CastInst : public Instruction {
@@ -108,6 +111,35 @@ public:
 
     CastOp op() const { return m_op; }
     Value *val() const { return m_val; }
+};
+
+enum class CompareOp {
+    LessThan,
+    GreaterThan,
+};
+
+class CompareInst : public Instruction {
+    CompareOp m_op;
+    Value *m_lhs;
+    Value *m_rhs;
+
+public:
+    static constexpr auto KIND = InstKind::Compare;
+
+    CompareInst(CompareOp op, Value *lhs, Value *rhs);
+    CompareInst(const CompareInst &) = delete;
+    CompareInst(CompareInst &&) = delete;
+    ~CompareInst() override;
+
+    CompareInst &operator=(const CompareInst &) = delete;
+    CompareInst &operator=(CompareInst &&) = delete;
+
+    void accept(Visitor *visitor) override;
+    void replace_uses_of_with(Value *orig, Value *repl) override;
+
+    CompareOp op() const { return m_op; }
+    Value *lhs() const { return m_lhs; }
+    Value *rhs() const { return m_rhs; }
 };
 
 class LoadInst : public Instruction {

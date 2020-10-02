@@ -4,6 +4,7 @@
 
 enum class TypeKind {
     Invalid,
+    Bool,
     Int,
     Pointer,
     Void,
@@ -40,6 +41,15 @@ struct InvalidType : public Type {
     InvalidType() noexcept : Type(kind) {}
 
     std::string to_string() const override;
+};
+
+struct BoolType : public Type {
+    static constexpr auto kind = TypeKind::Bool;
+    static const BoolType *get();
+
+    std::string to_string() const override;
+
+    BoolType() noexcept : Type(kind) {}
 };
 
 class IntType : public Type {

@@ -46,6 +46,14 @@ void Dumper::visit(const BinExpr *bin_expr) {
     case BinOp::Div:
         std::cout << "Div";
         break;
+    case BinOp::LessThan:
+        std::cout << "LessThan";
+        break;
+    case BinOp::GreaterThan:
+        std::cout << "GreaterThan";
+        break;
+    default:
+        assert(false);
     }
     std::cout << ", ";
     bin_expr->lhs()->accept(this);

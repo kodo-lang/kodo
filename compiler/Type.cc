@@ -6,6 +6,7 @@ namespace {
 
 // Primitive types.
 InvalidType s_invalid_type;
+BoolType s_bool_type;
 VoidType s_void_type;
 
 // Derived types.
@@ -16,6 +17,10 @@ std::unordered_map<const Type *, PointerType> s_pointer_types;
 
 const InvalidType *InvalidType::get() {
     return &s_invalid_type;
+}
+
+const BoolType *BoolType::get() {
+    return &s_bool_type;
 }
 
 const IntType *IntType::get(int bit_width) {
@@ -38,6 +43,10 @@ const VoidType *VoidType::get() {
 
 std::string InvalidType::to_string() const {
     return "invalid";
+}
+
+std::string BoolType::to_string() const {
+    return "bool";
 }
 
 std::string IntType::to_string() const {

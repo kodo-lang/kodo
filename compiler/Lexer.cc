@@ -76,6 +76,12 @@ Token Lexer::next_token() {
     case '=':
         token.kind = consume_if('>') ? TokenKind::Arrow : TokenKind::Eq;
         break;
+    case '<':
+        token.kind = TokenKind::LessThan;
+        break;
+    case '>':
+        token.kind = TokenKind::GreaterThan;
+        break;
     case '&':
         token.kind = TokenKind::Ampersand;
         break;

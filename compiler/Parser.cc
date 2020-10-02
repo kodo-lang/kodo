@@ -13,11 +13,15 @@
 namespace {
 
 enum class Op {
-    // Binary operators.
+    // Binary arithmetic operators.
     Add,
     Sub,
     Mul,
     Div,
+
+    // Binary comparison operators.
+    LessThan,
+    GreaterThan,
 
     // Unary operators.
     AddressOf,
@@ -37,9 +41,12 @@ constexpr int precedence(Op op) {
     case Op::Mul:
     case Op::Div:
         return 2;
+    case Op::LessThan:
+    case Op::GreaterThan:
+        return 3;
     case Op::AddressOf:
     case Op::Deref:
-        return 3;
+        return 4;
     default:
         assert(false);
     }
@@ -74,6 +81,10 @@ ast::Node *create_expr(Op op, Stack<ast::Node *> *operands) {
         return new ast::BinExpr(rhs->line(), ast::BinOp::Mul, lhs, rhs);
     case Op::Div:
         return new ast::BinExpr(rhs->line(), ast::BinOp::Div, lhs, rhs);
+    case Op::LessThan:
+        return new ast::BinExpr(rhs->line(), ast::BinOp::LessThan, lhs, rhs);
+    case Op::GreaterThan:
+        return new ast::BinExpr(rhs->line(), ast::BinOp::GreaterThan, lhs, rhs);
     case Op::Assign:
         return new ast::AssignExpr(rhs->line(), lhs, rhs);
     default:
@@ -137,6 +148,10 @@ ast::Node *Parser::parse_expr() {
                 return last_was_operator ? Op::Deref : Op::Mul;
             case TokenKind::Div:
                 return Op::Div;
+            case TokenKind::LessThan:
+                return Op::LessThan;
+            case TokenKind::GreaterThan:
+                return Op::GreaterThan;
             case TokenKind::Ampersand:
                 return Op::AddressOf;
             case TokenKind::Eq:
@@ -220,7 +235,9 @@ const Type *Parser::parse_type() {
     }
     auto base = std::get<std::string>(expect(TokenKind::Identifier).data);
     const Type *base_type = nullptr;
-    if (base.starts_with('i')) {
+    if (base == "bool") {
+        base_type = BoolType::get();
+    } else if (base.starts_with('i')) {
         base_type = IntType::get(std::stoi(base.substr(1)));
     }
 
