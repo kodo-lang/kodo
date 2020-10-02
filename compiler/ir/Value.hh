@@ -1,14 +1,10 @@
 #pragma once
 
 #include <Type.hh>
+#include <support/HasKind.hh>
 
 #include <string>
 #include <vector>
-
-template <typename T, typename Kind>
-concept HasKind = requires(T *t) {
-    static_cast<Kind>(T::KIND);
-};
 
 enum class ValueKind {
     Argument,
