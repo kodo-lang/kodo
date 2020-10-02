@@ -250,8 +250,11 @@ std::unique_ptr<ast::Root> Parser::parse() {
             consume(TokenKind::Comma);
         }
         expect(TokenKind::RParen);
-        expect(TokenKind::Arrow);
-        func->set_return_type(parse_type());
+        if (consume(TokenKind::Arrow)) {
+            func->set_return_type(parse_type());
+        } else {
+            func->set_return_type(VoidType::get());
+        }
         if (externed) {
             expect(TokenKind::Semi);
             continue;

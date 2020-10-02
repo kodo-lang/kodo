@@ -62,6 +62,8 @@ llvm::Type *LLVMGen::llvm_type(const Type *type) {
         return llvm::Type::getIntNTy(*m_llvm_context, type->as<IntType>()->bit_width());
     case TypeKind::Pointer:
         return llvm::PointerType::get(llvm_type(type->as<PointerType>()->pointee_type()), 0);
+    case TypeKind::Void:
+        return llvm::Type::getVoidTy(*m_llvm_context);
     default:
         assert(false);
     }

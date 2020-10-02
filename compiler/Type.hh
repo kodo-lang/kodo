@@ -6,6 +6,7 @@ enum class TypeKind {
     Invalid,
     Int,
     Pointer,
+    Void,
 };
 
 class Type {
@@ -67,6 +68,15 @@ public:
     std::string to_string() const override;
 
     const Type *pointee_type() const { return m_pointee_type; }
+};
+
+struct VoidType : public Type {
+    static constexpr auto kind = TypeKind::Void;
+    static const VoidType *get();
+
+    std::string to_string() const override;
+
+    VoidType() noexcept : Type(kind) {}
 };
 
 template <typename T>

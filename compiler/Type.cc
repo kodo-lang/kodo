@@ -4,7 +4,11 @@
 
 namespace {
 
+// Primitive types.
 InvalidType s_invalid_type;
+VoidType s_void_type;
+
+// Derived types.
 std::unordered_map<int, IntType> s_int_types;
 std::unordered_map<const Type *, PointerType> s_pointer_types;
 
@@ -28,6 +32,10 @@ const PointerType *PointerType::get(const Type *pointee_type) {
     return &s_pointer_types.at(pointee_type);
 }
 
+const VoidType *VoidType::get() {
+    return &s_void_type;
+}
+
 std::string InvalidType::to_string() const {
     return "invalid";
 }
@@ -38,4 +46,8 @@ std::string IntType::to_string() const {
 
 std::string PointerType::to_string() const {
     return m_pointee_type->to_string() + "*";
+}
+
+std::string VoidType::to_string() const {
+    return "void";
 }

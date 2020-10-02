@@ -122,7 +122,9 @@ void FunctionDumper::visit(BranchInst *) {
 }
 
 void FunctionDumper::visit(CallInst *call) {
-    std::cout << printable_value(call) << " = ";
+    if (!call->type()->is<VoidType>()) {
+        std::cout << printable_value(call) << " = ";
+    }
     std::cout << "call " << call->callee()->return_type()->to_string() << ' ';
     std::cout << '@' << call->callee()->name() << '(';
     for (bool first = true; auto *arg : call->args()) {
