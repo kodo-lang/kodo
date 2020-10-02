@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string>
+
 enum class TypeKind {
     Invalid,
     Int,
@@ -24,6 +26,8 @@ public:
     template <typename T>
     bool is() const;
 
+    virtual std::string to_string() const = 0;
+
     TypeKind kind() const { return m_kind; }
 };
 
@@ -33,6 +37,8 @@ struct InvalidType : public Type {
     static const InvalidType *get();
 
     InvalidType() noexcept : Type(kind) {}
+
+    std::string to_string() const override;
 };
 
 class IntType : public Type {
@@ -43,6 +49,8 @@ public:
     static const IntType *get(int bit_width);
 
     explicit IntType(int bit_width) : Type(kind), m_bit_width(bit_width) {}
+
+    std::string to_string() const override;
 
     int bit_width() const { return m_bit_width; }
 };
@@ -55,6 +63,8 @@ public:
     static const PointerType *get(const Type *pointee_type);
 
     explicit PointerType(const Type *pointee_type) : Type(kind), m_pointee_type(pointee_type) {}
+
+    std::string to_string() const override;
 
     const Type *pointee_type() const { return m_pointee_type; }
 };

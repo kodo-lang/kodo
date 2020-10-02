@@ -48,20 +48,6 @@ public:
     const std::vector<std::string> &errors() { return m_errors; }
 };
 
-// TODO: Deduplicate this from dumper!
-std::string type_string(const Type *type) {
-    switch (type->kind()) {
-    case TypeKind::Invalid:
-        return "invalid";
-    case TypeKind::Int:
-        return "i" + std::to_string(type->as<IntType>()->bit_width());
-    case TypeKind::Pointer:
-        return type_string(type->as<PointerType>()->pointee_type()) + "*";
-    default:
-        assert(false);
-    }
-}
-
 const Type *resulting_type(const IntType *lhs, const IntType *rhs) {
     return lhs->bit_width() > rhs->bit_width() ? lhs : rhs;
 }
@@ -128,7 +114,7 @@ Value *TypeChecker::coerce(Value *value, const Type *type) {
         inst = m_instruction;
     }
     assert(inst != nullptr);
-    add_error(inst, "cannot implicitly cast from '{}' to '{}'", type_string(value->type()), type_string(type));
+    add_error(inst, "cannot implicitly cast from '{}' to '{}'", value->type()->to_string(), type->to_string());
     return new Constant(0);
 }
 

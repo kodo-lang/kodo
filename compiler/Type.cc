@@ -27,3 +27,15 @@ const PointerType *PointerType::get(const Type *pointee_type) {
     }
     return &s_pointer_types.at(pointee_type);
 }
+
+std::string InvalidType::to_string() const {
+    return "invalid";
+}
+
+std::string IntType::to_string() const {
+    return "i" + std::to_string(m_bit_width);
+}
+
+std::string PointerType::to_string() const {
+    return m_pointee_type->to_string() + "*";
+}

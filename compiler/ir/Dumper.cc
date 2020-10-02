@@ -21,7 +21,6 @@ class FunctionDumper : public Visitor {
 
     std::string printable_block(const BasicBlock *block);
     std::string printable_value(const Value *value);
-    std::string type_string(const Type *type);
 
 public:
     void dump(const Function *function);
@@ -57,28 +56,15 @@ std::string FunctionDumper::printable_value(const Value *value) {
     return '%' + std::to_string(m_value_map.at(value));
 }
 
-std::string FunctionDumper::type_string(const Type *type) {
-    switch (type->kind()) {
-    case TypeKind::Invalid:
-        return "invalid";
-    case TypeKind::Int:
-        return "i" + std::to_string(type->as<IntType>()->bit_width());
-    case TypeKind::Pointer:
-        return type_string(type->as<PointerType>()->pointee_type()) + "*";
-    default:
-        assert(false);
-    }
-}
-
 void FunctionDumper::dump(const Function *function) {
-    std::cout << type_string(function->return_type()) << ' ';
+    std::cout << function->return_type()->to_string() << ' ';
     std::cout << function->name() << '(';
     for (bool first = true; const auto *arg : function->args()) {
         if (!first) {
             std::cout << ", ";
         }
         first = false;
-        std::cout << type_string(arg->type()) << ' ';
+        std::cout << arg->type()->to_string() << ' ';
         std::cout << arg->name();
     }
     std::cout << ')';
@@ -95,7 +81,7 @@ void FunctionDumper::dump(const Function *function) {
             std::cout << ", ";
         }
         first = false;
-        std::cout << type_string(var->var_type()) << ' ';
+        std::cout << var->var_type()->to_string() << ' ';
         std::cout << printable_value(var);
     }
     std::cout << "]\n";
@@ -127,8 +113,8 @@ void FunctionDumper::visit(BinaryInst *binary) {
         std::cout << "div ";
         break;
     }
-    std::cout << type_string(binary->lhs()->type()) << ' ' << printable_value(binary->lhs());
-    std::cout << ", " << type_string(binary->rhs()->type()) << ' ' << printable_value(binary->rhs());
+    std::cout << binary->lhs()->type()->to_string() << ' ' << printable_value(binary->lhs());
+    std::cout << ", " << binary->rhs()->type()->to_string() << ' ' << printable_value(binary->rhs());
 }
 
 void FunctionDumper::visit(BranchInst *) {
@@ -137,14 +123,14 @@ void FunctionDumper::visit(BranchInst *) {
 
 void FunctionDumper::visit(CallInst *call) {
     std::cout << printable_value(call) << " = ";
-    std::cout << "call " << type_string(call->callee()->return_type()) << ' ';
+    std::cout << "call " << call->callee()->return_type()->to_string() << ' ';
     std::cout << '@' << call->callee()->name() << '(';
     for (bool first = true; auto *arg : call->args()) {
         if (!first) {
             std::cout << ", ";
         }
         first = false;
-        std::cout << type_string(arg->type()) << ' ';
+        std::cout << arg->type()->to_string() << ' ';
         std::cout << printable_value(arg);
     }
     std::cout << ')';
@@ -166,9 +152,9 @@ void FunctionDumper::visit(CastInst *cast) {
         }
     };
     std::cout << printable_value(cast) << " = ";
-    std::cout << "cast " << type_string(cast->val()->type()) << ' ';
+    std::cout << "cast " << cast->val()->type()->to_string() << ' ';
     std::cout << printable_value(cast->val()) << " -> ";
-    std::cout << type_string(cast->type()) << " (";
+    std::cout << cast->type()->to_string() << " (";
     std::cout << cast_op_string(cast->op()) << ')';
 }
 
@@ -182,7 +168,7 @@ void FunctionDumper::visit(CondBranchInst *) {
 
 void FunctionDumper::visit(LoadInst *load) {
     std::cout << printable_value(load) << " = ";
-    std::cout << "load " << type_string(load->ptr()->type()) << ' ' << printable_value(load->ptr());
+    std::cout << "load " << load->ptr()->type()->to_string() << ' ' << printable_value(load->ptr());
 }
 
 void FunctionDumper::visit(PhiInst *) {
@@ -190,12 +176,12 @@ void FunctionDumper::visit(PhiInst *) {
 }
 
 void FunctionDumper::visit(StoreInst *store) {
-    std::cout << "store " << type_string(store->ptr()->type()) << ' ' << printable_value(store->ptr());
-    std::cout << ", " << type_string(store->val()->type()) << ' ' << printable_value(store->val());
+    std::cout << "store " << store->ptr()->type()->to_string() << ' ' << printable_value(store->ptr());
+    std::cout << ", " << store->val()->type()->to_string() << ' ' << printable_value(store->val());
 }
 
 void FunctionDumper::visit(RetInst *ret) {
-    std::cout << "ret " << type_string(ret->val()->type()) << ' ' << printable_value(ret->val());
+    std::cout << "ret " << ret->val()->type()->to_string() << ' ' << printable_value(ret->val());
 }
 
 } // namespace
