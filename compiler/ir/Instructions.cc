@@ -57,7 +57,7 @@ void BranchInst::accept(Visitor *visitor) {
 }
 
 void BranchInst::replace_uses_of_with(Value *orig, Value *repl) {
-    assert(repl->is(ValueKind::BasicBlock));
+    assert(repl->kind() == ValueKind::BasicBlock);
     REPL_VALUE(m_dst)
 }
 

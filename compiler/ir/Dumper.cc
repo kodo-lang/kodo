@@ -48,7 +48,7 @@ std::string FunctionDumper::printable_value(const Value *value) {
     if (value->has_name()) {
         return '%' + value->name();
     }
-    if (const auto *constant = value->as<Constant>()) {
+    if (const auto *constant = value->as_or_null<Constant>()) {
         return std::to_string(constant->value());
     }
     if (!m_value_map.contains(value)) {

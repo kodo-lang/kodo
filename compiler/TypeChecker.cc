@@ -101,7 +101,7 @@ void TypeChecker::add_error(const Instruction *inst, const FmtStr &fmt, const Ar
 }
 
 Value *TypeChecker::build_coerce_cast(Value *value, const Type *type, CastOp op) {
-    if (auto *constant = value->as<Constant>()) {
+    if (auto *constant = value->as_or_null<Constant>()) {
         auto new_constant = new Constant(constant->value());
         new_constant->set_type(type);
         return new_constant;
@@ -123,7 +123,7 @@ Value *TypeChecker::coerce(Value *value, const Type *type) {
         assert(to_type->bit_width() > from_type->bit_width());
         return build_coerce_cast(value, to_type, CastOp::Extend);
     }
-    auto *inst = value->as<Instruction>();
+    auto *inst = value->as_or_null<Instruction>();
     if (inst == nullptr) {
         inst = m_instruction;
     }

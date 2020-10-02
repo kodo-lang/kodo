@@ -5,6 +5,8 @@
 #include <support/List.hh>
 #include <support/ListNode.hh>
 
+#include <cassert>
+
 class BasicBlock;
 class Visitor;
 
@@ -39,11 +41,8 @@ public:
 
     template <typename T>
     T *as() requires HasKind<T, InstKind>;
-
     template <typename T>
     const T *as() const requires HasKind<T, InstKind>;
-
-    bool is(InstKind kind) const;
 
     virtual void accept(Visitor *visitor) = 0;
     ListIterator<Instruction> remove_from_parent();
@@ -59,10 +58,13 @@ public:
 
 template <typename T>
 T *Instruction::as() requires HasKind<T, InstKind> {
-    return is(T::KIND) ? static_cast<T *>(this) : nullptr;
+    // TODO: dynamic_cast check worth it?
+    assert(m_kind == T::KIND);
+    assert(dynamic_cast<T *>(this) != nullptr);
+    return static_cast<T *>(this);
 }
 
 template <typename T>
 const T *Instruction::as() const requires HasKind<T, InstKind> {
-    return is(T::KIND) ? static_cast<const T *>(this) : nullptr;
+    return const_cast<Instruction *>(this)->as<T>();
 }

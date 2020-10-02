@@ -4,10 +4,6 @@
 
 #include <cassert>
 
-bool Instruction::is(InstKind kind) const {
-    return m_kind == kind;
-}
-
 ListIterator<Instruction> Instruction::remove_from_parent() {
     assert(has_parent());
     return m_parent->remove(this);

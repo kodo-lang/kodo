@@ -12,10 +12,6 @@ Value::~Value() {
     replace_all_uses_with(nullptr);
 }
 
-bool Value::is(ValueKind kind) const {
-    return m_kind == kind;
-}
-
 void Value::add_user(Value *user) {
     m_users.push_back(user);
 }
@@ -44,14 +40,6 @@ void Value::replace_uses_of_with(Value *, Value *) {
     assert(false);
 }
 
-bool Value::has_name() const {
-    return !m_name.empty();
-}
-
-void Value::set_name(std::string name) {
-    m_name = std::move(name);
-}
-
 bool Value::has_type() const {
     assert(m_type != nullptr);
     return !m_type->is<InvalidType>();
@@ -59,4 +47,12 @@ bool Value::has_type() const {
 
 void Value::set_type(const Type *type) {
     m_type = type;
+}
+
+bool Value::has_name() const {
+    return !m_name.empty();
+}
+
+void Value::set_name(std::string name) {
+    m_name = std::move(name);
 }
