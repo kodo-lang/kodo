@@ -1,5 +1,7 @@
 #include <Token.hh>
 
+#include <cassert>
+
 std::string tok_str(TokenKind kind) {
     switch (kind) {
     case TokenKind::Add:
@@ -44,6 +46,8 @@ std::string tok_str(TokenKind kind) {
         return "-";
     case TokenKind::Var:
         return "var";
+    default:
+        assert(false);
     }
 }
 

@@ -65,6 +65,8 @@ std::string FunctionDumper::type_string(const Type *type) {
         return "i" + std::to_string(type->as<IntType>()->bit_width());
     case TypeKind::Pointer:
         return type_string(type->as<PointerType>()->pointee_type()) + "*";
+    default:
+        assert(false);
     }
 }
 
@@ -159,6 +161,8 @@ void FunctionDumper::visit(CastInst *cast) {
             return "ptr_to_int";
         case CastOp::Truncate:
             return "truncate";
+        default:
+            assert(false);
         }
     };
     std::cout << printable_value(cast) << " = ";

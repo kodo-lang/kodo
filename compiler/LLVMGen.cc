@@ -58,12 +58,12 @@ LLVMGen::LLVMGen(const Program *program, llvm::LLVMContext *llvm_context)
 
 llvm::Type *LLVMGen::llvm_type(const Type *type) {
     switch (type->kind()) {
-    case TypeKind::Invalid:
-        assert(false);
     case TypeKind::Int:
         return llvm::Type::getIntNTy(*m_llvm_context, type->as<IntType>()->bit_width());
     case TypeKind::Pointer:
         return llvm::PointerType::get(llvm_type(type->as<PointerType>()->pointee_type()), 0);
+    default:
+        assert(false);
     }
 }
 
@@ -90,6 +90,8 @@ llvm::Value *LLVMGen::gen_binary(const BinaryInst *binary) {
         return m_llvm_builder.CreateMul(lhs, rhs);
     case BinaryOp::Div:
         return m_llvm_builder.CreateSDiv(lhs, rhs);
+    default:
+        assert(false);
     }
 }
 
@@ -156,15 +158,14 @@ llvm::Value *LLVMGen::gen_instruction(const Instruction *instruction) {
 
 llvm::Value *LLVMGen::gen_value(const Value *value) {
     switch (value->kind()) {
-    case ValueKind::BasicBlock:
-    case ValueKind::LocalVar:
-        assert(false);
     case ValueKind::Argument:
         return gen_argument(value->as<Argument>());
     case ValueKind::Constant:
         return gen_constant(value->as<Constant>());
     case ValueKind::Instruction:
         return gen_instruction(value->as<Instruction>());
+    default:
+        assert(false);
     }
 }
 

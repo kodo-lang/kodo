@@ -8,6 +8,8 @@
 #include <fmt/color.h>
 #include <fmt/core.h>
 
+#include <cassert>
+
 namespace {
 
 enum class Op {
@@ -38,6 +40,8 @@ constexpr int precedence(Op op) {
     case Op::AddressOf:
     case Op::Deref:
         return 3;
+    default:
+        assert(false);
     }
 }
 

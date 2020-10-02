@@ -142,6 +142,8 @@ Value *IrGen::gen_bin_expr(const ast::BinExpr *bin_expr) {
         return m_block->append<BinaryInst>(BinaryOp::Mul, lhs, rhs);
     case ast::BinOp::Div:
         return m_block->append<BinaryInst>(BinaryOp::Div, lhs, rhs);
+    default:
+        assert(false);
     }
 }
 
@@ -186,6 +188,8 @@ Value *IrGen::gen_unary_expr(const ast::UnaryExpr *unary_expr) {
         return gen_address_of(unary_expr->val());
     case ast::UnaryOp::Deref:
         return gen_deref(unary_expr->val());
+    default:
+        assert(false);
     }
 }
 

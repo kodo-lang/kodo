@@ -57,6 +57,8 @@ std::string type_string(const Type *type) {
         return "i" + std::to_string(type->as<IntType>()->bit_width());
     case TypeKind::Pointer:
         return type_string(type->as<PointerType>()->pointee_type()) + "*";
+    default:
+        assert(false);
     }
 }
 
