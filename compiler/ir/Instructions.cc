@@ -86,8 +86,7 @@ void CallInst::replace_uses_of_with(Value *orig, Value *repl) {
     }
 }
 
-CastInst::CastInst(CastOp op, const Type *type, Value *val)
-    : Instruction(KIND), m_op(op), m_val(val) {
+CastInst::CastInst(CastOp op, const Type *type, Value *val) : Instruction(KIND), m_op(op), m_val(val) {
     m_val->add_user(this);
     set_type(type);
 }

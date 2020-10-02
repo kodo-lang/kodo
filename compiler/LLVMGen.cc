@@ -171,7 +171,6 @@ llvm::Value *LLVMGen::gen_value(const Value *value) {
 
 void LLVMGen::gen_block(const BasicBlock *block) {
     auto *new_block = llvm::BasicBlock::Create(*m_llvm_context, "", m_llvm_function);
-    ;
     if (m_llvm_block->empty() || !m_llvm_block->back().isTerminator()) {
         m_llvm_builder.CreateBr(new_block);
     }

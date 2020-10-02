@@ -24,7 +24,7 @@ public:
 };
 
 template <typename T>
-constexpr void Stack<T>::clear(){
+constexpr void Stack<T>::clear() {
     m_impl.clear();
 }
 

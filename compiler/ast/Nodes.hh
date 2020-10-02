@@ -40,7 +40,8 @@ class BinExpr : public Node {
 public:
     static constexpr auto KIND = NodeKind::BinExpr;
 
-    BinExpr(int line, BinOp op, const Node *lhs, const Node *rhs) : Node(KIND, line), m_op(op), m_lhs(lhs), m_rhs(rhs) {}
+    BinExpr(int line, BinOp op, const Node *lhs, const Node *rhs)
+        : Node(KIND, line), m_op(op), m_lhs(lhs), m_rhs(rhs) {}
 
     void accept(Visitor *visitor) const override;
 
@@ -90,7 +91,8 @@ class FunctionArg : public Node {
 public:
     static constexpr auto KIND = NodeKind::FunctionArg;
 
-    FunctionArg(int line, std::string name, const Type *type) : Node(KIND, line), m_name(std::move(name)), m_type(type) {}
+    FunctionArg(int line, std::string name, const Type *type)
+        : Node(KIND, line), m_name(std::move(name)), m_type(type) {}
 
     void accept(Visitor *visitor) const override;
 
@@ -108,7 +110,8 @@ class FunctionDecl : public Node {
 public:
     static constexpr auto KIND = NodeKind::FunctionDecl;
 
-    FunctionDecl(int line, std::string name, bool externed) : Node(KIND, line), m_name(std::move(name)), m_externed(externed) {}
+    FunctionDecl(int line, std::string name, bool externed)
+        : Node(KIND, line), m_name(std::move(name)), m_externed(externed) {}
 
     void accept(Visitor *visitor) const override;
     void set_return_type(const Type *return_type) { m_return_type = return_type; }

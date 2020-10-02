@@ -56,7 +56,7 @@ public:
     void set_type(const Type *type);
 
     ValueKind kind() const { return m_kind; }
-    const std::string &name() const { return m_name;}
+    const std::string &name() const { return m_name; }
     const Type *type() const { return m_type; }
     const std::vector<Value *> &users() const { return m_users; }
 };

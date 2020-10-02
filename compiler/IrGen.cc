@@ -31,9 +31,7 @@ public:
         m_state = new_state;
     }
 
-    ~StateChanger() {
-        m_state = m_old_state;
-    }
+    ~StateChanger() { m_state = m_old_state; }
 };
 
 class Scope {
@@ -57,7 +55,7 @@ class IrGen {
     enum class DerefState {
         Deref,
         DontDeref,
-    } m_deref_state {DerefState::Deref};
+    } m_deref_state{DerefState::Deref};
 
     template <typename FmtStr, typename... Args>
     void add_node_error(const ast::Node *node, const FmtStr &fmt, const Args &... args);

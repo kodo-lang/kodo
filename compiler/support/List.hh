@@ -3,9 +3,9 @@
 #include <support/ListNode.hh>
 
 #include <concepts>
+#include <memory>
 #include <type_traits>
 #include <utility>
-#include <memory>
 #include <vector>
 
 // TODO: Remove clang-format disable comments :(.
@@ -25,9 +25,7 @@ public:
     std::strong_ordering operator<=>(const ListIterator &) const = default;
     T *operator*() const { return static_cast<T *>(m_elem); }
     T *operator->() const { return static_cast<T *>(m_elem); }
-    ListIterator operator++(int) {
-        return ListIterator(m_elem->next());
-    }
+    ListIterator operator++(int) { return ListIterator(m_elem->next()); }
     ListIterator &operator--() {
         m_elem = m_elem->prev();
         return *this;
