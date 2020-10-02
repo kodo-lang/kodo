@@ -19,6 +19,10 @@ run_test() {
 run_test "implicit_extension.lang" 10 ""
 run_test "libc_hi.lang" 0 "Hi"
 run_test "malloc.lang" 0 "A"
+run_test "type_errors.lang" 1 "error: 'test' requires 2 arguments, but 0 were passed on line 8
+error: cannot implicitly cast from 'i32' to 'i32*' on line 9
+error: cannot implicitly cast from 'i32*' to 'i32' on line 9
+ note: Aborting due to previous errors"
 run_test "unknown_symbols.lang" 1 "error: no symbol named 'bar' in current context on line 2
 error: no function named 'test' in current context on line 2
  note: Aborting due to previous errors"
