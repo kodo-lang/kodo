@@ -194,15 +194,15 @@ Value *IrGen::gen_unary_expr(const ast::UnaryExpr *unary_expr) {
 Value *IrGen::gen_expr(const ast::Node *expr) {
     switch (expr->kind()) {
     case ast::NodeKind::BinExpr:
-        return gen_bin_expr(static_cast<const ast::BinExpr *>(expr));
+        return gen_bin_expr(expr->as<ast::BinExpr>());
     case ast::NodeKind::CallExpr:
-        return gen_call_expr(static_cast<const ast::CallExpr *>(expr));
+        return gen_call_expr(expr->as<ast::CallExpr>());
     case ast::NodeKind::NumLit:
-        return gen_num_lit(static_cast<const ast::NumLit *>(expr));
+        return gen_num_lit(expr->as<ast::NumLit>());
     case ast::NodeKind::Symbol:
-        return gen_symbol(static_cast<const ast::Symbol *>(expr));
+        return gen_symbol(expr->as<ast::Symbol>());
     case ast::NodeKind::UnaryExpr:
-        return gen_unary_expr(static_cast<const ast::UnaryExpr *>(expr));
+        return gen_unary_expr(expr->as<ast::UnaryExpr>());
     default:
         assert(false);
     }
@@ -226,16 +226,16 @@ void IrGen::gen_ret_stmt(const ast::RetStmt *ret_stmt) {
 void IrGen::gen_stmt(const ast::Node *stmt) {
     switch (stmt->kind()) {
     case ast::NodeKind::AssignExpr:
-        gen_assign_expr(static_cast<const ast::AssignExpr *>(stmt));
+        gen_assign_expr(stmt->as<ast::AssignExpr>());
         break;
     case ast::NodeKind::CallExpr:
-        gen_call_expr(static_cast<const ast::CallExpr *>(stmt));
+        gen_call_expr(stmt->as<ast::CallExpr>());
         break;
     case ast::NodeKind::DeclStmt:
-        gen_decl_stmt(static_cast<const ast::DeclStmt *>(stmt));
+        gen_decl_stmt(stmt->as<ast::DeclStmt>());
         break;
     case ast::NodeKind::RetStmt:
-        gen_ret_stmt(static_cast<const ast::RetStmt *>(stmt));
+        gen_ret_stmt(stmt->as<ast::RetStmt>());
         break;
     default:
         assert(false);
