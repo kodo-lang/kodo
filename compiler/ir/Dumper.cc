@@ -117,8 +117,8 @@ void FunctionDumper::visit(BinaryInst *binary) {
     std::cout << ", " << binary->rhs()->type()->to_string() << ' ' << printable_value(binary->rhs());
 }
 
-void FunctionDumper::visit(BranchInst *) {
-    assert(false);
+void FunctionDumper::visit(BranchInst *branch) {
+    std::cout << "br " << printable_block(branch->dst());
 }
 
 void FunctionDumper::visit(CallInst *call) {
@@ -176,8 +176,11 @@ void FunctionDumper::visit(CompareInst *compare) {
     std::cout << ", " << compare->rhs()->type()->to_string() << ' ' << printable_value(compare->rhs());
 }
 
-void FunctionDumper::visit(CondBranchInst *) {
-    assert(false);
+void FunctionDumper::visit(CondBranchInst *cond_branch) {
+    std::cout << "br " << cond_branch->cond()->type()->to_string();
+    std::cout << ' ' << printable_value(cond_branch->cond());
+    std::cout << ", " << printable_block(cond_branch->true_dst());
+    std::cout << ", " << printable_block(cond_branch->false_dst());
 }
 
 void FunctionDumper::visit(LoadInst *load) {

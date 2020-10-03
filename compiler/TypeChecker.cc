@@ -152,9 +152,7 @@ void TypeChecker::visit(BinaryInst *binary) {
     rhs->replace_all_uses_with(coerce(rhs, type));
 }
 
-void TypeChecker::visit(BranchInst *) {
-    assert(false);
-}
+void TypeChecker::visit(BranchInst *) {}
 
 void TypeChecker::visit(CallInst *call) {
     auto *callee = call->callee();
@@ -189,8 +187,8 @@ void TypeChecker::visit(CompareInst *compare) {
     compare->set_type(BoolType::get());
 }
 
-void TypeChecker::visit(CondBranchInst *) {
-    assert(false);
+void TypeChecker::visit(CondBranchInst *cond_branch) {
+    assert(cond_branch->cond()->type()->is<BoolType>());
 }
 
 void TypeChecker::visit(LoadInst *load) {

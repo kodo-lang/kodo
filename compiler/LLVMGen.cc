@@ -25,6 +25,7 @@ class LLVMGen {
     llvm::IRBuilder<> m_llvm_builder;
 
     std::unordered_map<const Argument *, llvm::Argument *> m_arg_map;
+    std::unordered_map<const BasicBlock *, llvm::BasicBlock *> m_block_map;
     std::unordered_map<const Value *, llvm::Value *> m_value_map;
 
 public:
@@ -38,6 +39,8 @@ public:
     llvm::Value *gen_cast(const CastInst *);
     llvm::Value *gen_compare(const CompareInst *);
     llvm::Value *gen_load(const LoadInst *);
+    void gen_branch(const BranchInst *);
+    void gen_cond_branch(const CondBranchInst *);
     void gen_store(const StoreInst *);
     void gen_ret(const RetInst *);
 
@@ -139,6 +142,17 @@ llvm::Value *LLVMGen::gen_load(const LoadInst *load) {
     return m_llvm_builder.CreateLoad(llvm_value(load->ptr()));
 }
 
+void LLVMGen::gen_branch(const BranchInst *branch) {
+    m_llvm_builder.CreateBr(m_block_map.at(branch->dst()));
+}
+
+void LLVMGen::gen_cond_branch(const CondBranchInst *cond_branch) {
+    auto *cond = llvm_value(cond_branch->cond());
+    auto *true_dst = m_block_map.at(cond_branch->true_dst());
+    auto *false_dst = m_block_map.at(cond_branch->false_dst());
+    m_llvm_builder.CreateCondBr(cond, true_dst, false_dst);
+}
+
 void LLVMGen::gen_store(const StoreInst *store) {
     m_llvm_builder.CreateStore(llvm_value(store->val()), llvm_value(store->ptr()));
 }
@@ -159,12 +173,18 @@ llvm::Value *LLVMGen::gen_instruction(const Instruction *instruction) {
     switch (instruction->inst_kind()) {
     case InstKind::Binary:
         return gen_binary(instruction->as<BinaryInst>());
+    case InstKind::Branch:
+        gen_branch(instruction->as<BranchInst>());
+        return nullptr;
     case InstKind::Call:
         return gen_call(instruction->as<CallInst>());
     case InstKind::Cast:
         return gen_cast(instruction->as<CastInst>());
     case InstKind::Compare:
         return gen_compare(instruction->as<CompareInst>());
+    case InstKind::CondBranch:
+        gen_cond_branch(instruction->as<CondBranchInst>());
+        return nullptr;
     case InstKind::Load:
         return gen_load(instruction->as<LoadInst>());
     case InstKind::Store:
@@ -192,7 +212,7 @@ llvm::Value *LLVMGen::gen_value(const Value *value) {
 }
 
 void LLVMGen::gen_block(const BasicBlock *block) {
-    auto *new_block = llvm::BasicBlock::Create(*m_llvm_context, "", m_llvm_function);
+    auto *new_block = m_block_map.at(block);
     if (m_llvm_block->empty() || !m_llvm_block->back().isTerminator()) {
         m_llvm_builder.CreateBr(new_block);
     }
@@ -221,6 +241,11 @@ void LLVMGen::gen_function(const Function *function) {
 
     m_llvm_block = llvm::BasicBlock::Create(*m_llvm_context, "vars", m_llvm_function);
     m_llvm_builder.SetInsertPoint(m_llvm_block);
+    for (const auto *block : *function) {
+        auto *llvm_block = llvm::BasicBlock::Create(*m_llvm_context, "", m_llvm_function);
+        m_block_map.emplace(block, llvm_block);
+    }
+
     for (int i = 0; const auto *arg : function->args()) {
         m_arg_map.emplace(arg, m_llvm_function->getArg(i++));
     }

@@ -111,8 +111,7 @@ void CastInst::set_op(CastOp op) {
     m_op = op;
 }
 
-CompareInst::CompareInst(CompareOp op, Value *lhs, Value *rhs)
-    : Instruction(KIND), m_op(op), m_lhs(lhs), m_rhs(rhs) {
+CompareInst::CompareInst(CompareOp op, Value *lhs, Value *rhs) : Instruction(KIND), m_op(op), m_lhs(lhs), m_rhs(rhs) {
     m_lhs->add_user(this);
     m_rhs->add_user(this);
 }
@@ -135,6 +134,37 @@ void CompareInst::accept(Visitor *visitor) {
 void CompareInst::replace_uses_of_with(Value *orig, Value *repl) {
     REPL_VALUE(m_lhs)
     REPL_VALUE(m_rhs)
+} // clang-format on
+
+CondBranchInst::CondBranchInst(Value *cond, BasicBlock *true_dst, BasicBlock *false_dst)
+    : Instruction(KIND), m_cond(cond), m_true_dst(true_dst), m_false_dst(false_dst) {
+    m_cond->add_user(this);
+    m_true_dst->add_user(this);
+    m_false_dst->add_user(this);
+}
+
+CondBranchInst::~CondBranchInst() {
+    if (m_cond != nullptr) {
+        m_cond->remove_user(this);
+    }
+    if (m_true_dst != nullptr) {
+        m_true_dst->remove_user(this);
+    }
+    if (m_false_dst != nullptr) {
+        m_false_dst->remove_user(this);
+    }
+}
+
+void CondBranchInst::accept(Visitor *visitor) {
+    visitor->visit(this);
+}
+
+// TODO: Figure out what's breaking clang-format here.
+// clang-format off
+void CondBranchInst::replace_uses_of_with(Value *orig, Value *repl) {
+    REPL_VALUE(m_cond)
+    REPL_VALUE(m_true_dst)
+    REPL_VALUE(m_false_dst)
 } // clang-format on
 
 LoadInst::LoadInst(Value *ptr)

@@ -143,6 +143,30 @@ public:
     Value *rhs() const { return m_rhs; }
 };
 
+class CondBranchInst : public Instruction {
+    Value *m_cond;
+    BasicBlock *m_true_dst;
+    BasicBlock *m_false_dst;
+
+public:
+    static constexpr auto KIND = InstKind::CondBranch;
+
+    CondBranchInst(Value *cond, BasicBlock *true_dst, BasicBlock *false_dst);
+    CondBranchInst(const CondBranchInst &) = delete;
+    CondBranchInst(CondBranchInst &&) = delete;
+    ~CondBranchInst() override;
+
+    CondBranchInst &operator=(const CondBranchInst &) = delete;
+    CondBranchInst &operator=(CondBranchInst &&) = delete;
+
+    void accept(Visitor *visitor) override;
+    void replace_uses_of_with(Value *orig, Value *repl) override;
+
+    Value *cond() const { return m_cond; }
+    BasicBlock *true_dst() const { return m_true_dst; }
+    BasicBlock *false_dst() const { return m_false_dst; }
+};
+
 class LoadInst : public Instruction {
     Value *m_ptr;
 
