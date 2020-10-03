@@ -5,10 +5,10 @@
 #include <ir/Function.hh>
 #include <ir/Instructions.hh>
 #include <ir/Program.hh>
+#include <support/Assert.hh>
 
 #include <llvm/IR/IRBuilder.h>
 
-#include <cassert>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -71,7 +71,7 @@ llvm::Type *LLVMGen::llvm_type(const Type *type) {
     case TypeKind::Void:
         return llvm::Type::getVoidTy(*m_llvm_context);
     default:
-        assert(false);
+        ASSERT_NOT_REACHED();
     }
 }
 
@@ -99,7 +99,7 @@ llvm::Value *LLVMGen::gen_binary(const BinaryInst *binary) {
     case BinaryOp::Div:
         return m_llvm_builder.CreateSDiv(lhs, rhs);
     default:
-        assert(false);
+        ASSERT_NOT_REACHED();
     }
 }
 
@@ -121,7 +121,7 @@ llvm::Value *LLVMGen::gen_cast(const CastInst *cast) {
     case CastOp::ZeroExtend:
         return m_llvm_builder.CreateZExt(value, type);
     default:
-        assert(false);
+        ASSERT_NOT_REACHED();
     }
 }
 
@@ -134,7 +134,7 @@ llvm::Value *LLVMGen::gen_compare(const CompareInst *compare) {
     case CompareOp::GreaterThan:
         return m_llvm_builder.CreateICmpSGT(lhs, rhs);
     default:
-        assert(false);
+        ASSERT_NOT_REACHED();
     }
 }
 
@@ -194,7 +194,7 @@ llvm::Value *LLVMGen::gen_instruction(const Instruction *instruction) {
         gen_ret(instruction->as<RetInst>());
         return nullptr;
     default:
-        assert(false);
+        ASSERT_NOT_REACHED();
     }
 }
 
@@ -207,7 +207,7 @@ llvm::Value *LLVMGen::gen_value(const Value *value) {
     case ValueKind::Instruction:
         return gen_instruction(value->as<Instruction>());
     default:
-        assert(false);
+        ASSERT_NOT_REACHED();
     }
 }
 
@@ -225,7 +225,7 @@ void LLVMGen::gen_block(const BasicBlock *block) {
 void LLVMGen::gen_function(const Function *function) {
     std::vector<llvm::Type *> arg_types;
     for (const auto *arg : function->args()) {
-        assert(arg->has_type());
+        ASSERT(arg->has_type());
         arg_types.push_back(llvm_type(arg->type()));
     }
 
@@ -235,7 +235,7 @@ void LLVMGen::gen_function(const Function *function) {
 
     // If the function has no blocks, return early.
     if (function->begin() == function->end()) {
-        assert(function->vars().empty());
+        ASSERT(function->vars().empty());
         return;
     }
 

@@ -1,6 +1,6 @@
 #include <Token.hh>
 
-#include <cassert>
+#include <support/Assert.hh>
 
 std::string tok_str(TokenKind kind) {
     switch (kind) {
@@ -55,7 +55,7 @@ std::string tok_str(TokenKind kind) {
     case TokenKind::Var:
         return "var";
     default:
-        assert(false);
+        ASSERT_NOT_REACHED();
     }
 }
 

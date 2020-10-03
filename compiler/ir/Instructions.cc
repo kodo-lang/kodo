@@ -3,8 +3,7 @@
 #include <ir/BasicBlock.hh>
 #include <ir/Function.hh>
 #include <ir/Visitor.hh>
-
-#include <cassert>
+#include <support/Assert.hh>
 
 // TODO: Check cast.
 #define REPL_VALUE(val)                                                                                                \
@@ -57,7 +56,7 @@ void BranchInst::accept(Visitor *visitor) {
 }
 
 void BranchInst::replace_uses_of_with(Value *orig, Value *repl) {
-    assert(repl->kind() == ValueKind::BasicBlock);
+    ASSERT(repl->kind() == ValueKind::BasicBlock);
     REPL_VALUE(m_dst)
 }
 

@@ -6,11 +6,11 @@
 #include <ir/Instructions.hh>
 #include <ir/Program.hh>
 #include <ir/Visitor.hh>
+#include <support/Assert.hh>
 
 #include <fmt/color.h>
 #include <fmt/core.h>
 
-#include <cassert>
 #include <string>
 #include <vector>
 
@@ -59,9 +59,9 @@ const Type *resulting_type(const IntType *lhs, const Type *rhs) {
     case TypeKind::Int:
         return resulting_type(lhs, rhs->as<IntType>());
     case TypeKind::Pointer:
-        assert(false);
+        ENSURE_NOT_REACHED();
     default:
-        assert(false);
+        ENSURE_NOT_REACHED();
     }
 }
 
@@ -77,9 +77,9 @@ const Type *resulting_type(const Type *lhs, const Type *rhs) {
     case TypeKind::Int:
         return resulting_type(lhs->as<IntType>(), rhs);
     case TypeKind::Pointer:
-        assert(false);
+        ENSURE_NOT_REACHED();
     default:
-        assert(false);
+        ENSURE_NOT_REACHED();
     }
 }
 
@@ -100,7 +100,7 @@ Value *TypeChecker::build_coerce_cast(Value *value, const Type *type, CastOp op)
 }
 
 Value *TypeChecker::coerce(Value *value, const Type *type) {
-    assert(!type->is<InvalidType>());
+    ASSERT(!type->is<InvalidType>());
     if (value->type() == type) {
         return value;
     }
@@ -118,16 +118,16 @@ Value *TypeChecker::coerce(Value *value, const Type *type) {
     if (inst == nullptr) {
         inst = m_instruction;
     }
-    assert(inst != nullptr);
+    ENSURE(inst != nullptr);
     add_error(inst, "cannot implicitly cast from '{}' to '{}'", value->type()->to_string(), type->to_string());
     return new Constant(0);
 }
 
 void TypeChecker::check(Function *function) {
     m_function = function;
-    assert(function->return_type() != nullptr);
+    ASSERT(function->return_type() != nullptr);
     for (auto *arg : function->args()) {
-        assert(arg->has_type());
+        ASSERT(arg->has_type());
     }
     for (auto *var : function->vars()) {
         var->set_type(PointerType::get(var->var_type()));
@@ -170,7 +170,7 @@ void TypeChecker::visit(CallInst *call) {
 
 void TypeChecker::visit(CastInst *cast) {
     auto *val = cast->val();
-    assert(val->kind() != ValueKind::Constant);
+    ENSURE(val->kind() != ValueKind::Constant);
     if (val->type()->is<BoolType>() && cast->type()->is<IntType>()) {
         cast->set_op(CastOp::ZeroExtend);
         return;
@@ -193,17 +193,17 @@ void TypeChecker::visit(CondBranchInst *cond_branch) {
 }
 
 void TypeChecker::visit(LoadInst *load) {
-    assert(load->ptr()->type()->is<PointerType>());
+    ENSURE(load->ptr()->type()->is<PointerType>());
     const auto *ptr_type = load->ptr()->type()->as<PointerType>();
     load->set_type(ptr_type->pointee_type());
 }
 
 void TypeChecker::visit(PhiInst *) {
-    assert(false);
+    ASSERT_NOT_REACHED();
 }
 
 void TypeChecker::visit(StoreInst *store) {
-    assert(store->ptr()->type()->is<PointerType>());
+    ENSURE(store->ptr()->type()->is<PointerType>());
     const auto *ptr_type = store->ptr()->type()->as<PointerType>();
     const auto *type = resulting_type(ptr_type->pointee_type(), store->val()->type());
     store->replace_uses_of_with(store->val(), coerce(store->val(), type));

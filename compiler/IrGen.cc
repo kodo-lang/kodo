@@ -6,13 +6,13 @@
 #include <ir/Function.hh>
 #include <ir/Instructions.hh>
 #include <ir/Program.hh>
+#include <support/Assert.hh>
 #include <support/Stack.hh>
 
 #include <fmt/color.h>
 #include <fmt/core.h>
 
 #include <algorithm>
-#include <cassert>
 #include <string>
 #include <string_view>
 #include <unordered_map>
@@ -148,7 +148,7 @@ Value *IrGen::gen_bin_expr(const ast::BinExpr *bin_expr) {
     case ast::BinOp::GreaterThan:
         return m_block->append<CompareInst>(CompareOp::GreaterThan, lhs, rhs);
     default:
-        assert(false);
+        ASSERT_NOT_REACHED();
     }
 }
 
@@ -200,7 +200,7 @@ Value *IrGen::gen_unary_expr(const ast::UnaryExpr *unary_expr) {
     case ast::UnaryOp::Deref:
         return gen_deref(unary_expr->val());
     default:
-        assert(false);
+        ASSERT_NOT_REACHED();
     }
 }
 
@@ -222,7 +222,7 @@ Value *IrGen::gen_expr(const ast::Node *expr) {
       case ast::NodeKind::UnaryExpr:
           return gen_unary_expr(expr->as<ast::UnaryExpr>());
       default:
-          assert(false);
+         ASSERT_NOT_REACHED();
       }
     }();
     if (auto *inst = value->as_or_null<Instruction>()) {
@@ -237,7 +237,7 @@ void IrGen::gen_decl_stmt(const ast::DeclStmt *decl_stmt) {
         return;
     }
 
-    assert(decl_stmt->type() != nullptr);
+    ASSERT(decl_stmt->type() != nullptr);
     auto *var = m_function->append_var(decl_stmt->type());
     if (decl_stmt->init_val() != nullptr) {
         auto *init_val = gen_expr(decl_stmt->init_val());
@@ -309,7 +309,7 @@ void IrGen::gen_function_decl(const ast::FunctionDecl *function_decl) {
         m_scope_stack.peek().put_var(arg->name(), arg_var);
     }
 
-    assert(function_decl->block() != nullptr);
+    ASSERT(function_decl->block() != nullptr);
     gen_block(function_decl->block());
 }
 

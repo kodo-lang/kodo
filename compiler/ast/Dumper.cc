@@ -2,6 +2,7 @@
 
 #include <ast/Nodes.hh>
 #include <ast/Visitor.hh>
+#include <support/Assert.hh>
 
 #include <iostream>
 
@@ -59,7 +60,7 @@ void Dumper::visit(const BinExpr *bin_expr) {
         std::cout << "GreaterThan";
         break;
     default:
-        assert(false);
+        ASSERT_NOT_REACHED();
     }
     std::cout << ", ";
     bin_expr->lhs()->accept(this);
@@ -123,7 +124,7 @@ void Dumper::visit(const FunctionDecl *function_decl) {
     }
     std::cout << ')';
     if (!function_decl->externed()) {
-        assert(function_decl->block() != nullptr);
+        ASSERT(function_decl->block() != nullptr);
         function_decl->block()->accept(this);
     }
 }

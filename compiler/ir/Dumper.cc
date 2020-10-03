@@ -6,8 +6,8 @@
 #include <ir/Instructions.hh>
 #include <ir/Program.hh>
 #include <ir/Visitor.hh>
+#include <support/Assert.hh>
 
-#include <cassert>
 #include <cstdint>
 #include <iostream>
 #include <string>
@@ -152,7 +152,7 @@ void FunctionDumper::visit(CastInst *cast) {
         case CastOp::ZeroExtend:
             return "zero_extend";
         default:
-            assert(false);
+            ASSERT_NOT_REACHED();
         }
     };
     std::cout << printable_value(cast) << " = ";
@@ -189,7 +189,7 @@ void FunctionDumper::visit(LoadInst *load) {
 }
 
 void FunctionDumper::visit(PhiInst *) {
-    assert(false);
+    ASSERT_NOT_REACHED();
 }
 
 void FunctionDumper::visit(StoreInst *store) {

@@ -3,7 +3,6 @@
 #include <Token.hh>
 #include <ast/Nodes.hh>
 
-#include <cassert>
 #include <memory>
 #include <optional>
 

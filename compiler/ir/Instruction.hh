@@ -2,10 +2,9 @@
 
 #include <ir/Value.hh>
 // TODO: Only include ListIterator and ListNode.
+#include <support/Assert.hh>
 #include <support/List.hh>
 #include <support/ListNode.hh>
-
-#include <cassert>
 
 class BasicBlock;
 class Visitor;
@@ -58,9 +57,8 @@ public:
 
 template <typename T>
 T *Instruction::as() requires HasKind<T, InstKind> {
-    // TODO: dynamic_cast check worth it?
-    assert(m_kind == T::KIND);
-    assert(dynamic_cast<T *>(this) != nullptr);
+    ASSERT(m_kind == T::KIND);
+    ASSERT_PEDANTIC(dynamic_cast<T *>(this) != nullptr);
     return static_cast<T *>(this);
 }
 

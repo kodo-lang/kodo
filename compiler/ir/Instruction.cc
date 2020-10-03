@@ -1,11 +1,10 @@
 #include <ir/Instruction.hh>
 
 #include <ir/BasicBlock.hh>
-
-#include <cassert>
+#include <support/Assert.hh>
 
 ListIterator<Instruction> Instruction::remove_from_parent() {
-    assert(has_parent());
+    ASSERT(has_parent());
     return m_parent->remove(this);
 }
 

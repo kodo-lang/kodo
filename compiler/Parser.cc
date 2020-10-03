@@ -3,12 +3,11 @@
 #include <Lexer.hh>
 #include <Token.hh>
 #include <Type.hh>
+#include <support/Assert.hh>
 #include <support/Stack.hh>
 
 #include <fmt/color.h>
 #include <fmt/core.h>
-
-#include <cassert>
 
 namespace {
 
@@ -48,7 +47,7 @@ constexpr int precedence(Op op) {
     case Op::Deref:
         return 4;
     default:
-        assert(false);
+        ASSERT_NOT_REACHED();
     }
 }
 
@@ -88,7 +87,7 @@ ast::Node *create_expr(Op op, Stack<ast::Node *> *operands) {
     case Op::Assign:
         return new ast::AssignExpr(rhs->line(), lhs, rhs);
     default:
-        assert(false);
+        ASSERT_NOT_REACHED();
     }
 }
 

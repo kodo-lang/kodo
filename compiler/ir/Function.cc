@@ -1,6 +1,6 @@
 #include <ir/Function.hh>
 
-#include <cassert>
+#include <support/Assert.hh>
 
 // TODO: List<T>::append()?
 // TODO: Default List<T>::emplace() U param to T.
@@ -20,6 +20,6 @@ LocalVar *Function::append_var(const Type *type) {
 }
 
 BasicBlock *Function::entry() const {
-    assert(!m_blocks.empty());
+    ASSERT(!m_blocks.empty());
     return *m_blocks.begin();
 }

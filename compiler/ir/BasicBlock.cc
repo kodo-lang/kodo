@@ -1,7 +1,8 @@
 #include <ir/BasicBlock.hh>
 
+#include <support/Assert.hh>
+
 #include <algorithm>
-#include <cassert>
 
 BasicBlock::iterator BasicBlock::position(const Instruction *inst) const {
     // TODO: No need to find!
@@ -9,9 +10,9 @@ BasicBlock::iterator BasicBlock::position(const Instruction *inst) const {
 }
 
 BasicBlock::iterator BasicBlock::remove(Instruction *inst) {
-    assert(inst->users().empty());
+    ASSERT(inst->users().empty());
     auto it = position(inst);
-    assert(it != m_instructions.end());
+    ASSERT(it != m_instructions.end());
     return m_instructions.erase(it);
 }
 

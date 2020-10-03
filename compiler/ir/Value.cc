@@ -1,7 +1,8 @@
 #include <ir/Value.hh>
 
+#include <support/Assert.hh>
+
 #include <algorithm>
-#include <cassert>
 #include <utility>
 
 Value::Value(ValueKind kind) : m_kind(kind) {
@@ -32,16 +33,16 @@ void Value::replace_all_uses_with(Value *repl) {
         user->replace_uses_of_with(this, repl);
     }
     // Make sure that all users have removed themselves as users of us.
-    assert(m_users.empty());
+    ASSERT(m_users.empty());
 }
 
 void Value::replace_uses_of_with(Value *, Value *) {
     // Should be implemented by subclass.
-    assert(false);
+    ASSERT_NOT_REACHED();
 }
 
 bool Value::has_type() const {
-    assert(m_type != nullptr);
+    ASSERT(m_type != nullptr);
     return !m_type->is<InvalidType>();
 }
 

@@ -2,8 +2,7 @@
 
 #include <support/HasKind.hh>
 #include <support/ListNode.hh>
-
-#include <cassert>
+#include <support/Assert.hh>
 
 namespace ast {
 
@@ -45,9 +44,8 @@ public:
 
 template <typename T>
 const T *Node::as() const requires HasKind<T, NodeKind> {
-    // TODO: dynamic_cast check worth it?
-    assert(m_kind == T::KIND);
-    assert(dynamic_cast<const T *>(this) != nullptr);
+    ASSERT(m_kind == T::KIND);
+    ASSERT_PEDANTIC(dynamic_cast<const T *>(this) != nullptr);
     return static_cast<const T *>(this);
 }
 

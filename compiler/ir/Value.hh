@@ -1,9 +1,9 @@
 #pragma once
 
 #include <Type.hh>
+#include <support/Assert.hh>
 #include <support/HasKind.hh>
 
-#include <cassert>
 #include <string>
 #include <vector>
 
@@ -62,9 +62,8 @@ public:
 
 template <typename T>
 T *Value::as() requires HasKind<T, ValueKind> {
-    // TODO: dynamic_cast check worth it?
-    assert(m_kind == T::KIND);
-    assert(dynamic_cast<T *>(this) != nullptr);
+    ASSERT(m_kind == T::KIND);
+    ASSERT_PEDANTIC(dynamic_cast<T *>(this) != nullptr);
     return static_cast<T *>(this);
 }
 
