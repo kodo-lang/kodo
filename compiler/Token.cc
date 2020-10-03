@@ -10,6 +10,8 @@ std::string tok_str(TokenKind kind) {
         return "&";
     case TokenKind::Arrow:
         return "=>";
+    case TokenKind::Cast:
+        return "cast";
     case TokenKind::Colon:
         return ":";
     case TokenKind::Comma:

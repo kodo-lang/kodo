@@ -13,6 +13,7 @@ struct Dumper : public Visitor {
     void visit(const AssignExpr *) override;
     void visit(const BinExpr *) override;
     void visit(const CallExpr *) override;
+    void visit(const CastExpr *) override;
     void visit(const DeclStmt *) override;
     void visit(const FunctionArg *) override;
     void visit(const FunctionDecl *) override;
@@ -69,6 +70,14 @@ void Dumper::visit(const CallExpr *call_expr) {
         std::cout << ", ";
         arg->accept(this);
     }
+    std::cout << ')';
+}
+
+void Dumper::visit(const CastExpr *cast_expr) {
+    std::cout << "CastExpr(";
+    std::cout << cast_expr->type()->to_string();
+    std::cout << ", ";
+    cast_expr->val()->accept(this);
     std::cout << ')';
 }
 

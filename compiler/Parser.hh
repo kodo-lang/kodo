@@ -17,6 +17,7 @@ class Parser {
     Token expect(TokenKind kind);
 
     ast::CallExpr *parse_call_expr(std::string name);
+    ast::CastExpr *parse_cast_expr();
     ast::Node *parse_expr();
     void parse_stmt(ast::FunctionDecl *);
     const Type *parse_type();

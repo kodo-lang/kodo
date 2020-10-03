@@ -1,3 +1,3 @@
 fn main() => i32 {
-    return 5 < 10;
+    return cast<i32>(5 < 10);
 }

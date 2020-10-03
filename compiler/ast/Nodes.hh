@@ -71,6 +71,21 @@ public:
     const List<const Node> &args() const { return m_args; }
 };
 
+class CastExpr : public Node {
+    const Type *const m_type;
+    const std::unique_ptr<const Node> m_val;
+
+public:
+    static constexpr auto KIND = NodeKind::CastExpr;
+
+    CastExpr(int line, const Type *type, const Node *val) : Node(KIND, line), m_type(type), m_val(val) {}
+
+    void accept(Visitor *visitor) const override;
+
+    const Type *type() const { return m_type; }
+    const Node *val() const { return m_val.get(); }
+};
+
 class DeclStmt : public Node {
     const std::string m_name;
     const Type *const m_type;

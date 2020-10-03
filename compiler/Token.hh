@@ -8,6 +8,7 @@ enum class TokenKind {
     Add,
     Ampersand,
     Arrow,
+    Cast,
     Colon,
     Comma,
     Div,

@@ -131,6 +131,17 @@ ast::CallExpr *Parser::parse_call_expr(std::string name) {
     return call_expr;
 }
 
+ast::CastExpr *Parser::parse_cast_expr() {
+    expect(TokenKind::Cast);
+    expect(TokenKind::LessThan);
+    const auto *type = parse_type();
+    expect(TokenKind::GreaterThan);
+    expect(TokenKind::LParen);
+    auto *expr = parse_expr();
+    expect(TokenKind::RParen);
+    return new ast::CastExpr(m_lexer->line(), type, expr);
+}
+
 ast::Node *Parser::parse_expr() {
     Stack<ast::Node *> operands;
     Stack<Op> operators;
@@ -138,6 +149,11 @@ ast::Node *Parser::parse_expr() {
     bool last_was_operator = true;
     while (keep_parsing) {
         auto token = m_lexer->peek();
+        if (token.kind == TokenKind::Cast) {
+            operands.push(parse_cast_expr());
+            continue;
+        }
+
         auto op1 = [&token, last_was_operator]() -> std::optional<Op> {
             switch (token.kind) {
             case TokenKind::Add:

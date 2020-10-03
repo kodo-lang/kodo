@@ -69,6 +69,7 @@ public:
     Value *gen_assign_expr(const ast::AssignExpr *);
     Value *gen_bin_expr(const ast::BinExpr *);
     Value *gen_call_expr(const ast::CallExpr *);
+    Value *gen_cast_expr(const ast::CastExpr *);
     Value *gen_num_lit(const ast::NumLit *);
     Value *gen_symbol(const ast::Symbol *);
     Value *gen_unary_expr(const ast::UnaryExpr *);
@@ -166,6 +167,12 @@ Value *IrGen::gen_call_expr(const ast::CallExpr *call_expr) {
     return call;
 }
 
+Value *IrGen::gen_cast_expr(const ast::CastExpr *cast_expr) {
+    auto *cast = m_block->append<CastInst>(CastOp::SignExtend, cast_expr->type(), gen_expr(cast_expr->val()));
+    cast->set_line(cast_expr->line());
+    return cast;
+}
+
 Value *IrGen::gen_num_lit(const ast::NumLit *num_lit) {
     return new Constant(num_lit->value());
 }
@@ -201,6 +208,8 @@ Value *IrGen::gen_expr(const ast::Node *expr) {
         return gen_bin_expr(expr->as<ast::BinExpr>());
     case ast::NodeKind::CallExpr:
         return gen_call_expr(expr->as<ast::CallExpr>());
+    case ast::NodeKind::CastExpr:
+        return gen_cast_expr(expr->as<ast::CastExpr>());
     case ast::NodeKind::NumLit:
         return gen_num_lit(expr->as<ast::NumLit>());
     case ast::NodeKind::Symbol:

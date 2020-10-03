@@ -107,6 +107,10 @@ void CastInst::replace_uses_of_with(Value *orig, Value *repl) {
     REPL_VALUE(m_val)
 } // clang-format on
 
+void CastInst::set_op(CastOp op) {
+    m_op = op;
+}
+
 CompareInst::CompareInst(CompareOp op, Value *lhs, Value *rhs)
     : Instruction(KIND), m_op(op), m_lhs(lhs), m_rhs(rhs) {
     m_lhs->add_user(this);

@@ -108,6 +108,7 @@ public:
 
     void accept(Visitor *visitor) override;
     void replace_uses_of_with(Value *orig, Value *repl) override;
+    void set_op(CastOp op);
 
     CastOp op() const { return m_op; }
     Value *val() const { return m_val; }

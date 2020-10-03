@@ -13,6 +13,7 @@ enum class NodeKind {
     AssignExpr,
     BinExpr,
     CallExpr,
+    CastExpr,
     DeclStmt,
     FunctionArg,
     FunctionDecl,

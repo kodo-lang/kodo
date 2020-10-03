@@ -107,10 +107,6 @@ Value *TypeChecker::coerce(Value *value, const Type *type) {
     if (value->type()->is<InvalidType>()) {
         return build_coerce_cast(value, type, CastOp::SignExtend);
     }
-    // TODO: Should the bool -> int implicit cast be a thing?
-    if (value->type()->is<BoolType>() && type->is<IntType>()) {
-        return build_coerce_cast(value, type, CastOp::ZeroExtend);
-    }
     if (value->type()->is<IntType>() && type->is<IntType>()) {
         const auto *from_type = value->type()->as<IntType>();
         const auto *to_type = type->as<IntType>();
@@ -173,8 +169,14 @@ void TypeChecker::visit(CallInst *call) {
     call->set_type(callee->return_type());
 }
 
-void TypeChecker::visit(CastInst *) {
-    assert(false);
+void TypeChecker::visit(CastInst *cast) {
+    auto *val = cast->val();
+    assert(val->kind() != ValueKind::Constant);
+    if (val->type()->is<BoolType>() && cast->type()->is<IntType>()) {
+        cast->set_op(CastOp::ZeroExtend);
+        return;
+    }
+    add_error(cast, "cannot cast from '{}' to '{}'", val->type()->to_string(), cast->type()->to_string());
 }
 
 void TypeChecker::visit(CompareInst *compare) {

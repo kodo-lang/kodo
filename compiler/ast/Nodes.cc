@@ -16,6 +16,10 @@ void CallExpr::accept(Visitor *visitor) const {
     visitor->visit(this);
 }
 
+void CastExpr::accept(Visitor *visitor) const {
+    visitor->visit(this);
+}
+
 void DeclStmt::accept(Visitor *visitor) const {
     visitor->visit(this);
 }
