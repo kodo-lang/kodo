@@ -1,0 +1,8 @@
+fn main() => i32 {
+    var foo: i16 = 5;
+    var bar: i32 = 10;
+    var foo_addr: *i16 = &foo;
+    var bar_addr: *i32 = &bar;
+    var bar_addr_addr: **i32 = &bar_addr;
+    return foo + *foo_addr * **bar_addr_addr;
+}
