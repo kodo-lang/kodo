@@ -205,22 +205,30 @@ Value *IrGen::gen_unary_expr(const ast::UnaryExpr *unary_expr) {
 }
 
 Value *IrGen::gen_expr(const ast::Node *expr) {
-    switch (expr->kind()) {
-    case ast::NodeKind::BinExpr:
-        return gen_bin_expr(expr->as<ast::BinExpr>());
-    case ast::NodeKind::CallExpr:
-        return gen_call_expr(expr->as<ast::CallExpr>());
-    case ast::NodeKind::CastExpr:
-        return gen_cast_expr(expr->as<ast::CastExpr>());
-    case ast::NodeKind::NumLit:
-        return gen_num_lit(expr->as<ast::NumLit>());
-    case ast::NodeKind::Symbol:
-        return gen_symbol(expr->as<ast::Symbol>());
-    case ast::NodeKind::UnaryExpr:
-        return gen_unary_expr(expr->as<ast::UnaryExpr>());
-    default:
-        assert(false);
+    auto *value = [this, expr]() {
+      switch (expr->kind()) {
+      case ast::NodeKind::AssignExpr:
+          return gen_assign_expr(expr->as<ast::AssignExpr>());
+      case ast::NodeKind::BinExpr:
+          return gen_bin_expr(expr->as<ast::BinExpr>());
+      case ast::NodeKind::CallExpr:
+          return gen_call_expr(expr->as<ast::CallExpr>());
+      case ast::NodeKind::CastExpr:
+          return gen_cast_expr(expr->as<ast::CastExpr>());
+      case ast::NodeKind::NumLit:
+          return gen_num_lit(expr->as<ast::NumLit>());
+      case ast::NodeKind::Symbol:
+          return gen_symbol(expr->as<ast::Symbol>());
+      case ast::NodeKind::UnaryExpr:
+          return gen_unary_expr(expr->as<ast::UnaryExpr>());
+      default:
+          assert(false);
+      }
+    }();
+    if (auto *inst = value->as_or_null<Instruction>()) {
+        inst->set_line(expr->line());
     }
+    return value;
 }
 
 void IrGen::gen_decl_stmt(const ast::DeclStmt *decl_stmt) {
@@ -258,12 +266,6 @@ void IrGen::gen_ret_stmt(const ast::RetStmt *ret_stmt) {
 
 void IrGen::gen_stmt(const ast::Node *stmt) {
     switch (stmt->kind()) {
-    case ast::NodeKind::AssignExpr:
-        gen_assign_expr(stmt->as<ast::AssignExpr>());
-        break;
-    case ast::NodeKind::CallExpr:
-        gen_call_expr(stmt->as<ast::CallExpr>());
-        break;
     case ast::NodeKind::DeclStmt:
         gen_decl_stmt(stmt->as<ast::DeclStmt>());
         break;
@@ -274,7 +276,7 @@ void IrGen::gen_stmt(const ast::Node *stmt) {
         gen_ret_stmt(stmt->as<ast::RetStmt>());
         break;
     default:
-        assert(false);
+        gen_expr(stmt);
     }
 }
 
