@@ -148,8 +148,8 @@ void TypeChecker::visit(BinaryInst *binary) {
     auto *rhs = binary->rhs();
     const auto *type = resulting_type(lhs->type(), rhs->type());
     binary->set_type(type);
-    lhs->replace_all_uses_with(coerce(lhs, type));
-    rhs->replace_all_uses_with(coerce(rhs, type));
+    binary->replace_uses_of_with(lhs, coerce(lhs, type));
+    binary->replace_uses_of_with(rhs, coerce(rhs, type));
 }
 
 void TypeChecker::visit(BranchInst *) {}
