@@ -28,5 +28,5 @@ Instruction *BasicBlock::terminator() const {
     if (m_instructions.empty()) {
         return nullptr;
     }
-    return *m_instructions.begin();
+    return *(--m_instructions.end());
 }
