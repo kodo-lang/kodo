@@ -188,7 +188,8 @@ void TypeChecker::visit(CompareInst *compare) {
 }
 
 void TypeChecker::visit(CondBranchInst *cond_branch) {
-    assert(cond_branch->cond()->type()->is<BoolType>());
+    auto *cond = cond_branch->cond();
+    cond_branch->replace_uses_of_with(cond, coerce(cond, BoolType::get()));
 }
 
 void TypeChecker::visit(LoadInst *load) {
