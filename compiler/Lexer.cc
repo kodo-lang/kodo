@@ -106,7 +106,7 @@ Token Lexer::next_token() {
         } else if (std::isalpha(ch) != 0) {
             std::string buf;
             buf += ch;
-            while (std::isalpha(ch = m_stream->peek()) != 0 || std::isdigit(ch) != 0) {
+            while (std::isalpha(ch = m_stream->peek()) != 0 || std::isdigit(ch) != 0 || ch == '_') {
                 buf += m_stream->next();
             }
             if (buf == "cast") {
