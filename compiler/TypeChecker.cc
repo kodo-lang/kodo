@@ -107,11 +107,12 @@ Value *TypeChecker::coerce(Value *value, const Type *type) {
     if (value->type()->is<InvalidType>()) {
         return build_coerce_cast(value, type, CastOp::SignExtend);
     }
-    if (value->type()->is<IntType>() && type->is<IntType>()) {
-        const auto *from_type = value->type()->as<IntType>();
-        const auto *to_type = type->as<IntType>();
-        assert(to_type->bit_width() > from_type->bit_width());
-        return build_coerce_cast(value, to_type, CastOp::SignExtend);
+    if (const auto *from = value->type()->as<IntType>()) {
+        if (const auto *to = type->as<IntType>()) {
+            if (from->bit_width() < to->bit_width()) {
+                return build_coerce_cast(value, type, CastOp::SignExtend);
+            }
+        }
     }
     auto *inst = value->as_or_null<Instruction>();
     if (inst == nullptr) {
