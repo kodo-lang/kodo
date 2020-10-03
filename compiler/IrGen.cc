@@ -222,6 +222,11 @@ Value *IrGen::gen_expr(const ast::Node *expr) {
 }
 
 void IrGen::gen_decl_stmt(const ast::DeclStmt *decl_stmt) {
+    if (m_scope_stack.peek().find_var(decl_stmt->name()) != nullptr) {
+        add_node_error(decl_stmt, "redeclaration of variable '{}'", decl_stmt->name());
+        return;
+    }
+
     assert(decl_stmt->type() != nullptr);
     auto *var = m_function->append_var(decl_stmt->type());
     if (decl_stmt->init_val() != nullptr) {
