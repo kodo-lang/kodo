@@ -30,6 +30,8 @@ std::string tok_str(TokenKind kind) {
         return ">";
     case TokenKind::Identifier:
         return "identifier";
+    case TokenKind::If:
+        return "if";
     case TokenKind::LBrace:
         return "{";
     case TokenKind::LessThan:

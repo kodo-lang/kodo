@@ -18,6 +18,7 @@ enum class NodeKind {
     DeclStmt,
     FunctionArg,
     FunctionDecl,
+    IfStmt,
     NumLit,
     RetStmt,
     Root,

@@ -9,7 +9,10 @@ namespace ast {
 
 namespace {
 
-struct Dumper : public Visitor {
+class Dumper : public Visitor {
+    int m_indent_width{0};
+
+public:
     void visit(const AssignExpr *) override;
     void visit(const BinExpr *) override;
     void visit(const Block *) override;
@@ -18,6 +21,7 @@ struct Dumper : public Visitor {
     void visit(const DeclStmt *) override;
     void visit(const FunctionArg *) override;
     void visit(const FunctionDecl *) override;
+    void visit(const IfStmt *) override;
     void visit(const NumLit *) override;
     void visit(const RetStmt *) override;
     void visit(const Root *) override;
@@ -65,10 +69,15 @@ void Dumper::visit(const BinExpr *bin_expr) {
 }
 
 void Dumper::visit(const Block *block) {
+    m_indent_width += 2;
     for (const auto *stmt : block->stmts()) {
-        std::cout << "\n  ";
+        std::cout << '\n';
+        for (int i = 0; i < m_indent_width; i++) {
+            std::cout << ' ';
+        }
         stmt->accept(this);
     }
+    m_indent_width -= 2;
 }
 
 void Dumper::visit(const CallExpr *call_expr) {
@@ -117,6 +126,13 @@ void Dumper::visit(const FunctionDecl *function_decl) {
         assert(function_decl->block() != nullptr);
         function_decl->block()->accept(this);
     }
+}
+
+void Dumper::visit(const IfStmt *if_stmt) {
+    std::cout << "IfStmt(";
+    if_stmt->expr()->accept(this);
+    std::cout << ')';
+    if_stmt->block()->accept(this);
 }
 
 void Dumper::visit(const NumLit *num_lit) {

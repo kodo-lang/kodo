@@ -76,9 +76,11 @@ public:
     Value *gen_expr(const ast::Node *);
 
     void gen_decl_stmt(const ast::DeclStmt *);
+    void gen_if_stmt(const ast::IfStmt *);
     void gen_ret_stmt(const ast::RetStmt *);
     void gen_stmt(const ast::Node *);
 
+    void gen_block(const ast::Block *);
     void gen_function_decl(const ast::FunctionDecl *);
 
     const std::vector<std::string> &errors() { return m_errors; }
@@ -236,6 +238,19 @@ void IrGen::gen_decl_stmt(const ast::DeclStmt *decl_stmt) {
     m_scope_stack.peek().put_var(decl_stmt->name(), var);
 }
 
+void IrGen::gen_if_stmt(const ast::IfStmt *if_stmt) {
+    auto *cond = gen_expr(if_stmt->expr());
+    auto *true_dst = m_function->append_block();
+    auto *false_dst = m_function->append_block();
+    m_block->append<CondBranchInst>(cond, true_dst, false_dst);
+    m_block = true_dst;
+    gen_block(if_stmt->block());
+    if ((m_block->begin() == m_block->end()) || m_block->terminator()->inst_kind() != InstKind::Ret) {
+        m_block->append<BranchInst>(false_dst);
+    }
+    m_block = false_dst;
+}
+
 void IrGen::gen_ret_stmt(const ast::RetStmt *ret_stmt) {
     auto *val = gen_expr(ret_stmt->val());
     m_block->append<RetInst>(val);
@@ -252,12 +267,23 @@ void IrGen::gen_stmt(const ast::Node *stmt) {
     case ast::NodeKind::DeclStmt:
         gen_decl_stmt(stmt->as<ast::DeclStmt>());
         break;
+    case ast::NodeKind::IfStmt:
+        gen_if_stmt(stmt->as<ast::IfStmt>());
+        break;
     case ast::NodeKind::RetStmt:
         gen_ret_stmt(stmt->as<ast::RetStmt>());
         break;
     default:
         assert(false);
     }
+}
+
+void IrGen::gen_block(const ast::Block *block) {
+    m_scope_stack.emplace(m_scope_stack.peek());
+    for (const auto *stmt : block->stmts()) {
+        gen_stmt(stmt);
+    }
+    m_scope_stack.pop();
 }
 
 void IrGen::gen_function_decl(const ast::FunctionDecl *function_decl) {
@@ -282,9 +308,7 @@ void IrGen::gen_function_decl(const ast::FunctionDecl *function_decl) {
     }
 
     assert(function_decl->block() != nullptr);
-    for (const auto *stmt : function_decl->block()->stmts()) {
-        gen_stmt(stmt);
-    }
+    gen_block(function_decl->block());
 }
 
 } // namespace

@@ -224,9 +224,18 @@ ast::Node *Parser::parse_expr() {
 
 void Parser::parse_stmt(ast::Block *block) {
     switch (m_lexer->peek().kind) {
+    case TokenKind::If: {
+        consume(TokenKind::If);
+        expect(TokenKind::LParen);
+        auto *expr = parse_expr();
+        expect(TokenKind::RParen);
+        block->add_stmt<ast::IfStmt>(m_lexer->line(), expr, parse_block());
+        break;
+    }
     case TokenKind::Return:
         consume(TokenKind::Return);
         block->add_stmt<ast::RetStmt>(m_lexer->line(), parse_expr());
+        expect(TokenKind::Semi);
         break;
     case TokenKind::Var: {
         consume(TokenKind::Var);
@@ -235,10 +244,12 @@ void Parser::parse_stmt(ast::Block *block) {
         const auto *type = parse_type();
         const auto *init_val = consume(TokenKind::Eq) ? parse_expr() : nullptr;
         block->add_stmt<ast::DeclStmt>(m_lexer->line(), std::move(name), type, init_val);
+        expect(TokenKind::Semi);
         break;
     }
     default:
         block->add_stmt(parse_expr());
+        expect(TokenKind::Semi);
         break;
     }
 }
@@ -276,7 +287,6 @@ ast::Block *Parser::parse_block() {
             break;
         }
         parse_stmt(block);
-        expect(TokenKind::Semi);
     }
     expect(TokenKind::RBrace);
     return block;

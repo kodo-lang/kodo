@@ -36,6 +36,10 @@ void FunctionDecl::accept(Visitor *visitor) const {
     visitor->visit(this);
 }
 
+void IfStmt::accept(Visitor *visitor) const {
+    visitor->visit(this);
+}
+
 void NumLit::accept(Visitor *visitor) const {
     visitor->visit(this);
 }

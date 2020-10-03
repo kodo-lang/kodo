@@ -18,6 +18,7 @@ enum class TokenKind {
     Fn,
     GreaterThan,
     Identifier,
+    If,
     LBrace,
     LessThan,
     LParen,

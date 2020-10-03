@@ -1,0 +1,21 @@
+extern fn putchar(character: i32) => i32;
+
+fn main() => i32 {
+    var foo: i32 = 5;
+    var bar: i32 = 7;
+    if (foo < bar) {
+        putchar(65);
+    }
+    if (foo > bar) {
+        putchar(66);
+    }
+    if (bar > foo) {
+        putchar(65);
+    }
+    foo = 10;
+    bar = 20;
+    if (bar > foo) {
+        putchar(65);
+    }
+    return 0;
+}

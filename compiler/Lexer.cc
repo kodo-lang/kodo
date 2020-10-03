@@ -115,6 +115,8 @@ Token Lexer::next_token() {
                 token.kind = TokenKind::Extern;
             } else if (buf == "fn") {
                 token.kind = TokenKind::Fn;
+            } else if (buf == "if") {
+                token.kind = TokenKind::If;
             } else if (buf == "return") {
                 token.kind = TokenKind::Return;
             } else if (buf == "var") {

@@ -169,6 +169,21 @@ public:
     const Block *block() const { return m_block.get(); }
 };
 
+class IfStmt : public Node {
+    const std::unique_ptr<const Node> m_expr;
+    std::unique_ptr<const Block> m_block;
+
+public:
+    static constexpr auto KIND = NodeKind::IfStmt;
+
+    IfStmt(int line, const Node *expr, const Block *block) : Node(KIND, line), m_expr(expr), m_block(block) {}
+
+    void accept(Visitor *visitor) const override;
+
+    const Node *expr() const { return m_expr.get(); }
+    const Block *block() const { return m_block.get(); }
+};
+
 class NumLit : public Node {
     const std::uint64_t m_value;
 

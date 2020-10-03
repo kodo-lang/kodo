@@ -20,6 +20,7 @@ run_test "comparison.lang" 1 ""
 run_test "implicit_extension.lang" 10 ""
 run_test "libc_hi.lang" 0 "Hi"
 run_test "malloc.lang" 0 "A"
+run_test "simple_if.lang" 0 "AAA"
 run_test "type_errors.lang" 1 "error: 'test' requires 2 arguments, but 0 were passed on line 8
 error: cannot implicitly cast from 'i32' to 'i32*' on line 9
 error: cannot implicitly cast from 'i32*' to 'i32' on line 9
