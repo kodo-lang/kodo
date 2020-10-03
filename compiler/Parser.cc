@@ -222,11 +222,11 @@ ast::Node *Parser::parse_expr() {
     return operands.pop();
 }
 
-void Parser::parse_stmt(ast::FunctionDecl *func) {
+void Parser::parse_stmt(ast::Block *block) {
     switch (m_lexer->peek().kind) {
     case TokenKind::Return:
         consume(TokenKind::Return);
-        func->add_stmt<ast::RetStmt>(m_lexer->line(), parse_expr());
+        block->add_stmt<ast::RetStmt>(m_lexer->line(), parse_expr());
         break;
     case TokenKind::Var: {
         consume(TokenKind::Var);
@@ -234,11 +234,11 @@ void Parser::parse_stmt(ast::FunctionDecl *func) {
         expect(TokenKind::Colon);
         const auto *type = parse_type();
         const auto *init_val = consume(TokenKind::Eq) ? parse_expr() : nullptr;
-        func->add_stmt<ast::DeclStmt>(m_lexer->line(), std::move(name), type, init_val);
+        block->add_stmt<ast::DeclStmt>(m_lexer->line(), std::move(name), type, init_val);
         break;
     }
     default:
-        func->add_stmt(parse_expr());
+        block->add_stmt(parse_expr());
         break;
     }
 }
@@ -268,6 +268,20 @@ const Type *Parser::parse_type() {
     return type;
 }
 
+ast::Block *Parser::parse_block() {
+    auto *block = new ast::Block(m_lexer->line());
+    expect(TokenKind::LBrace);
+    while (m_lexer->has_next()) {
+        if (m_lexer->peek().kind == TokenKind::RBrace) {
+            break;
+        }
+        parse_stmt(block);
+        expect(TokenKind::Semi);
+    }
+    expect(TokenKind::RBrace);
+    return block;
+}
+
 std::unique_ptr<ast::Root> Parser::parse() {
     auto root = std::make_unique<ast::Root>();
     while (m_lexer->has_next() && m_lexer->peek().kind != TokenKind::Eof) {
@@ -292,15 +306,7 @@ std::unique_ptr<ast::Root> Parser::parse() {
             expect(TokenKind::Semi);
             continue;
         }
-        expect(TokenKind::LBrace);
-        while (m_lexer->has_next()) {
-            if (m_lexer->peek().kind == TokenKind::RBrace) {
-                break;
-            }
-            parse_stmt(func);
-            expect(TokenKind::Semi);
-        }
-        expect(TokenKind::RBrace);
+        func->set_block(parse_block());
     }
     return std::move(root);
 }

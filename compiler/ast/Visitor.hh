@@ -4,6 +4,7 @@ namespace ast {
 
 class AssignExpr;
 class BinExpr;
+class Block;
 class CallExpr;
 class CastExpr;
 class DeclStmt;
@@ -18,6 +19,7 @@ class UnaryExpr;
 struct Visitor {
     virtual void visit(const AssignExpr *) = 0;
     virtual void visit(const BinExpr *) = 0;
+    virtual void visit(const Block *) = 0;
     virtual void visit(const CallExpr *) = 0;
     virtual void visit(const CastExpr *) = 0;
     virtual void visit(const DeclStmt *) = 0;

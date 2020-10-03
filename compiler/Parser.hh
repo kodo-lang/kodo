@@ -19,8 +19,9 @@ class Parser {
     ast::CallExpr *parse_call_expr(std::string name);
     ast::CastExpr *parse_cast_expr();
     ast::Node *parse_expr();
-    void parse_stmt(ast::FunctionDecl *);
+    void parse_stmt(ast::Block *);
     const Type *parse_type();
+    ast::Block *parse_block();
 
 public:
     explicit Parser(Lexer *lexer) : m_lexer(lexer) {}

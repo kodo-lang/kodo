@@ -12,6 +12,7 @@ namespace {
 struct Dumper : public Visitor {
     void visit(const AssignExpr *) override;
     void visit(const BinExpr *) override;
+    void visit(const Block *) override;
     void visit(const CallExpr *) override;
     void visit(const CastExpr *) override;
     void visit(const DeclStmt *) override;
@@ -63,6 +64,13 @@ void Dumper::visit(const BinExpr *bin_expr) {
     std::cout << ')';
 }
 
+void Dumper::visit(const Block *block) {
+    for (const auto *stmt : block->stmts()) {
+        std::cout << "\n  ";
+        stmt->accept(this);
+    }
+}
+
 void Dumper::visit(const CallExpr *call_expr) {
     std::cout << "CallExpr(";
     std::cout << call_expr->name();
@@ -105,9 +113,9 @@ void Dumper::visit(const FunctionDecl *function_decl) {
         arg->accept(this);
     }
     std::cout << ')';
-    for (const auto *stmt : function_decl->stmts()) {
-        std::cout << "\n  ";
-        stmt->accept(this);
+    if (!function_decl->externed()) {
+        assert(function_decl->block() != nullptr);
+        function_decl->block()->accept(this);
     }
 }
 

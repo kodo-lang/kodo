@@ -12,6 +12,7 @@ class Visitor;
 enum class NodeKind {
     AssignExpr,
     BinExpr,
+    Block,
     CallExpr,
     CastExpr,
     DeclStmt,

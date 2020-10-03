@@ -55,6 +55,26 @@ public:
     const Node *rhs() const { return m_rhs.get(); }
 };
 
+class Block : public Node {
+    List<const Node> m_stmts;
+
+public:
+    static constexpr auto KIND = NodeKind::Block;
+
+    explicit Block(int line) : Node(KIND, line) {}
+
+    void accept(Visitor *visitor) const override;
+    void add_stmt(const Node *stmt) { m_stmts.insert(m_stmts.end(), stmt); }
+
+    // TODO: Remove this.
+    template <typename Stmt, typename... Args>
+    Stmt *add_stmt(Args &&... args) {
+        return m_stmts.emplace<Stmt>(m_stmts.end(), std::forward<Args>(args)...);
+    }
+
+    const List<const Node> &stmts() const { return m_stmts; }
+};
+
 class CallExpr : public Node {
     const std::string m_name;
     List<const Node> m_args;
@@ -125,7 +145,7 @@ class FunctionDecl : public Node {
     const Type *m_return_type;
     const bool m_externed;
     List<const FunctionArg> m_args;
-    List<const Node> m_stmts;
+    std::unique_ptr<const Block> m_block;
 
 public:
     static constexpr auto KIND = NodeKind::FunctionDecl;
@@ -134,6 +154,7 @@ public:
         : Node(KIND, line), m_name(std::move(name)), m_externed(externed) {}
 
     void accept(Visitor *visitor) const override;
+    void set_block(const Block *block) { m_block.reset(block); }
     void set_return_type(const Type *return_type) { m_return_type = return_type; }
 
     template <typename... Args>
@@ -141,19 +162,11 @@ public:
         return m_args.emplace<FunctionArg>(m_args.end(), std::forward<Args>(args)...);
     }
 
-    void add_stmt(const Node *stmt) { m_stmts.insert(m_stmts.end(), stmt); }
-
-    // TODO: Remove this.
-    template <typename Stmt, typename... Args>
-    Stmt *add_stmt(Args &&... args) {
-        return m_stmts.emplace<Stmt>(m_stmts.end(), std::forward<Args>(args)...);
-    }
-
     const std::string &name() const { return m_name; }
     const Type *return_type() const { return m_return_type; }
     bool externed() const { return m_externed; }
     const List<const FunctionArg> &args() const { return m_args; }
-    const List<const Node> &stmts() const { return m_stmts; }
+    const Block *block() const { return m_block.get(); }
 };
 
 class NumLit : public Node {

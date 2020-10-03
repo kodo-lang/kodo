@@ -12,6 +12,10 @@ void BinExpr::accept(Visitor *visitor) const {
     visitor->visit(this);
 }
 
+void Block::accept(Visitor *visitor) const {
+    visitor->visit(this);
+}
+
 void CallExpr::accept(Visitor *visitor) const {
     visitor->visit(this);
 }

@@ -276,7 +276,8 @@ void IrGen::gen_function_decl(const ast::FunctionDecl *function_decl) {
         m_scope_stack.peek().put_var(arg->name(), arg_var);
     }
 
-    for (const auto *stmt : function_decl->stmts()) {
+    assert(function_decl->block() != nullptr);
+    for (const auto *stmt : function_decl->block()->stmts()) {
         gen_stmt(stmt);
     }
 }
