@@ -47,7 +47,7 @@ constexpr int precedence(Op op) {
     case Op::Deref:
         return 4;
     default:
-        ASSERT_NOT_REACHED();
+        ENSURE_NOT_REACHED();
     }
 }
 
@@ -87,7 +87,7 @@ ast::Node *create_expr(Op op, Stack<ast::Node *> *operands) {
     case Op::Assign:
         return new ast::AssignExpr(rhs->line(), lhs, rhs);
     default:
-        ASSERT_NOT_REACHED();
+        ENSURE_NOT_REACHED();
     }
 }
 

@@ -152,7 +152,7 @@ void FunctionDumper::visit(CastInst *cast) {
         case CastOp::ZeroExtend:
             return "zero_extend";
         default:
-            ASSERT_NOT_REACHED();
+            ENSURE_NOT_REACHED();
         }
     };
     std::cout << printable_value(cast) << " = ";

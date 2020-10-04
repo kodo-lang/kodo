@@ -71,7 +71,7 @@ llvm::Type *LLVMGen::llvm_type(const Type *type) {
     case TypeKind::Void:
         return llvm::Type::getVoidTy(*m_llvm_context);
     default:
-        ASSERT_NOT_REACHED();
+        ENSURE_NOT_REACHED();
     }
 }
 
@@ -99,7 +99,7 @@ llvm::Value *LLVMGen::gen_binary(const BinaryInst *binary) {
     case BinaryOp::Div:
         return m_llvm_builder.CreateSDiv(lhs, rhs);
     default:
-        ASSERT_NOT_REACHED();
+        ENSURE_NOT_REACHED();
     }
 }
 
@@ -121,7 +121,7 @@ llvm::Value *LLVMGen::gen_cast(const CastInst *cast) {
     case CastOp::ZeroExtend:
         return m_llvm_builder.CreateZExt(value, type);
     default:
-        ASSERT_NOT_REACHED();
+        ENSURE_NOT_REACHED();
     }
 }
 
@@ -134,7 +134,7 @@ llvm::Value *LLVMGen::gen_compare(const CompareInst *compare) {
     case CompareOp::GreaterThan:
         return m_llvm_builder.CreateICmpSGT(lhs, rhs);
     default:
-        ASSERT_NOT_REACHED();
+        ENSURE_NOT_REACHED();
     }
 }
 
@@ -194,7 +194,7 @@ llvm::Value *LLVMGen::gen_instruction(const Instruction *instruction) {
         gen_ret(instruction->as<RetInst>());
         return nullptr;
     default:
-        ASSERT_NOT_REACHED();
+        ENSURE_NOT_REACHED();
     }
 }
 
@@ -207,7 +207,7 @@ llvm::Value *LLVMGen::gen_value(const Value *value) {
     case ValueKind::Instruction:
         return gen_instruction(value->as<Instruction>());
     default:
-        ASSERT_NOT_REACHED();
+        ENSURE_NOT_REACHED();
     }
 }
 

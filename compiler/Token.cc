@@ -57,7 +57,7 @@ std::string tok_str(TokenKind kind) {
     case TokenKind::Var:
         return "var";
     default:
-        ASSERT_NOT_REACHED();
+        ENSURE_NOT_REACHED();
     }
 }
 

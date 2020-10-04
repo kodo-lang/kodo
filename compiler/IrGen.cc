@@ -148,7 +148,7 @@ Value *IrGen::gen_bin_expr(const ast::BinExpr *bin_expr) {
     case ast::BinOp::GreaterThan:
         return m_block->append<CompareInst>(CompareOp::GreaterThan, lhs, rhs);
     default:
-        ASSERT_NOT_REACHED();
+        ENSURE_NOT_REACHED();
     }
 }
 
@@ -196,7 +196,7 @@ Value *IrGen::gen_unary_expr(const ast::UnaryExpr *unary_expr) {
     case ast::UnaryOp::Deref:
         return gen_deref(unary_expr->val());
     default:
-        ASSERT_NOT_REACHED();
+        ENSURE_NOT_REACHED();
     }
 }
 
@@ -218,7 +218,7 @@ Value *IrGen::gen_expr(const ast::Node *expr) {
       case ast::NodeKind::UnaryExpr:
           return gen_unary_expr(expr->as<ast::UnaryExpr>());
       default:
-         ASSERT_NOT_REACHED();
+          ENSURE_NOT_REACHED();
       }
     }();
     if (auto *inst = value->as_or_null<Instruction>()) {
