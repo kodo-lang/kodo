@@ -164,15 +164,13 @@ Value *IrGen::gen_call_expr(const ast::CallExpr *call_expr) {
         add_node_error(call_expr, "no function named '{}' in current context", call_expr->name());
         return new Constant(0);
     }
-    auto *call = m_block->append<CallInst>(*it, std::move(args));
-    call->set_line(call_expr->line());
-    return call;
+    return m_block->append<CallInst>(*it, std::move(args));
 }
 
 Value *IrGen::gen_cast_expr(const ast::CastExpr *cast_expr) {
-    auto *cast = m_block->append<CastInst>(CastOp::SignExtend, cast_expr->type(), gen_expr(cast_expr->val()));
-    cast->set_line(cast_expr->line());
-    return cast;
+    // TODO: Always setting this to SignExtend is a bit misleading.
+    auto *expr = gen_expr(cast_expr->val());
+    return m_block->append<CastInst>(CastOp::SignExtend, cast_expr->type(), expr);
 }
 
 Value *IrGen::gen_num_lit(const ast::NumLit *num_lit) {
@@ -188,9 +186,7 @@ Value *IrGen::gen_symbol(const ast::Symbol *symbol) {
     if (m_deref_state == DerefState::DontDeref) {
         return var;
     }
-    auto *load = m_block->append<LoadInst>(var);
-    load->set_line(symbol->line());
-    return load;
+    return m_block->append<LoadInst>(var);
 }
 
 Value *IrGen::gen_unary_expr(const ast::UnaryExpr *unary_expr) {
