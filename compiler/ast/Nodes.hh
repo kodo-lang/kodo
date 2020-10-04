@@ -228,6 +228,19 @@ public:
     const List<const FunctionDecl> &functions() const { return m_functions; }
 };
 
+class StringLit : public Node {
+    const std::string m_value;
+
+public:
+    static constexpr auto KIND = NodeKind::StringLit;
+
+    StringLit(int line, std::string value) : Node(KIND, line), m_value(std::move(value)) {}
+
+    void accept(Visitor *visitor) const override;
+
+    const std::string &value() const { return m_value; }
+};
+
 class Symbol : public Node {
     const std::string m_name;
 

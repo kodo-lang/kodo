@@ -191,6 +191,9 @@ ast::Node *Parser::parse_expr() {
             case TokenKind::NumLit:
                 operands.push(new ast::NumLit(m_lexer->line(), std::get<std::uint64_t>(m_lexer->next().data)));
                 break;
+            case TokenKind::StringLit:
+                operands.push(new ast::StringLit(m_lexer->line(), std::get<std::string>(m_lexer->next().data)));
+                break;
             default:
                 keep_parsing = false;
                 break;

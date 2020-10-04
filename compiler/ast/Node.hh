@@ -1,8 +1,8 @@
 #pragma once
 
+#include <support/Assert.hh>
 #include <support/HasKind.hh>
 #include <support/ListNode.hh>
-#include <support/Assert.hh>
 
 namespace ast {
 
@@ -21,6 +21,7 @@ enum class NodeKind {
     NumLit,
     RetStmt,
     Root,
+    StringLit,
     Symbol,
     UnaryExpr,
 };

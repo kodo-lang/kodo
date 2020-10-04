@@ -28,6 +28,7 @@ enum class TokenKind {
     RBrace,
     RParen,
     Semi,
+    StringLit,
     Sub,
     Var,
 };

@@ -94,6 +94,16 @@ Token Lexer::next_token() {
     case ';':
         token.kind = TokenKind::Semi;
         break;
+    case '"': {
+        std::string buf;
+        while (m_stream->peek() != '"') {
+            buf += m_stream->next();
+        }
+        m_stream->next();
+        token.kind = TokenKind::StringLit;
+        token.data = std::move(buf);
+        break;
+    }
     default:
         if (std::isdigit(ch) != 0) {
             std::string buf;

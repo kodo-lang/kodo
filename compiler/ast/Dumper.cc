@@ -26,6 +26,7 @@ public:
     void visit(const NumLit *) override;
     void visit(const RetStmt *) override;
     void visit(const Root *) override;
+    void visit(const StringLit *) override;
     void visit(const Symbol *) override;
     void visit(const UnaryExpr *) override;
 };
@@ -153,6 +154,12 @@ void Dumper::visit(const Root *root) {
         function->accept(this);
         std::cout << '\n';
     }
+}
+
+void Dumper::visit(const StringLit *string_lit) {
+    std::cout << "StringLit(";
+    std::cout << string_lit->value();
+    std::cout << ')';
 }
 
 void Dumper::visit(const Symbol *symbol) {
