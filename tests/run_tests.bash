@@ -3,7 +3,7 @@
 COMPILER=$1
 run_test() {
     printf "Running test '%s' " $1
-    OUTPUT=$($COMPILER --silent $(dirname $0)/$1)
+    OUTPUT=$($COMPILER $(dirname $0)/$1)
     RET=$?
     OUTPUT_STRIPPED=$(echo "$OUTPUT" | sed 's/\x1b\[[0-9;]*m//g')
     if [ $2 -ne $RET ] || [ "$3" != "$OUTPUT_STRIPPED" ]
