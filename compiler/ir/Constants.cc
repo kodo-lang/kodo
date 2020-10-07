@@ -1,17 +1,28 @@
 #include <ir/Constants.hh>
 
 #include <support/Assert.hh>
+#include <support/PairHash.hh>
+
+#include <unordered_map>
+#include <utility>
 
 // TODO: Constant cache.
 namespace ir {
 namespace {
 
 ConstantNull s_constant_null;
+std::unordered_map<std::pair<const Type *, std::size_t>, ConstantInt, PairHash> s_constant_ints;
+std::unordered_map<std::string, ConstantString> s_constant_strings;
 
 } // namespace
 
 ConstantInt *ConstantInt::get(const Type *type, std::size_t value) {
-    return new ConstantInt(type, value);
+    std::pair<const Type *, std::size_t> pair(type, value);
+    if (!s_constant_ints.contains(pair)) {
+        s_constant_ints.emplace(std::piecewise_construct, std::forward_as_tuple(pair),
+                                std::forward_as_tuple(type, value));
+    }
+    return &s_constant_ints.at(pair);
 }
 
 ConstantNull *ConstantNull::get() {
@@ -19,7 +30,11 @@ ConstantNull *ConstantNull::get() {
 }
 
 ConstantString *ConstantString::get(std::string value) {
-    return new ConstantString(PointerType::get(IntType::get_unsigned(8)), std::move(value));
+    if (!s_constant_strings.contains(value)) {
+        s_constant_strings.emplace(std::piecewise_construct, std::forward_as_tuple(value),
+                                   std::forward_as_tuple(PointerType::get(IntType::get_unsigned(8)), value));
+    }
+    return &s_constant_strings.at(value);
 }
 
 Constant *ConstantInt::clone(const Type *type) const {
