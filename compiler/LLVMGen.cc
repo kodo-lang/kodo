@@ -34,6 +34,9 @@ public:
     llvm::Type *llvm_type(const Type *);
     llvm::Value *llvm_value(const ir::Value *);
 
+    llvm::Value *gen_constant_int(const ir::ConstantInt *);
+    llvm::Value *gen_constant_string(const ir::ConstantString *);
+
     llvm::Value *gen_binary(const ir::BinaryInst *);
     llvm::Value *gen_call(const ir::CallInst *);
     llvm::Value *gen_cast(const ir::CastInst *);
@@ -84,6 +87,14 @@ llvm::Value *LLVMGen::llvm_value(const ir::Value *value) {
         llvm_value->setName(value->name());
     }
     return llvm_value;
+}
+
+llvm::Value *LLVMGen::gen_constant_int(const ir::ConstantInt *constant_int) {
+    return llvm::ConstantInt::get(llvm_type(constant_int->type()), constant_int->value());
+}
+
+llvm::Value *LLVMGen::gen_constant_string(const ir::ConstantString *constant_string) {
+    return m_llvm_builder.CreateGlobalStringPtr(constant_string->value());
 }
 
 llvm::Value *LLVMGen::gen_binary(const ir::BinaryInst *binary) {
@@ -166,8 +177,14 @@ llvm::Value *LLVMGen::gen_argument(const ir::Argument *argument) {
 }
 
 llvm::Value *LLVMGen::gen_constant(const ir::Constant *constant) {
-    auto *constant_int = constant->as<ir::ConstantInt>();
-    return llvm::ConstantInt::get(llvm_type(constant->type()), constant_int->value());
+    switch (constant->constant_kind()) {
+    case ir::ConstantKind::Int:
+        return gen_constant_int(constant->as<ir::ConstantInt>());
+    case ir::ConstantKind::String:
+        return gen_constant_string(constant->as<ir::ConstantString>());
+    default:
+        ENSURE_NOT_REACHED();
+    }
 }
 
 llvm::Value *LLVMGen::gen_instruction(const ir::Instruction *instruction) {

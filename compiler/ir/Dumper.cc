@@ -43,6 +43,8 @@ std::string printable_constant(const Constant *constant) {
         return std::to_string(constant->as<ConstantInt>()->value());
     case ConstantKind::Null:
         return "nullptr";
+    case ConstantKind::String:
+        return constant->as<ConstantString>()->value();
     default:
         ENSURE_NOT_REACHED();
     }

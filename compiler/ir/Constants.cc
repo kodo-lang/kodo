@@ -18,11 +18,19 @@ ConstantNull *ConstantNull::get() {
     return &s_constant_null;
 }
 
+ConstantString *ConstantString::get(std::string value) {
+    return new ConstantString(PointerType::get(IntType::get_unsigned(8)), std::move(value));
+}
+
 Constant *ConstantInt::clone(const Type *type) const {
     return get(type, m_value);
 }
 
 Constant *ConstantNull::clone(const Type *) const {
+    ENSURE_NOT_REACHED();
+}
+
+Constant *ConstantString::clone(const Type *) const {
     ENSURE_NOT_REACHED();
 }
 

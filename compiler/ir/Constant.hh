@@ -8,6 +8,7 @@ namespace ir {
 enum class ConstantKind {
     Int,
     Null,
+    String,
 };
 
 class Constant : public Value {

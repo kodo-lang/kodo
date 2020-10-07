@@ -71,6 +71,7 @@ public:
     ir::Value *gen_call_expr(const ast::CallExpr *);
     ir::Value *gen_cast_expr(const ast::CastExpr *);
     ir::Value *gen_num_lit(const ast::NumLit *);
+    ir::Value *gen_string_lit(const ast::StringLit *);
     ir::Value *gen_symbol(const ast::Symbol *);
     ir::Value *gen_unary_expr(const ast::UnaryExpr *);
     ir::Value *gen_expr(const ast::Node *);
@@ -178,6 +179,11 @@ ir::Value *IrGen::gen_num_lit(const ast::NumLit *num_lit) {
     return ir::ConstantInt::get(InvalidType::get(), num_lit->value());
 }
 
+ir::Value *IrGen::gen_string_lit(const ast::StringLit *string_lit) {
+    // TODO: Avoid copying string here?
+    return ir::ConstantString::get(string_lit->value());
+}
+
 ir::Value *IrGen::gen_symbol(const ast::Symbol *symbol) {
     auto *var = m_scope_stack.peek().find_var(symbol->name());
     if (var == nullptr) {
@@ -214,6 +220,8 @@ ir::Value *IrGen::gen_expr(const ast::Node *expr) {
           return gen_cast_expr(expr->as<ast::CastExpr>());
       case ast::NodeKind::NumLit:
           return gen_num_lit(expr->as<ast::NumLit>());
+      case ast::NodeKind::StringLit:
+          return gen_string_lit(expr->as<ast::StringLit>());
       case ast::NodeKind::Symbol:
           return gen_symbol(expr->as<ast::Symbol>());
       case ast::NodeKind::UnaryExpr:

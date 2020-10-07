@@ -3,6 +3,8 @@
 #include <ir/Constant.hh>
 
 #include <cstdint>
+#include <string>
+#include <utility>
 
 namespace ir {
 
@@ -27,6 +29,20 @@ struct ConstantNull : public Constant {
     ConstantNull() noexcept : Constant(KIND, nullptr) {}
 
     Constant *clone(const Type *type) const override;
+};
+
+class ConstantString : public Constant {
+    const std::string m_value;
+
+public:
+    static constexpr auto KIND = ConstantKind::String;
+    static ConstantString *get(std::string value);
+
+    ConstantString(const Type *type, std::string value) : Constant(KIND, type), m_value(std::move(value)) {}
+
+    Constant *clone(const Type *type) const override;
+
+    const std::string &value() const { return m_value; }
 };
 
 } // namespace ir
