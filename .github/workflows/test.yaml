@@ -13,16 +13,18 @@ jobs:
           apt update -qq
           apt install -y \
             cmake \
-            gcc \
+            g++-10 \
             libfmt-dev \
+            llvm-dev \
             ninja-build
       - name: Configure CMake
         run: |
           cmake \
             -Bbuild \
             -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_CXX_COMPILER=g++-10 \
             -GNinja
       - name: Build
-        run: ninja
+        run: cmake --build build
       - name: Test
-        run: ninja tests
+        run: cmake --build build --target tests
