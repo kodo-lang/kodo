@@ -102,8 +102,8 @@ ir::Value *Checker::coerce(ir::Value *value, const Type *type) {
     if (value->type()->is<InvalidType>()) {
         return build_coerce_cast(value, type, ir::CastOp::SignExtend);
     }
-    if (const auto *from = value->type()->as<IntType>()) {
-        if (const auto *to = type->as<IntType>()) {
+    if (const auto *from = value->type()->as_or_null<IntType>()) {
+        if (const auto *to = type->as_or_null<IntType>()) {
             if (from->bit_width() < to->bit_width()) {
                 return build_coerce_cast(value, type, ir::CastOp::SignExtend);
             }
@@ -188,7 +188,6 @@ void Checker::visit(ir::CondBranchInst *cond_branch) {
 }
 
 void Checker::visit(ir::LoadInst *load) {
-    ENSURE(load->ptr()->type()->is<PointerType>());
     const auto *ptr_type = load->ptr()->type()->as<PointerType>();
     load->set_type(ptr_type->pointee_type());
 }
@@ -198,7 +197,6 @@ void Checker::visit(ir::PhiInst *) {
 }
 
 void Checker::visit(ir::StoreInst *store) {
-    ENSURE(store->ptr()->type()->is<PointerType>());
     const auto *ptr_type = store->ptr()->type()->as<PointerType>();
     const auto *type = resulting_type(ptr_type->pointee_type(), store->val()->type());
     store->replace_uses_of_with(store->val(), coerce(store->val(), type));

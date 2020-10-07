@@ -1,5 +1,8 @@
 #pragma once
 
+#include <support/Assert.hh>
+#include <support/HasKind.hh>
+
 #include <string>
 
 enum class TypeKind {
@@ -13,8 +16,10 @@ enum class TypeKind {
 class Type {
     TypeKind m_kind;
 
-public:
+protected:
     explicit Type(TypeKind kind) : m_kind(kind) {}
+
+public:
     Type(const Type &) = delete;
     Type(Type &&) = delete;
     virtual ~Type() = default;
@@ -23,33 +28,33 @@ public:
     Type &operator=(Type &&) = delete;
 
     template <typename T>
-    const T *as() const;
-
+    const T *as() const requires HasKind<T, TypeKind>;
     template <typename T>
-    bool is() const;
+    const T *as_or_null() const requires HasKind<T, TypeKind>;
+    template <typename T>
+    bool is() const requires HasKind<T, TypeKind>;
 
     virtual std::string to_string() const = 0;
 
     TypeKind kind() const { return m_kind; }
 };
 
-// TODO: Make cast system more like IR.
 struct InvalidType : public Type {
-    static constexpr auto kind = TypeKind::Invalid;
+    static constexpr auto KIND = TypeKind::Invalid;
     static const InvalidType *get();
 
-    InvalidType() noexcept : Type(kind) {}
+    InvalidType() noexcept : Type(KIND) {}
 
     std::string to_string() const override;
 };
 
 struct BoolType : public Type {
-    static constexpr auto kind = TypeKind::Bool;
+    static constexpr auto KIND = TypeKind::Bool;
     static const BoolType *get();
 
     std::string to_string() const override;
 
-    BoolType() noexcept : Type(kind) {}
+    BoolType() noexcept : Type(KIND) {}
 };
 
 class IntType : public Type {
@@ -57,12 +62,12 @@ class IntType : public Type {
     const bool m_is_signed;
 
 public:
-    static constexpr auto kind = TypeKind::Int;
+    static constexpr auto KIND = TypeKind::Int;
     static const IntType *get(int bit_width, bool is_signed);
     static const IntType *get_signed(int bit_width);
     static const IntType *get_unsigned(int bit_width);
 
-    IntType(int bit_width, bool is_signed) : Type(kind), m_bit_width(bit_width), m_is_signed(is_signed) {}
+    IntType(int bit_width, bool is_signed) : Type(KIND), m_bit_width(bit_width), m_is_signed(is_signed) {}
 
     std::string to_string() const override;
 
@@ -74,10 +79,10 @@ class PointerType : public Type {
     const Type *m_pointee_type;
 
 public:
-    static constexpr auto kind = TypeKind::Pointer;
+    static constexpr auto KIND = TypeKind::Pointer;
     static const PointerType *get(const Type *pointee_type);
 
-    explicit PointerType(const Type *pointee_type) : Type(kind), m_pointee_type(pointee_type) {}
+    explicit PointerType(const Type *pointee_type) : Type(KIND), m_pointee_type(pointee_type) {}
 
     std::string to_string() const override;
 
@@ -85,23 +90,27 @@ public:
 };
 
 struct VoidType : public Type {
-    static constexpr auto kind = TypeKind::Void;
+    static constexpr auto KIND = TypeKind::Void;
     static const VoidType *get();
 
     std::string to_string() const override;
 
-    VoidType() noexcept : Type(kind) {}
+    VoidType() noexcept : Type(KIND) {}
 };
 
 template <typename T>
-const T *Type::as() const {
-    if (!is<T>()) {
-        return nullptr;
-    }
+const T *Type::as() const requires HasKind<T, TypeKind> {
+    ASSERT(m_kind == T::KIND);
+    ASSERT_PEDANTIC(dynamic_cast<const T *>(this) != nullptr);
     return static_cast<const T *>(this);
 }
 
 template <typename T>
-bool Type::is() const {
-    return m_kind == T::kind;
+const T *Type::as_or_null() const requires HasKind<T, TypeKind> {
+    return is<T>() ? as<T>() : nullptr;
+}
+
+template <typename T>
+bool Type::is() const requires HasKind<T, TypeKind> {
+    return m_kind == T::KIND;
 }
