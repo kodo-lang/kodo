@@ -1,7 +1,7 @@
 #include <TypeChecker.hh>
 
 #include <ir/BasicBlock.hh>
-#include <ir/Constant.hh>
+#include <ir/Constants.hh>
 #include <ir/Function.hh>
 #include <ir/Instructions.hh>
 #include <ir/Program.hh>
@@ -92,9 +92,7 @@ void TypeChecker::add_error(const ir::Instruction *inst, const FmtStr &fmt, cons
 
 ir::Value *TypeChecker::build_coerce_cast(ir::Value *value, const Type *type, ir::CastOp op) {
     if (auto *constant = value->as_or_null<ir::Constant>()) {
-        auto new_constant = new ir::Constant(constant->value());
-        new_constant->set_type(type);
-        return new_constant;
+        return constant->clone(type);
     }
     return m_block->insert<ir::CastInst>(m_insert_pos, op, type, value);
 }
@@ -120,7 +118,7 @@ ir::Value *TypeChecker::coerce(ir::Value *value, const Type *type) {
     }
     ENSURE(inst != nullptr);
     add_error(inst, "cannot implicitly cast from '{}' to '{}'", value->type()->to_string(), type->to_string());
-    return new ir::Constant(0);
+    return ir::ConstantNull::get();
 }
 
 void TypeChecker::check(ir::Function *function) {

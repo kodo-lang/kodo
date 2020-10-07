@@ -2,6 +2,7 @@ add_executable(compiler
     ast/Dumper.cc
     ast/Nodes.cc
     ir/BasicBlock.cc
+    ir/Constants.cc
     ir/Dumper.cc
     ir/Function.cc
     ir/Instruction.cc

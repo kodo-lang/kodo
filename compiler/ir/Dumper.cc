@@ -1,7 +1,7 @@
 #include <ir/Dumper.hh>
 
 #include <ir/BasicBlock.hh>
-#include <ir/Constant.hh>
+#include <ir/Constants.hh>
 #include <ir/Function.hh>
 #include <ir/Instructions.hh>
 #include <ir/Program.hh>
@@ -37,6 +37,17 @@ public:
     void visit(RetInst *) override;
 };
 
+std::string printable_constant(const Constant *constant) {
+    switch (constant->constant_kind()) {
+    case ConstantKind::Int:
+        return std::to_string(constant->as<ConstantInt>()->value());
+    case ConstantKind::Null:
+        return "nullptr";
+    default:
+        ENSURE_NOT_REACHED();
+    }
+}
+
 std::string FunctionDumper::printable_block(const BasicBlock *block) {
     if (!m_block_map.contains(block)) {
         m_block_map.emplace(block, m_block_map.size());
@@ -49,7 +60,7 @@ std::string FunctionDumper::printable_value(const Value *value) {
         return '%' + value->name();
     }
     if (const auto *constant = value->as_or_null<Constant>()) {
-        return std::to_string(constant->value());
+        return printable_constant(constant);
     }
     if (!m_value_map.contains(value)) {
         m_value_map.emplace(value, m_value_map.size());

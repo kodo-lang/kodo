@@ -2,7 +2,7 @@
 
 #include <ast/Nodes.hh>
 #include <ir/BasicBlock.hh>
-#include <ir/Constant.hh>
+#include <ir/Constants.hh>
 #include <ir/Function.hh>
 #include <ir/Instructions.hh>
 #include <ir/Program.hh>
@@ -162,7 +162,7 @@ ir::Value *IrGen::gen_call_expr(const ast::CallExpr *call_expr) {
     });
     if (it == m_program->end()) {
         add_node_error(call_expr, "no function named '{}' in current context", call_expr->name());
-        return new ir::Constant(0);
+        return ir::ConstantNull::get();
     }
     return m_block->append<ir::CallInst>(*it, std::move(args));
 }
@@ -174,14 +174,15 @@ ir::Value *IrGen::gen_cast_expr(const ast::CastExpr *cast_expr) {
 }
 
 ir::Value *IrGen::gen_num_lit(const ast::NumLit *num_lit) {
-    return new ir::Constant(num_lit->value());
+    // TODO: Work out best fit type based on constant value.
+    return ir::ConstantInt::get(InvalidType::get(), num_lit->value());
 }
 
 ir::Value *IrGen::gen_symbol(const ast::Symbol *symbol) {
     auto *var = m_scope_stack.peek().find_var(symbol->name());
     if (var == nullptr) {
         add_node_error(symbol, "no symbol named '{}' in current context", symbol->name());
-        return new ir::Constant(0);
+        return ir::ConstantNull::get();
     }
     if (m_deref_state == DerefState::DontDeref) {
         return var;

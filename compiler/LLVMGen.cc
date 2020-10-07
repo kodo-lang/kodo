@@ -1,7 +1,7 @@
 #include <LLVMGen.hh>
 
 #include <ir/BasicBlock.hh>
-#include <ir/Constant.hh>
+#include <ir/Constants.hh>
 #include <ir/Function.hh>
 #include <ir/Instructions.hh>
 #include <ir/Program.hh>
@@ -166,7 +166,8 @@ llvm::Value *LLVMGen::gen_argument(const ir::Argument *argument) {
 }
 
 llvm::Value *LLVMGen::gen_constant(const ir::Constant *constant) {
-    return llvm::ConstantInt::get(llvm_type(constant->type()), constant->value());
+    auto *constant_int = constant->as<ir::ConstantInt>();
+    return llvm::ConstantInt::get(llvm_type(constant->type()), constant_int->value());
 }
 
 llvm::Value *LLVMGen::gen_instruction(const ir::Instruction *instruction) {
