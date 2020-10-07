@@ -19,6 +19,7 @@ run_test() {
 # Expecting success.
 run_test "comparison.lang" 1 ""
 run_test "complex_expression.lang" 55 ""
+run_test "hello_world.lang" 0 "Hello, world!"
 run_test "implicit_extension.lang" 10 ""
 run_test "libc_hi.lang" 0 "Hi"
 run_test "malloc.lang" 0 "A"
