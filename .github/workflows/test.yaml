@@ -1,0 +1,28 @@
+name: Run tests
+on: push
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    container: ubuntu:20.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Install dependencies and tools
+        run: |
+          apt update -qq
+          apt install -y \
+            cmake \
+            gcc \
+            libfmt-dev \
+            ninja-build
+      - name: Configure CMake
+        run: |
+          cmake \
+            -Bbuild \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -GNinja
+      - name: Build
+        run: ninja
+      - name: Test
+        run: ninja tests
