@@ -69,7 +69,7 @@ const Type *resulting_type(const Type *lhs, const Type *rhs) {
     if (lhs == rhs) {
         // TODO: Hacky. resulting_type should take in two values and have special handling for constants.
         if (lhs->is<InvalidType>()) {
-            return IntType::get(32);
+            return IntType::get_signed(32);
         }
         return lhs;
     }

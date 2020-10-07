@@ -266,8 +266,9 @@ const Type *Parser::parse_type() {
     const Type *base_type = nullptr;
     if (base == "bool") {
         base_type = BoolType::get();
-    } else if (base.starts_with('i')) {
-        base_type = IntType::get(std::stoi(base.substr(1)));
+    } else if (base.starts_with('i') || base.starts_with('u')) {
+        int bit_width = std::stoi(base.substr(1));
+        base_type = IntType::get(bit_width, base.starts_with('i'));
     }
 
     if (base_type == nullptr) {

@@ -54,16 +54,20 @@ struct BoolType : public Type {
 
 class IntType : public Type {
     const int m_bit_width;
+    const bool m_is_signed;
 
 public:
     static constexpr auto kind = TypeKind::Int;
-    static const IntType *get(int bit_width);
+    static const IntType *get(int bit_width, bool is_signed);
+    static const IntType *get_signed(int bit_width);
+    static const IntType *get_unsigned(int bit_width);
 
-    explicit IntType(int bit_width) : Type(kind), m_bit_width(bit_width) {}
+    IntType(int bit_width, bool is_signed) : Type(kind), m_bit_width(bit_width), m_is_signed(is_signed) {}
 
     std::string to_string() const override;
 
     int bit_width() const { return m_bit_width; }
+    bool is_signed() const { return m_is_signed; }
 };
 
 class PointerType : public Type {
