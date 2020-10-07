@@ -5,6 +5,8 @@
 #include <algorithm>
 #include <utility>
 
+namespace ir {
+
 Value::Value(ValueKind kind) : m_kind(kind) {
     set_type(InvalidType::get());
 }
@@ -57,3 +59,5 @@ bool Value::has_name() const {
 void Value::set_name(std::string name) {
     m_name = std::move(name);
 }
+
+} // namespace ir

@@ -1,5 +1,7 @@
 #pragma once
 
+namespace ir {
+
 class BinaryInst;
 class BranchInst;
 class CallInst;
@@ -23,3 +25,5 @@ struct Visitor {
     virtual void visit(StoreInst *) = 0;
     virtual void visit(RetInst *) = 0;
 };
+
+} // namespace ir

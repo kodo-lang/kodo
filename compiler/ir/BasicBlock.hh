@@ -7,6 +7,8 @@
 
 #include <concepts>
 
+namespace ir {
+
 class Function;
 
 class BasicBlock : public Value, public ListNode {
@@ -81,3 +83,5 @@ template <typename Inst, typename... Args>
 Inst *BasicBlock::append(Args &&... args) requires std::derived_from<Inst, Instruction> {
     return insert<Inst>(m_instructions.end(), std::forward<Args>(args)...);
 }
+
+} // namespace ir

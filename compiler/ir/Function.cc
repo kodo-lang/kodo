@@ -4,6 +4,7 @@
 
 // TODO: List<T>::append()?
 // TODO: Default List<T>::emplace() U param to T.
+namespace ir {
 
 Argument *Function::append_arg() {
     return m_args.emplace<Argument>(m_args.end());
@@ -23,3 +24,5 @@ BasicBlock *Function::entry() const {
     ASSERT(!m_blocks.empty());
     return *m_blocks.begin();
 }
+
+} // namespace ir

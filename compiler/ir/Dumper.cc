@@ -13,6 +13,7 @@
 #include <string>
 #include <unordered_map>
 
+namespace ir {
 namespace {
 
 class FunctionDumper : public Visitor {
@@ -208,3 +209,5 @@ void dump_ir(const Program *program) {
         FunctionDumper().dump(function);
     }
 }
+
+} // namespace ir

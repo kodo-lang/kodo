@@ -16,34 +16,34 @@
 
 namespace {
 
-class TypeChecker : public Visitor {
-    Program *const m_program;
-    Function *m_function{nullptr};
-    BasicBlock *m_block{nullptr};
-    Instruction *m_instruction{nullptr};
-    BasicBlock::iterator m_insert_pos{nullptr};
+class TypeChecker : public ir::Visitor {
+    ir::Program *const m_program;
+    ir::Function *m_function{nullptr};
+    ir::BasicBlock *m_block{nullptr};
+    ir::Instruction *m_instruction{nullptr};
+    ir::BasicBlock::iterator m_insert_pos{nullptr};
     std::vector<std::string> m_errors;
 
     template <typename FmtStr, typename... Args>
-    void add_error(const Instruction *inst, const FmtStr &fmt, const Args &... args);
+    void add_error(const ir::Instruction *inst, const FmtStr &fmt, const Args &... args);
 
-    Value *build_coerce_cast(Value *value, const Type *type, CastOp op);
-    Value *coerce(Value *value, const Type *type);
+    ir::Value *build_coerce_cast(ir::Value *value, const Type *type, ir::CastOp op);
+    ir::Value *coerce(ir::Value *value, const Type *type);
 
 public:
-    explicit TypeChecker(Program *program) : m_program(program) {}
+    explicit TypeChecker(ir::Program *program) : m_program(program) {}
 
-    void check(Function *function);
-    void visit(BinaryInst *) override;
-    void visit(BranchInst *) override;
-    void visit(CallInst *) override;
-    void visit(CastInst *) override;
-    void visit(CompareInst *) override;
-    void visit(CondBranchInst *) override;
-    void visit(LoadInst *) override;
-    void visit(PhiInst *) override;
-    void visit(StoreInst *) override;
-    void visit(RetInst *) override;
+    void check(ir::Function *);
+    void visit(ir::BinaryInst *) override;
+    void visit(ir::BranchInst *) override;
+    void visit(ir::CallInst *) override;
+    void visit(ir::CastInst *) override;
+    void visit(ir::CompareInst *) override;
+    void visit(ir::CondBranchInst *) override;
+    void visit(ir::LoadInst *) override;
+    void visit(ir::PhiInst *) override;
+    void visit(ir::StoreInst *) override;
+    void visit(ir::RetInst *) override;
 
     const std::vector<std::string> &errors() { return m_errors; }
 };
@@ -84,46 +84,46 @@ const Type *resulting_type(const Type *lhs, const Type *rhs) {
 }
 
 template <typename FmtStr, typename... Args>
-void TypeChecker::add_error(const Instruction *inst, const FmtStr &fmt, const Args &... args) {
+void TypeChecker::add_error(const ir::Instruction *inst, const FmtStr &fmt, const Args &... args) {
     auto formatted = fmt::format(fmt, args...);
     auto error = fmt::format(fmt::fg(fmt::color::orange_red), "error:");
     m_errors.push_back(fmt::format("{} {} on line {}\n", error, formatted, inst->line()));
 }
 
-Value *TypeChecker::build_coerce_cast(Value *value, const Type *type, CastOp op) {
-    if (auto *constant = value->as_or_null<Constant>()) {
-        auto new_constant = new Constant(constant->value());
+ir::Value *TypeChecker::build_coerce_cast(ir::Value *value, const Type *type, ir::CastOp op) {
+    if (auto *constant = value->as_or_null<ir::Constant>()) {
+        auto new_constant = new ir::Constant(constant->value());
         new_constant->set_type(type);
         return new_constant;
     }
-    return m_block->insert<CastInst>(m_insert_pos, op, type, value);
+    return m_block->insert<ir::CastInst>(m_insert_pos, op, type, value);
 }
 
-Value *TypeChecker::coerce(Value *value, const Type *type) {
+ir::Value *TypeChecker::coerce(ir::Value *value, const Type *type) {
     ASSERT(!type->is<InvalidType>());
     if (value->type() == type) {
         return value;
     }
     if (value->type()->is<InvalidType>()) {
-        return build_coerce_cast(value, type, CastOp::SignExtend);
+        return build_coerce_cast(value, type, ir::CastOp::SignExtend);
     }
     if (const auto *from = value->type()->as<IntType>()) {
         if (const auto *to = type->as<IntType>()) {
             if (from->bit_width() < to->bit_width()) {
-                return build_coerce_cast(value, type, CastOp::SignExtend);
+                return build_coerce_cast(value, type, ir::CastOp::SignExtend);
             }
         }
     }
-    auto *inst = value->as_or_null<Instruction>();
+    auto *inst = value->as_or_null<ir::Instruction>();
     if (inst == nullptr) {
         inst = m_instruction;
     }
     ENSURE(inst != nullptr);
     add_error(inst, "cannot implicitly cast from '{}' to '{}'", value->type()->to_string(), type->to_string());
-    return new Constant(0);
+    return new ir::Constant(0);
 }
 
-void TypeChecker::check(Function *function) {
+void TypeChecker::check(ir::Function *function) {
     m_function = function;
     ASSERT(function->return_type() != nullptr);
     for (auto *arg : function->args()) {
@@ -143,7 +143,7 @@ void TypeChecker::check(Function *function) {
     }
 }
 
-void TypeChecker::visit(BinaryInst *binary) {
+void TypeChecker::visit(ir::BinaryInst *binary) {
     auto *lhs = binary->lhs();
     auto *rhs = binary->rhs();
     const auto *type = resulting_type(lhs->type(), rhs->type());
@@ -152,9 +152,9 @@ void TypeChecker::visit(BinaryInst *binary) {
     binary->replace_uses_of_with(rhs, coerce(rhs, type));
 }
 
-void TypeChecker::visit(BranchInst *) {}
+void TypeChecker::visit(ir::BranchInst *) {}
 
-void TypeChecker::visit(CallInst *call) {
+void TypeChecker::visit(ir::CallInst *call) {
     auto *callee = call->callee();
     if (call->args().size() != callee->args().size()) {
         add_error(call, "'{}' requires {} arguments, but {} were passed", callee->name(), callee->args().size(),
@@ -168,17 +168,17 @@ void TypeChecker::visit(CallInst *call) {
     call->set_type(callee->return_type());
 }
 
-void TypeChecker::visit(CastInst *cast) {
+void TypeChecker::visit(ir::CastInst *cast) {
     auto *val = cast->val();
-    ENSURE(val->kind() != ValueKind::Constant);
+    ENSURE(val->kind() != ir::ValueKind::Constant);
     if (val->type()->is<BoolType>() && cast->type()->is<IntType>()) {
-        cast->set_op(CastOp::ZeroExtend);
+        cast->set_op(ir::CastOp::ZeroExtend);
         return;
     }
     add_error(cast, "cannot cast from '{}' to '{}'", val->type()->to_string(), cast->type()->to_string());
 }
 
-void TypeChecker::visit(CompareInst *compare) {
+void TypeChecker::visit(ir::CompareInst *compare) {
     auto *lhs = compare->lhs();
     auto *rhs = compare->rhs();
     const auto *type = resulting_type(lhs->type(), rhs->type());
@@ -187,36 +187,36 @@ void TypeChecker::visit(CompareInst *compare) {
     compare->set_type(BoolType::get());
 }
 
-void TypeChecker::visit(CondBranchInst *cond_branch) {
+void TypeChecker::visit(ir::CondBranchInst *cond_branch) {
     auto *cond = cond_branch->cond();
     cond_branch->replace_uses_of_with(cond, coerce(cond, BoolType::get()));
 }
 
-void TypeChecker::visit(LoadInst *load) {
+void TypeChecker::visit(ir::LoadInst *load) {
     ENSURE(load->ptr()->type()->is<PointerType>());
     const auto *ptr_type = load->ptr()->type()->as<PointerType>();
     load->set_type(ptr_type->pointee_type());
 }
 
-void TypeChecker::visit(PhiInst *) {
+void TypeChecker::visit(ir::PhiInst *) {
     ASSERT_NOT_REACHED();
 }
 
-void TypeChecker::visit(StoreInst *store) {
+void TypeChecker::visit(ir::StoreInst *store) {
     ENSURE(store->ptr()->type()->is<PointerType>());
     const auto *ptr_type = store->ptr()->type()->as<PointerType>();
     const auto *type = resulting_type(ptr_type->pointee_type(), store->val()->type());
     store->replace_uses_of_with(store->val(), coerce(store->val(), type));
 }
 
-void TypeChecker::visit(RetInst *ret) {
+void TypeChecker::visit(ir::RetInst *ret) {
     const auto *expected_type = m_function->return_type();
     ret->replace_uses_of_with(ret->val(), coerce(ret->val(), expected_type));
 }
 
 } // namespace
 
-void type_check(Program *program) {
+void type_check(ir::Program *program) {
     TypeChecker checker(program);
     for (auto *function : *program) {
         checker.check(function);

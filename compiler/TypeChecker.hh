@@ -1,5 +1,9 @@
 #pragma once
 
+namespace ir {
+
 class Program;
 
-void type_check(Program *program);
+} // namespace ir
+
+void type_check(ir::Program *program);

@@ -7,6 +7,8 @@
 
 // TODO: Cleanup IR const-correctness.
 
+namespace ir {
+
 class BasicBlock;
 class Function;
 
@@ -228,3 +230,5 @@ public:
 
     Value *val() const { return m_val; }
 };
+
+} // namespace ir

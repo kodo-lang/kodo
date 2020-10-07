@@ -10,4 +10,4 @@ class Root;
 
 } // namespace ast
 
-std::unique_ptr<Program> gen_ir(const ast::Root *root);
+std::unique_ptr<ir::Program> gen_ir(const ast::Root *root);

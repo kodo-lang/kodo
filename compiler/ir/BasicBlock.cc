@@ -4,6 +4,8 @@
 
 #include <algorithm>
 
+namespace ir {
+
 BasicBlock::iterator BasicBlock::position(const Instruction *inst) const {
     // TODO: No need to find!
     return std::find(m_instructions.begin(), m_instructions.end(), inst);
@@ -30,4 +32,6 @@ Instruction *BasicBlock::terminator() const {
         return nullptr;
     }
     return *(--m_instructions.end());
+}
+
 }

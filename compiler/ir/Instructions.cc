@@ -5,6 +5,8 @@
 #include <ir/Visitor.hh>
 #include <support/Assert.hh>
 
+namespace ir {
+
 // TODO: Check cast.
 #define REPL_VALUE(val)                                                                                                \
     if (val == orig) {                                                                                                 \
@@ -231,3 +233,5 @@ void RetInst::accept(Visitor *visitor) {
 void RetInst::replace_uses_of_with(Value *orig, Value *repl) {
     REPL_VALUE(m_val)
 }
+
+} // namespace ir

@@ -7,6 +7,8 @@
 #include <string>
 #include <vector>
 
+namespace ir {
+
 enum class ValueKind {
     Argument,
     BasicBlock,
@@ -81,3 +83,5 @@ template <typename T>
 const T *Value::as_or_null() const requires HasKind<T, ValueKind> {
     return const_cast<Value *>(this)->as_or_null<T>();
 }
+
+} // namespace ir

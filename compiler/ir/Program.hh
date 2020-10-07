@@ -5,6 +5,8 @@
 
 #include <string>
 
+namespace ir {
+
 class Program {
     List<Function> m_functions;
 
@@ -15,3 +17,5 @@ public:
 
     Function *append_function(std::string name, const Type *return_type);
 };
+
+} // namespace ir

@@ -4,6 +4,8 @@
 
 #include <cstdint>
 
+namespace ir {
+
 class Constant : public Value {
     const std::uint64_t m_value;
 
@@ -14,3 +16,5 @@ public:
 
     std::uint64_t value() const { return m_value; }
 };
+
+} // namespace ir

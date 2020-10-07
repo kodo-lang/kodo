@@ -7,6 +7,8 @@
 #include <string>
 #include <utility>
 
+namespace ir {
+
 struct Argument : public Value, public ListNode {
     static constexpr auto KIND = ValueKind::Argument;
 
@@ -56,3 +58,5 @@ public:
     const List<LocalVar> &vars() const { return m_vars; }
     BasicBlock *entry() const;
 };
+
+} // namespace ir

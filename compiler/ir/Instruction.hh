@@ -6,6 +6,8 @@
 #include <support/List.hh>
 #include <support/ListNode.hh>
 
+namespace ir {
+
 class BasicBlock;
 class Visitor;
 
@@ -66,3 +68,5 @@ template <typename T>
 const T *Instruction::as() const requires HasKind<T, InstKind> {
     return const_cast<Instruction *>(this)->as<T>();
 }
+
+} // namespace ir

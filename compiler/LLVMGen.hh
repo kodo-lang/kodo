@@ -5,6 +5,10 @@
 
 #include <memory>
 
+namespace ir {
+
 class Program;
 
-std::unique_ptr<llvm::Module> gen_llvm(const Program *program, llvm::LLVMContext *llvm_context);
+} // namespace ir
+
+std::unique_ptr<llvm::Module> gen_llvm(const ir::Program *program, llvm::LLVMContext *llvm_context);

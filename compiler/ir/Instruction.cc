@@ -3,6 +3,8 @@
 #include <ir/BasicBlock.hh>
 #include <support/Assert.hh>
 
+namespace ir {
+
 ListIterator<Instruction> Instruction::remove_from_parent() {
     ASSERT(has_parent());
     return m_parent->remove(this);
@@ -19,3 +21,5 @@ void Instruction::set_line(int line) {
 void Instruction::set_parent(BasicBlock *parent) {
     m_parent = parent;
 }
+
+} // namespace ir
