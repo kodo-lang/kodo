@@ -1,17 +1,21 @@
 // extern some libc functions.
 extern fn malloc(size: i64) => *i32;
+extern fn free(ptr: *i32);
 extern fn putchar(character: i32) => i32;
 
 fn main() => i32 {
-    var h: *i32 = malloc(1);
-    var i: *i32 = malloc(1);
-    var newline: *i32 = malloc(1);
+    var h: *i32 = malloc(4);
+    var i: *i32 = malloc(4);
+    var newline: *i32 = malloc(4);
     *h = 72;
     *i = 105;
     *newline = 10;
     putchar(*h);
     putchar(*i);
     putchar(*newline);
+    free(h);
+    free(i);
+    free(newline);
 
     // Implicit int extension cast.
     var foo: i16 = 5;
