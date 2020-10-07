@@ -9,6 +9,7 @@ add_executable(compiler
     ir/Instructions.cc
     ir/Program.cc
     ir/Value.cc
+    pass/PassManager.cc
     support/ArgsParser.cc
     support/Assert.cc
     CharStream.cc

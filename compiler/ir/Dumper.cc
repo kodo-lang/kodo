@@ -217,10 +217,8 @@ void FunctionDumper::visit(RetInst *ret) {
 
 } // namespace
 
-void dump_ir(const Program *program) {
-    for (const auto *function : *program) {
-        FunctionDumper().dump(function);
-    }
+void Dumper::run(Function *function) {
+    FunctionDumper().dump(function);
 }
 
 } // namespace ir

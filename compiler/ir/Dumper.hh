@@ -1,9 +1,11 @@
 #pragma once
 
+#include <pass/Pass.hh>
+
 namespace ir {
 
-class Program;
-
-void dump_ir(const Program *program);
+struct Dumper : public Pass {
+    void run(Function *) override;
+};
 
 } // namespace ir

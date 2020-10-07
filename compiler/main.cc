@@ -6,6 +6,7 @@
 #include <TypeChecker.hh>
 #include <ast/Dumper.hh>
 #include <ir/Dumper.hh>
+#include <pass/PassManager.hh>
 #include <support/ArgsParser.hh>
 
 #include <llvm/ExecutionEngine/MCJIT.h>
@@ -53,11 +54,12 @@ int main(int argc, char **argv) {
     }
 
     auto program = gen_ir(ast.get());
-    type_check(program.get());
+    PassManager pass_manager;
+    pass_manager.add<TypeChecker>();
     if (dump_ir_opt.present_or_true()) {
-        dump_ir(program.get());
-        std::cout << '\n';
+        pass_manager.add<ir::Dumper>();
     }
+    pass_manager.run(*program);
 
     llvm::LLVMContext context;
     auto module = gen_llvm(program.get(), &context);
