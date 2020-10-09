@@ -17,7 +17,7 @@ class BasicBlock : public Value, public ListNode {
     List<Instruction> m_instructions;
 
 public:
-    static constexpr auto KIND = ValueKind::Constant;
+    static constexpr auto KIND = ValueKind::BasicBlock;
     using iterator = decltype(m_instructions)::iterator;
     iterator begin() const { return m_instructions.begin(); }
     iterator end() const { return m_instructions.end(); }
