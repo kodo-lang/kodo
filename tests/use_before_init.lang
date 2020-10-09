@@ -1,0 +1,7 @@
+fn main() => i32 {
+    // TODO: The use before initialisation detection is very dumb. We need some sort of memory SSA/reaching def analysis
+    //       to detect if a load val can ever be undef, and then fail. We can't rely on standard SSA construction
+    //       (VarPromoter) since it's an optimisation and doesn't work for all variables.
+    var a: i32;
+    return a;
+}

@@ -1,0 +1,6 @@
+fn main() => i32 {
+    var foo: i32 = 5;
+    foo = 10;
+    let bar: i32 = foo;
+    return foo + bar;
+}
