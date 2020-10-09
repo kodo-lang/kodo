@@ -110,18 +110,20 @@ class DeclStmt : public Node {
     const std::string m_name;
     const Type *const m_type;
     const std::unique_ptr<const Node> m_init_val;
+    const bool m_is_mutable;
 
 public:
     static constexpr auto KIND = NodeKind::DeclStmt;
 
-    DeclStmt(int line, std::string name, const Type *type, const Node *init_val)
-        : Node(KIND, line), m_name(std::move(name)), m_type(type), m_init_val(init_val) {}
+    DeclStmt(int line, std::string name, const Type *type, const Node *init_val, bool is_mutable)
+        : Node(KIND, line), m_name(std::move(name)), m_type(type), m_init_val(init_val), m_is_mutable(is_mutable) {}
 
     void accept(Visitor *visitor) const override;
 
     const std::string &name() const { return m_name; }
     const Type *type() const { return m_type; }
     const Node *init_val() const { return m_init_val.get(); }
+    bool is_mutable() const { return m_is_mutable; }
 };
 
 class FunctionArg : public Node {

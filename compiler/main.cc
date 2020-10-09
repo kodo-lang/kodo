@@ -4,6 +4,7 @@
 #include <Lexer.hh>
 #include <Parser.hh>
 #include <TypeChecker.hh>
+#include <VarChecker.hh>
 #include <ast/Dumper.hh>
 #include <ir/Dumper.hh>
 #include <pass/PassManager.hh>
@@ -56,6 +57,7 @@ int main(int argc, char **argv) {
     auto program = gen_ir(ast.get());
     PassManager pass_manager;
     pass_manager.add<TypeChecker>();
+    pass_manager.add<VarChecker>();
     if (dump_ir_opt.present_or_true()) {
         pass_manager.add<ir::Dumper>();
     }

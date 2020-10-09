@@ -36,6 +36,8 @@ std::string tok_str(TokenKind kind) {
         return "{";
     case TokenKind::LessThan:
         return "<";
+    case TokenKind::Let:
+        return "let";
     case TokenKind::LParen:
         return "(";
     case TokenKind::Mul:

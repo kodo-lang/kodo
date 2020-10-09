@@ -234,21 +234,25 @@ void Parser::parse_stmt(ast::Block *block) {
         block->add_stmt<ast::IfStmt>(m_lexer->line(), expr, parse_block());
         break;
     }
+    case TokenKind::Let:
+    case TokenKind::Var: {
+        bool is_mutable = consume(TokenKind::Var).has_value();
+        if (!is_mutable) {
+            expect(TokenKind::Let);
+        }
+        auto name = std::move(std::get<std::string>(expect(TokenKind::Identifier).data));
+        expect(TokenKind::Colon);
+        const auto *type = parse_type();
+        const auto *init_val = consume(TokenKind::Eq) ? parse_expr() : nullptr;
+        block->add_stmt<ast::DeclStmt>(m_lexer->line(), std::move(name), type, init_val, is_mutable);
+        expect(TokenKind::Semi);
+        break;
+    }
     case TokenKind::Return:
         consume(TokenKind::Return);
         block->add_stmt<ast::RetStmt>(m_lexer->line(), parse_expr());
         expect(TokenKind::Semi);
         break;
-    case TokenKind::Var: {
-        consume(TokenKind::Var);
-        auto name = std::move(std::get<std::string>(expect(TokenKind::Identifier).data));
-        expect(TokenKind::Colon);
-        const auto *type = parse_type();
-        const auto *init_val = consume(TokenKind::Eq) ? parse_expr() : nullptr;
-        block->add_stmt<ast::DeclStmt>(m_lexer->line(), std::move(name), type, init_val);
-        expect(TokenKind::Semi);
-        break;
-    }
     default:
         block->add_stmt(parse_expr());
         expect(TokenKind::Semi);

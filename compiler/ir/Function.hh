@@ -17,13 +17,15 @@ struct Argument : public Value, public ListNode {
 
 class LocalVar : public Value, public ListNode {
     const Type *const m_var_type;
+    const bool m_is_mutable;
 
 public:
     static constexpr auto KIND = ValueKind::LocalVar;
 
-    explicit LocalVar(const Type *var_type) : Value(KIND), m_var_type(var_type) {}
+    LocalVar(const Type *var_type, bool is_mutable) : Value(KIND), m_var_type(var_type), m_is_mutable(is_mutable) {}
 
     const Type *var_type() const { return m_var_type; }
+    bool is_mutable() const { return m_is_mutable; }
 };
 
 class Function : public ListNode {
@@ -50,7 +52,7 @@ public:
 
     Argument *append_arg();
     BasicBlock *append_block();
-    LocalVar *append_var(const Type *type);
+    LocalVar *append_var(const Type *type, bool is_mutable);
 
     const std::string &name() const { return m_name; }
     const Type *return_type() const { return m_return_type; }

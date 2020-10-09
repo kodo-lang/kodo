@@ -16,8 +16,8 @@ BasicBlock *Function::append_block() {
     return block;
 }
 
-LocalVar *Function::append_var(const Type *type) {
-    return m_vars.emplace<LocalVar>(m_vars.end(), type);
+LocalVar *Function::append_var(const Type *type, bool is_mutable) {
+    return m_vars.emplace<LocalVar>(m_vars.end(), type, is_mutable);
 }
 
 BasicBlock *Function::entry() const {

@@ -58,7 +58,7 @@ std::string FunctionDumper::printable_block(const BasicBlock *block) {
 }
 
 std::string FunctionDumper::printable_value(const Value *value) {
-    if (value->has_name()) {
+    if (value->has_name() && value->kind() != ValueKind::LocalVar) {
         return '%' + value->name();
     }
     if (const auto *constant = value->as_or_null<Constant>()) {
@@ -79,7 +79,7 @@ void FunctionDumper::dump(const Function *function) {
         }
         first = false;
         std::cout << arg->type()->to_string() << ' ';
-        std::cout << arg->name();
+        std::cout << printable_value(arg);
     }
     std::cout << ')';
 

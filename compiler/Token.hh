@@ -21,6 +21,7 @@ enum class TokenKind {
     If,
     LBrace,
     LessThan,
+    Let,
     LParen,
     Mul,
     NumLit,

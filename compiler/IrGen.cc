@@ -124,7 +124,8 @@ ir::Value *IrGen::gen_assign_expr(const ast::AssignExpr *assign_expr) {
         lhs = gen_expr(assign_expr->lhs());
     }
     auto *rhs = gen_expr(assign_expr->rhs());
-    m_block->append<ir::StoreInst>(lhs, rhs);
+    auto *store = m_block->append<ir::StoreInst>(lhs, rhs);
+    store->set_line(assign_expr->line());
     return lhs;
 }
 
@@ -239,10 +240,12 @@ void IrGen::gen_decl_stmt(const ast::DeclStmt *decl_stmt) {
     }
 
     ASSERT(decl_stmt->type() != nullptr);
-    auto *var = m_function->append_var(decl_stmt->type());
+    auto *var = m_function->append_var(decl_stmt->type(), decl_stmt->is_mutable());
+    var->set_name(decl_stmt->name());
     if (decl_stmt->init_val() != nullptr) {
         auto *init_val = gen_expr(decl_stmt->init_val());
-        m_block->append<ir::StoreInst>(var, init_val);
+        auto *store = m_block->append<ir::StoreInst>(var, init_val);
+        store->set_line(decl_stmt->line());
     }
     m_scope_stack.peek().put_var(decl_stmt->name(), var);
 }
@@ -305,7 +308,8 @@ void IrGen::gen_function_decl(const ast::FunctionDecl *function_decl) {
     m_scope_stack.clear();
     m_scope_stack.emplace(/* parent */ nullptr);
     for (auto *arg : m_function->args()) {
-        auto *arg_var = m_function->append_var(arg->type());
+        // TODO: let and var syntax for function args.
+        auto *arg_var = m_function->append_var(arg->type(), true);
         m_block->append<ir::StoreInst>(arg_var, arg);
         m_scope_stack.peek().put_var(arg->name(), arg_var);
     }
