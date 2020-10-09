@@ -1,5 +1,6 @@
 #include <TypeChecker.hh>
 
+#include <Error.hh>
 #include <ir/BasicBlock.hh>
 #include <ir/Constants.hh>
 #include <ir/Function.hh>
@@ -7,9 +8,6 @@
 #include <ir/Program.hh>
 #include <ir/Visitor.hh>
 #include <support/Assert.hh>
-
-#include <fmt/color.h>
-#include <fmt/core.h>
 
 #include <string>
 #include <vector>
@@ -82,9 +80,7 @@ const Type *resulting_type(const Type *lhs, const Type *rhs) {
 
 template <typename FmtStr, typename... Args>
 void Checker::add_error(const ir::Instruction *inst, const FmtStr &fmt, const Args &... args) {
-    auto formatted = fmt::format(fmt, args...);
-    auto error = fmt::format(fmt::fg(fmt::color::orange_red), "error:");
-    m_errors.push_back(fmt::format("{} {} on line {}\n", error, formatted, inst->line()));
+    m_errors.push_back(format_error(inst, fmt, args...));
 }
 
 ir::Value *Checker::build_coerce_cast(ir::Value *value, const Type *type, ir::CastOp op) {

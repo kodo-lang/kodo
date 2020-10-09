@@ -1,5 +1,6 @@
 #include <IrGen.hh>
 
+#include <Error.hh>
 #include <ast/Nodes.hh>
 #include <ir/BasicBlock.hh>
 #include <ir/Constants.hh>
@@ -8,9 +9,6 @@
 #include <ir/Program.hh>
 #include <support/Assert.hh>
 #include <support/Stack.hh>
-
-#include <fmt/color.h>
-#include <fmt/core.h>
 
 #include <algorithm>
 #include <string>
@@ -107,9 +105,7 @@ IrGen::IrGen() {
 
 template <typename FmtStr, typename... Args>
 void IrGen::add_node_error(const ast::Node *node, const FmtStr &fmt, const Args &... args) {
-    auto formatted = fmt::format(fmt, args...);
-    auto error = fmt::format(fmt::fg(fmt::color::orange_red), "error:");
-    m_errors.push_back(fmt::format("{} {} on line {}\n", error, formatted, node->line()));
+    m_errors.push_back(format_error(node, fmt, args...));
 }
 
 ir::Value *IrGen::gen_address_of(const ast::Node *expr) {
