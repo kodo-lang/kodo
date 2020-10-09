@@ -43,7 +43,12 @@ public:
     template <typename T>
     T *as() requires HasKind<T, InstKind>;
     template <typename T>
+    T *as_or_null() requires HasKind<T, InstKind>;
+
+    template <typename T>
     const T *as() const requires HasKind<T, InstKind>;
+    template <typename T>
+    const T *as_or_null() const requires HasKind<T, InstKind>;
 
     virtual void accept(Visitor *visitor) = 0;
     ListIterator<Instruction> remove_from_parent();
@@ -65,8 +70,18 @@ T *Instruction::as() requires HasKind<T, InstKind> {
 }
 
 template <typename T>
+T *Instruction::as_or_null() requires HasKind<T, InstKind> {
+    return m_kind == T::KIND ? as<T>() : nullptr;
+}
+
+template <typename T>
 const T *Instruction::as() const requires HasKind<T, InstKind> {
     return const_cast<Instruction *>(this)->as<T>();
+}
+
+template <typename T>
+const T *Instruction::as_or_null() const requires HasKind<T, InstKind> {
+    return const_cast<Instruction *>(this)->as_or_null<T>();
 }
 
 } // namespace ir
