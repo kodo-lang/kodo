@@ -40,7 +40,3 @@ error: no function named 'test' in current context on line 2
  note: Aborting due to previous errors"
 run_test "use_before_init.lang" 1 "error: use of variable 'a' before initialization on line 6
  note: Aborting due to previous errors"
-
-# Expecting compile warning.
-run_test "unused_var.lang" 0 " warn: variable 'foo' is unused on line 2
- warn: variable 'bar' is unused on line 2"

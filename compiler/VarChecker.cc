@@ -15,20 +15,10 @@ void VarChecker::run(ir::Function *function) {
     std::unordered_map<ir::Instruction *, std::vector<ir::LocalVar *>> user_map;
     std::vector<std::string> errors;
     for (auto *var : function->vars()) {
-        bool alive = false;
         for (auto *user : var->users()) {
             if (auto *user_inst = user->as_or_null<ir::Instruction>()) {
                 user_map[user_inst].push_back(var);
-                alive |= user_inst->inst_kind() == ir::InstKind::Load;
-                if (auto *store = user_inst->as_or_null<ir::StoreInst>()) {
-                    alive |= store->val() == var;
-                }
             }
-        }
-        if (!alive) {
-            // TODO: The line number isn't right.
-            auto *inst = *function->entry()->begin();
-            fmt::print(format_warn(inst, "variable '{}' is unused", var->name()));
         }
     }
     for (auto *block : *function) {
