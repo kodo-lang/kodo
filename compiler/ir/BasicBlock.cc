@@ -34,4 +34,4 @@ Instruction *BasicBlock::terminator() const {
     return *(--m_instructions.end());
 }
 
-}
+} // namespace ir
