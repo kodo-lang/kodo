@@ -38,5 +38,6 @@ error: cannot implicitly cast from 'i32*' to 'i32' on line 10
 run_test "unknown_symbols.lang" 1 "error: no symbol named 'bar' in current context on line 2
 error: no function named 'test' in current context on line 2
  note: Aborting due to previous errors"
-run_test "use_before_init.lang" 1 "error: use of variable 'a' before initialization on line 6
+run_test "use_before_init.lang" 1 "error: use of possibly uninitialised variable 'a' on line 3
+error: use of possibly uninitialised variable 'c' on line 8
  note: Aborting due to previous errors"
