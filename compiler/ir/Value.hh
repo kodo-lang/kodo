@@ -15,6 +15,7 @@ enum class ValueKind {
     Constant,
     Instruction,
     LocalVar,
+    MemoryPhi,
 };
 
 class Value {
