@@ -131,6 +131,8 @@ Token Lexer::next_token() {
                 token.kind = TokenKind::Let;
             } else if (buf == "return") {
                 token.kind = TokenKind::Return;
+            } else if (buf == "type") {
+                token.kind = TokenKind::Type;
             } else if (buf == "var") {
                 token.kind = TokenKind::Var;
             } else {

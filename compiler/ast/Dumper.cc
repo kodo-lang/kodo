@@ -27,6 +27,7 @@ public:
     void visit(const Root *) override;
     void visit(const StringLit *) override;
     void visit(const Symbol *) override;
+    void visit(const TypeDecl *) override;
     void visit(const UnaryExpr *) override;
 };
 
@@ -156,8 +157,8 @@ void Dumper::visit(const RetStmt *ret_stmt) {
 }
 
 void Dumper::visit(const Root *root) {
-    for (const auto *function : root->functions()) {
-        function->accept(this);
+    for (const auto *decl : root->decls()) {
+        decl->accept(this);
         std::cout << '\n';
     }
 }
@@ -171,6 +172,14 @@ void Dumper::visit(const StringLit *string_lit) {
 void Dumper::visit(const Symbol *symbol) {
     std::cout << "Symbol(";
     std::cout << symbol->name();
+    std::cout << ')';
+}
+
+void Dumper::visit(const TypeDecl *type_decl) {
+    std::cout << "TypeDecl(";
+    std::cout << type_decl->name();
+    std::cout << ", ";
+    print_type(type_decl->type());
     std::cout << ')';
 }
 

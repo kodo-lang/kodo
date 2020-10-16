@@ -31,6 +31,7 @@ enum class TokenKind {
     Semi,
     StringLit,
     Sub,
+    Type,
     Var,
 };
 

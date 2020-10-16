@@ -213,7 +213,7 @@ public:
 };
 
 class Root : public Node {
-    List<const FunctionDecl> m_functions;
+    List<const Node> m_decls;
 
 public:
     static constexpr auto KIND = NodeKind::Root;
@@ -222,12 +222,12 @@ public:
 
     void accept(Visitor *visitor) const override;
 
-    template <typename... Args>
-    FunctionDecl *add_function(Args &&... args) {
-        return m_functions.emplace<FunctionDecl>(m_functions.end(), std::forward<Args>(args)...);
+    template <typename T, typename... Args>
+    T *add(Args &&... args) {
+        return m_decls.emplace<T>(m_decls.end(), std::forward<Args>(args)...);
     }
 
-    const List<const FunctionDecl> &functions() const { return m_functions; }
+    const List<const Node> &decls() const { return m_decls; }
 };
 
 class StringLit : public Node {
@@ -254,6 +254,21 @@ public:
     void accept(Visitor *visitor) const override;
 
     const std::string &name() const { return m_name; }
+};
+
+class TypeDecl : public Node {
+    const std::string m_name;
+    const Type m_type;
+
+public:
+    static constexpr auto KIND = NodeKind::TypeDecl;
+
+    TypeDecl(int line, std::string name, Type type) : Node(KIND, line), m_name(std::move(name)), m_type(std::move(type)) {}
+
+    void accept(Visitor *visitor) const override;
+
+    const std::string &name() const { return m_name; }
+    const Type &type() const { return m_type; }
 };
 
 enum class UnaryOp {

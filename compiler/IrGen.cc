@@ -34,10 +34,14 @@ public:
 
 class Scope {
     const Scope *const m_parent;
+    std::unordered_map<std::string, const ir::Type *> m_types;
     std::unordered_map<std::string_view, ir::Value *> m_vars;
 
 public:
     explicit Scope(const Scope *parent) : m_parent(parent) {}
+
+    const ir::Type *find_type(const std::string &name);
+    void put_type(std::string name, const ir::Type *type);
 
     ir::Value *find_var(std::string_view name);
     void put_var(std::string_view name, ir::Value *value);
@@ -84,10 +88,25 @@ public:
 
     void gen_block(const ast::Block *);
     void gen_function_decl(const ast::FunctionDecl *);
+    void gen_type_decl(const ast::TypeDecl *);
+    void gen_decl(const ast::Node *);
 
     const std::vector<std::string> &errors() { return m_errors; }
     std::unique_ptr<ir::Program> program() { return std::move(m_program); }
 };
+
+const ir::Type *Scope::find_type(const std::string &name) {
+    for (const auto *scope = this; scope != nullptr; scope = scope->m_parent) {
+        if (scope->m_types.contains(name)) {
+            return scope->m_types.at(name);
+        }
+    }
+    return nullptr;
+}
+
+void Scope::put_type(std::string name, const ir::Type *type) {
+    m_types.emplace(std::move(name), type);
+}
 
 ir::Value *Scope::find_var(std::string_view name) {
     for (const auto *scope = this; scope != nullptr; scope = scope->m_parent) {
@@ -104,6 +123,7 @@ void Scope::put_var(std::string_view name, ir::Value *value) {
 
 IrGen::IrGen() {
     m_program = std::make_unique<ir::Program>();
+    m_scope_stack.emplace(/* parent */ nullptr);
 }
 
 template <typename FmtStr, typename... Args>
@@ -119,8 +139,14 @@ const ir::Type *IrGen::gen_base_type(const ast::Node *node, const std::string &b
         return ir::VoidType::get();
     }
     if (base.starts_with('i') || base.starts_with('u')) {
-        int bit_width = std::stoi(base.substr(1));
-        return ir::IntType::get(bit_width, base.starts_with('i'));
+        auto bit_width_str = base.substr(1);
+        if (bit_width_str.find_first_not_of("0123456789") == std::string::npos) {
+            int bit_width = std::stoi(bit_width_str);
+            return ir::IntType::get(bit_width, base.starts_with('i'));
+        }
+    }
+    if (const auto *type = m_scope_stack.peek().find_type(base)) {
+        return type;
     }
     add_node_error(node, "invalid type '{}'", base);
     return ir::InvalidType::get();
@@ -332,8 +358,7 @@ void IrGen::gen_function_decl(const ast::FunctionDecl *function_decl) {
     }
 
     m_block = m_function->append_block();
-    m_scope_stack.clear();
-    m_scope_stack.emplace(/* parent */ nullptr);
+    m_scope_stack.emplace(m_scope_stack.peek());
     for (auto *arg : m_function->args()) {
         // TODO: let and var syntax for function args.
         auto *arg_var = m_function->append_var(arg->type(), true);
@@ -343,14 +368,33 @@ void IrGen::gen_function_decl(const ast::FunctionDecl *function_decl) {
 
     ASSERT(function_decl->block() != nullptr);
     gen_block(function_decl->block());
+    m_scope_stack.pop();
+}
+
+void IrGen::gen_type_decl(const ast::TypeDecl *type_decl) {
+    const auto *type = gen_type(type_decl, type_decl->type());
+    m_scope_stack.peek().put_type(type_decl->name(), type);
+}
+
+void IrGen::gen_decl(const ast::Node *decl) {
+    switch (decl->kind()) {
+    case ast::NodeKind::FunctionDecl:
+        gen_function_decl(decl->as<ast::FunctionDecl>());
+        break;
+    case ast::NodeKind::TypeDecl:
+        gen_type_decl(decl->as<ast::TypeDecl>());
+        break;
+    default:
+        ENSURE_NOT_REACHED();
+    }
 }
 
 } // namespace
 
 std::unique_ptr<ir::Program> gen_ir(const ast::Root *root) {
     IrGen gen;
-    for (const auto *function : root->functions()) {
-        gen.gen_function_decl(function);
+    for (const auto *decl : root->decls()) {
+        gen.gen_decl(decl);
     }
     for (const auto &error : gen.errors()) {
         fmt::print(error);

@@ -56,6 +56,8 @@ std::string tok_str(TokenKind kind) {
         return "string";
     case TokenKind::Sub:
         return "-";
+    case TokenKind::Type:
+        return "type";
     case TokenKind::Var:
         return "var";
     default:

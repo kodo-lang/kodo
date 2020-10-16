@@ -23,6 +23,7 @@ enum class NodeKind {
     Root,
     StringLit,
     Symbol,
+    TypeDecl,
     UnaryExpr,
 };
 

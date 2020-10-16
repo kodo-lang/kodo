@@ -285,11 +285,19 @@ ast::Block *Parser::parse_block() {
 std::unique_ptr<ast::Root> Parser::parse() {
     auto root = std::make_unique<ast::Root>();
     while (m_lexer->has_next() && m_lexer->peek().kind != TokenKind::Eof) {
+        if (consume(TokenKind::Type)) {
+            auto name = expect(TokenKind::Identifier);
+            expect(TokenKind::Eq);
+            auto type = parse_type();
+            expect(TokenKind::Semi);
+            root->add<ast::TypeDecl>(m_lexer->line(), std::move(std::get<std::string>(name.data)), std::move(type));
+            continue;
+        }
         bool externed = consume(TokenKind::Extern).has_value();
         expect(TokenKind::Fn);
         auto name = expect(TokenKind::Identifier);
         auto *func =
-            root->add_function(m_lexer->line(), std::move(std::get<std::string>(name.data)), externed);
+            root->add<ast::FunctionDecl>(m_lexer->line(), std::move(std::get<std::string>(name.data)), externed);
         expect(TokenKind::LParen);
         while (m_lexer->peek().kind != TokenKind::RParen) {
             auto arg_name = expect(TokenKind::Identifier);

@@ -16,6 +16,7 @@ class RetStmt;
 class Root;
 class StringLit;
 class Symbol;
+class TypeDecl;
 class UnaryExpr;
 
 struct Visitor {
@@ -33,6 +34,7 @@ struct Visitor {
     virtual void visit(const Root *) = 0;
     virtual void visit(const StringLit *) = 0;
     virtual void visit(const Symbol *) = 0;
+    virtual void visit(const TypeDecl *) = 0;
     virtual void visit(const UnaryExpr *) = 0;
 };
 

@@ -60,6 +60,10 @@ void Symbol::accept(Visitor *visitor) const {
     visitor->visit(this);
 }
 
+void TypeDecl::accept(Visitor *visitor) const {
+    visitor->visit(this);
+}
+
 void UnaryExpr::accept(Visitor *visitor) const {
     visitor->visit(this);
 }
