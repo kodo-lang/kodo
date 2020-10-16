@@ -1,4 +1,4 @@
-fn main() => i32 {
+fn main() -> i32 {
     // Implicit int extension cast.
     let foo: i16 = 5;
     let bar: i32 = foo + 5;

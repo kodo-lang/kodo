@@ -1,9 +1,9 @@
 // extern from libc.
-extern fn malloc(size: i64) => *i32;
+extern fn malloc(size: i64) -> *i32;
 extern fn free(ptr: *i32);
-extern fn putchar(character: i32) => i32;
+extern fn putchar(character: i32) -> i32;
 
-fn main() => i32 {
+fn main() -> i32 {
     var mem: *i32 = malloc(4);
     *mem = 65;
     putchar(*mem);

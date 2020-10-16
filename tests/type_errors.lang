@@ -1,9 +1,9 @@
-fn test(foo: *i32, bar: i32) => i32 {
+fn test(foo: *i32, bar: i32) -> i32 {
     *foo = bar;
     return 0;
 }
 
-fn main() => i32 {
+fn main() -> i32 {
     // TODO: This shouldn't be able to be let.
     let foo: i32 = 10;
     test();
