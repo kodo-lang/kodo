@@ -1,7 +1,7 @@
 #pragma once
 
-#include <Type.hh>
 #include <ast/Node.hh>
+#include <ast/Type.hh>
 #include <support/List.hh>
 
 #include <memory>
@@ -92,60 +92,60 @@ public:
 };
 
 class CastExpr : public Node {
-    const Type *const m_type;
+    const Type m_type;
     const std::unique_ptr<const Node> m_val;
 
 public:
     static constexpr auto KIND = NodeKind::CastExpr;
 
-    CastExpr(int line, const Type *type, const Node *val) : Node(KIND, line), m_type(type), m_val(val) {}
+    CastExpr(int line, Type type, const Node *val) : Node(KIND, line), m_type(std::move(type)), m_val(val) {}
 
     void accept(Visitor *visitor) const override;
 
-    const Type *type() const { return m_type; }
+    const Type &type() const { return m_type; }
     const Node *val() const { return m_val.get(); }
 };
 
 class DeclStmt : public Node {
     const std::string m_name;
-    const Type *const m_type;
+    const Type m_type;
     const std::unique_ptr<const Node> m_init_val;
     const bool m_is_mutable;
 
 public:
     static constexpr auto KIND = NodeKind::DeclStmt;
 
-    DeclStmt(int line, std::string name, const Type *type, const Node *init_val, bool is_mutable)
-        : Node(KIND, line), m_name(std::move(name)), m_type(type), m_init_val(init_val), m_is_mutable(is_mutable) {}
+    DeclStmt(int line, std::string name, Type type, const Node *init_val, bool is_mutable)
+        : Node(KIND, line), m_name(std::move(name)), m_type(std::move(type)), m_init_val(init_val), m_is_mutable(is_mutable) {}
 
     void accept(Visitor *visitor) const override;
 
     const std::string &name() const { return m_name; }
-    const Type *type() const { return m_type; }
+    const Type &type() const { return m_type; }
     const Node *init_val() const { return m_init_val.get(); }
     bool is_mutable() const { return m_is_mutable; }
 };
 
 class FunctionArg : public Node {
     const std::string m_name;
-    const Type *const m_type;
+    const Type m_type;
 
 public:
     static constexpr auto KIND = NodeKind::FunctionArg;
 
-    FunctionArg(int line, std::string name, const Type *type)
-        : Node(KIND, line), m_name(std::move(name)), m_type(type) {}
+    FunctionArg(int line, std::string name, Type type)
+        : Node(KIND, line), m_name(std::move(name)), m_type(std::move(type)) {}
 
     void accept(Visitor *visitor) const override;
 
     const std::string &name() const { return m_name; }
-    const Type *type() const { return m_type; }
+    const Type &type() const { return m_type; }
 };
 
 class FunctionDecl : public Node {
     const std::string m_name;
-    const Type *m_return_type;
     const bool m_externed;
+    Type m_return_type;
     List<const FunctionArg> m_args;
     std::unique_ptr<const Block> m_block;
 
@@ -157,7 +157,7 @@ public:
 
     void accept(Visitor *visitor) const override;
     void set_block(const Block *block) { m_block.reset(block); }
-    void set_return_type(const Type *return_type) { m_return_type = return_type; }
+    void set_return_type(Type return_type) { m_return_type = std::move(return_type); }
 
     template <typename... Args>
     FunctionArg *add_arg(Args &&... args) {
@@ -165,8 +165,8 @@ public:
     }
 
     const std::string &name() const { return m_name; }
-    const Type *return_type() const { return m_return_type; }
     bool externed() const { return m_externed; }
+    const Type &return_type() const { return m_return_type; }
     const List<const FunctionArg> &args() const { return m_args; }
     const Block *block() const { return m_block.get(); }
 };

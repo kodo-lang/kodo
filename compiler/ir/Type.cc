@@ -1,10 +1,11 @@
-#include <Type.hh>
+#include <ir/Type.hh>
 
 #include <support/PairHash.hh>
 
 #include <unordered_map>
 #include <utility>
 
+namespace ir {
 namespace {
 
 // Primitive types.
@@ -73,3 +74,5 @@ std::string PointerType::to_string() const {
 std::string VoidType::to_string() const {
     return "void";
 }
+
+} // namespace ir

@@ -5,6 +5,8 @@
 
 #include <string>
 
+namespace ir {
+
 enum class TypeKind {
     Invalid,
     Bool,
@@ -114,3 +116,5 @@ template <typename T>
 bool Type::is() const requires HasKind<T, TypeKind> {
     return m_kind == T::KIND;
 }
+
+} // namespace ir

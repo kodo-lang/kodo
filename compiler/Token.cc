@@ -67,7 +67,7 @@ std::string tok_str(const Token &token) {
     switch (token.kind) {
     case TokenKind::Identifier:
     case TokenKind::StringLit:
-        return std::get<std::string>(token.data);
+        return "'" + std::get<std::string>(token.data) + "'";
     case TokenKind::NumLit:
         return std::to_string(std::get<std::uint64_t>(token.data));
     default:

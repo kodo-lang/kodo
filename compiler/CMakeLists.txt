@@ -10,6 +10,7 @@ add_executable(compiler
     ir/Instruction.cc
     ir/Instructions.cc
     ir/Program.cc
+    ir/Type.cc
     ir/Value.cc
     pass/PassManager.cc
     support/ArgsParser.cc
@@ -21,7 +22,6 @@ add_executable(compiler
     main.cc
     Parser.cc
     Token.cc
-    Type.cc
     TypeChecker.cc
     VarChecker.cc)
 target_compile_definitions(compiler PRIVATE ${LLVM_DEFINITIONS})

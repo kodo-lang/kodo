@@ -2,7 +2,6 @@
 
 #include <Lexer.hh>
 #include <Token.hh>
-#include <Type.hh>
 #include <support/Assert.hh>
 #include <support/Stack.hh>
 
@@ -133,12 +132,12 @@ ast::CallExpr *Parser::parse_call_expr(std::string name) {
 ast::CastExpr *Parser::parse_cast_expr() {
     expect(TokenKind::Cast);
     expect(TokenKind::LessThan);
-    const auto *type = parse_type();
+    auto type = parse_type();
     expect(TokenKind::GreaterThan);
     expect(TokenKind::LParen);
     auto *expr = parse_expr();
     expect(TokenKind::RParen);
-    return new ast::CastExpr(m_lexer->line(), type, expr);
+    return new ast::CastExpr(m_lexer->line(), std::move(type), expr);
 }
 
 ast::Node *Parser::parse_expr() {
@@ -242,9 +241,9 @@ void Parser::parse_stmt(ast::Block *block) {
         }
         auto name = std::move(std::get<std::string>(expect(TokenKind::Identifier).data));
         expect(TokenKind::Colon);
-        const auto *type = parse_type();
+        auto type = parse_type();
         const auto *init_val = consume(TokenKind::Eq) ? parse_expr() : nullptr;
-        block->add_stmt<ast::DeclStmt>(m_lexer->line(), std::move(name), type, init_val, is_mutable);
+        block->add_stmt<ast::DeclStmt>(m_lexer->line(), std::move(name), std::move(type), init_val, is_mutable);
         expect(TokenKind::Semi);
         break;
     }
@@ -260,30 +259,14 @@ void Parser::parse_stmt(ast::Block *block) {
     }
 }
 
-const Type *Parser::parse_type() {
+ast::Type Parser::parse_type() {
     // TODO: TokenKind::Mul misleading.
     int pointer_levels = 0;
     while (consume(TokenKind::Mul)) {
         pointer_levels++;
     }
     auto base = std::get<std::string>(expect(TokenKind::Identifier).data);
-    const Type *base_type = nullptr;
-    if (base == "bool") {
-        base_type = BoolType::get();
-    } else if (base.starts_with('i') || base.starts_with('u')) {
-        int bit_width = std::stoi(base.substr(1));
-        base_type = IntType::get(bit_width, base.starts_with('i'));
-    }
-
-    if (base_type == nullptr) {
-        error("invalid type {}", base);
-    }
-
-    const auto *type = base_type;
-    for (int i = 0; i < pointer_levels; i++) {
-        type = PointerType::get(type);
-    }
-    return type;
+    return {std::move(base), pointer_levels};
 }
 
 ast::Block *Parser::parse_block() {
@@ -305,7 +288,8 @@ std::unique_ptr<ast::Root> Parser::parse() {
         bool externed = consume(TokenKind::Extern).has_value();
         expect(TokenKind::Fn);
         auto name = expect(TokenKind::Identifier);
-        auto *func = root->add_function(m_lexer->line(), std::move(std::get<std::string>(name.data)), externed);
+        auto *func =
+            root->add_function(m_lexer->line(), std::move(std::get<std::string>(name.data)), externed);
         expect(TokenKind::LParen);
         while (m_lexer->peek().kind != TokenKind::RParen) {
             auto arg_name = expect(TokenKind::Identifier);
@@ -317,7 +301,7 @@ std::unique_ptr<ast::Root> Parser::parse() {
         if (consume(TokenKind::Arrow)) {
             func->set_return_type(parse_type());
         } else {
-            func->set_return_type(VoidType::get());
+            func->set_return_type({"void", 0});
         }
         if (externed) {
             expect(TokenKind::Semi);

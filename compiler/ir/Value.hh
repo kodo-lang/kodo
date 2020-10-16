@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Type.hh>
+#include <ir/Type.hh>
 #include <support/Assert.hh>
 #include <support/HasKind.hh>
 

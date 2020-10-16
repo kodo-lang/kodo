@@ -31,7 +31,7 @@ class LLVMGen {
 public:
     LLVMGen(const ir::Program *program, llvm::LLVMContext *llvm_context);
 
-    llvm::Type *llvm_type(const Type *);
+    llvm::Type *llvm_type(const ir::Type *);
     llvm::Value *llvm_value(const ir::Value *);
 
     llvm::Value *gen_constant_int(const ir::ConstantInt *);
@@ -63,15 +63,15 @@ LLVMGen::LLVMGen(const ir::Program *program, llvm::LLVMContext *llvm_context)
     m_llvm_module = std::make_unique<llvm::Module>("main", *llvm_context);
 }
 
-llvm::Type *LLVMGen::llvm_type(const Type *type) {
+llvm::Type *LLVMGen::llvm_type(const ir::Type *type) {
     switch (type->kind()) {
-    case TypeKind::Bool:
+    case ir::TypeKind::Bool:
         return llvm::Type::getInt1Ty(*m_llvm_context);
-    case TypeKind::Int:
-        return llvm::Type::getIntNTy(*m_llvm_context, type->as<IntType>()->bit_width());
-    case TypeKind::Pointer:
-        return llvm::PointerType::get(llvm_type(type->as<PointerType>()->pointee_type()), 0);
-    case TypeKind::Void:
+    case ir::TypeKind::Int:
+        return llvm::Type::getIntNTy(*m_llvm_context, type->as<ir::IntType>()->bit_width());
+    case ir::TypeKind::Pointer:
+        return llvm::PointerType::get(llvm_type(type->as<ir::PointerType>()->pointee_type()), 0);
+    case ir::TypeKind::Void:
         return llvm::Type::getVoidTy(*m_llvm_context);
     default:
         ENSURE_NOT_REACHED();

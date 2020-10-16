@@ -7,7 +7,6 @@
 #include <optional>
 
 class Lexer;
-class Type;
 
 class Parser {
     Lexer *const m_lexer;
@@ -19,7 +18,7 @@ class Parser {
     ast::CastExpr *parse_cast_expr();
     ast::Node *parse_expr();
     void parse_stmt(ast::Block *);
-    const Type *parse_type();
+    ast::Type parse_type();
     ast::Block *parse_block();
 
 public:

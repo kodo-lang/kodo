@@ -7,7 +7,6 @@
 #include <iostream>
 
 namespace ast {
-
 namespace {
 
 class Dumper : public Visitor {
@@ -30,6 +29,13 @@ public:
     void visit(const Symbol *) override;
     void visit(const UnaryExpr *) override;
 };
+
+void print_type(const Type &type) {
+    for (int i = 0; i < type.pointer_levels(); i++) {
+        std::cout << '*';
+    }
+    std::cout << type.base();
+}
 
 void Dumper::visit(const AssignExpr *assign_stmt) {
     std::cout << "AssignExpr(";
@@ -94,7 +100,7 @@ void Dumper::visit(const CallExpr *call_expr) {
 
 void Dumper::visit(const CastExpr *cast_expr) {
     std::cout << "CastExpr(";
-    std::cout << cast_expr->type()->to_string();
+    print_type(cast_expr->type());
     std::cout << ", ";
     cast_expr->val()->accept(this);
     std::cout << ')';

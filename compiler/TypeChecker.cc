@@ -24,8 +24,8 @@ class Checker : public ir::Visitor {
     template <typename FmtStr, typename... Args>
     void add_error(const ir::Instruction *inst, const FmtStr &fmt, const Args &... args);
 
-    ir::Value *build_coerce_cast(ir::Value *value, const Type *type, ir::CastOp op);
-    ir::Value *coerce(ir::Value *value, const Type *type);
+    ir::Value *build_coerce_cast(ir::Value *value, const ir::Type *type, ir::CastOp op);
+    ir::Value *coerce(ir::Value *value, const ir::Type *type);
 
 public:
     void check(ir::Function *);
@@ -43,35 +43,35 @@ public:
     const std::vector<std::string> &errors() { return m_errors; }
 };
 
-const Type *resulting_type(const IntType *lhs, const IntType *rhs) {
+const ir::Type *resulting_type(const ir::IntType *lhs, const ir::IntType *rhs) {
     return lhs->bit_width() > rhs->bit_width() ? lhs : rhs;
 }
 
-const Type *resulting_type(const IntType *lhs, const Type *rhs) {
+const ir::Type *resulting_type(const ir::IntType *lhs, const ir::Type *rhs) {
     switch (rhs->kind()) {
-    case TypeKind::Invalid:
+    case ir::TypeKind::Invalid:
         return lhs;
-    case TypeKind::Int:
-        return resulting_type(lhs, rhs->as<IntType>());
-    case TypeKind::Pointer:
+    case ir::TypeKind::Int:
+        return resulting_type(lhs, rhs->as<ir::IntType>());
+    case ir::TypeKind::Pointer:
         ENSURE_NOT_REACHED();
     default:
         ENSURE_NOT_REACHED();
     }
 }
 
-const Type *resulting_type(const Type *lhs, const Type *rhs) {
+const ir::Type *resulting_type(const ir::Type *lhs, const ir::Type *rhs) {
     if (lhs == rhs) {
         // TODO: Hacky. resulting_type should take in two values and have special handling for constants.
-        if (lhs->is<InvalidType>()) {
-            return IntType::get_signed(32);
+        if (lhs->is<ir::InvalidType>()) {
+            return ir::IntType::get_signed(32);
         }
         return lhs;
     }
     switch (lhs->kind()) {
-    case TypeKind::Int:
-        return resulting_type(lhs->as<IntType>(), rhs);
-    case TypeKind::Pointer:
+    case ir::TypeKind::Int:
+        return resulting_type(lhs->as<ir::IntType>(), rhs);
+    case ir::TypeKind::Pointer:
         ENSURE_NOT_REACHED();
     default:
         ENSURE_NOT_REACHED();
@@ -83,23 +83,23 @@ void Checker::add_error(const ir::Instruction *inst, const FmtStr &fmt, const Ar
     m_errors.push_back(format_error(inst, fmt, args...));
 }
 
-ir::Value *Checker::build_coerce_cast(ir::Value *value, const Type *type, ir::CastOp op) {
+ir::Value *Checker::build_coerce_cast(ir::Value *value, const ir::Type *type, ir::CastOp op) {
     if (auto *constant = value->as_or_null<ir::Constant>()) {
         return constant->clone(type);
     }
     return m_block->insert<ir::CastInst>(m_insert_pos, op, type, value);
 }
 
-ir::Value *Checker::coerce(ir::Value *value, const Type *type) {
-    ASSERT(!type->is<InvalidType>());
+ir::Value *Checker::coerce(ir::Value *value, const ir::Type *type) {
+    ASSERT(!type->is<ir::InvalidType>());
     if (value->type() == type) {
         return value;
     }
-    if (value->type()->is<InvalidType>()) {
+    if (value->type()->is<ir::InvalidType>()) {
         return build_coerce_cast(value, type, ir::CastOp::SignExtend);
     }
-    if (const auto *from = value->type()->as_or_null<IntType>()) {
-        if (const auto *to = type->as_or_null<IntType>()) {
+    if (const auto *from = value->type()->as_or_null<ir::IntType>()) {
+        if (const auto *to = type->as_or_null<ir::IntType>()) {
             if (from->bit_width() < to->bit_width()) {
                 return build_coerce_cast(value, type, ir::CastOp::SignExtend);
             }
@@ -121,7 +121,7 @@ void Checker::check(ir::Function *function) {
         ASSERT(arg->has_type());
     }
     for (auto *var : function->vars()) {
-        var->set_type(PointerType::get(var->var_type()));
+        var->set_type(ir::PointerType::get(var->var_type()));
     }
     for (auto *block : *function) {
         m_block = block;
@@ -162,7 +162,7 @@ void Checker::visit(ir::CallInst *call) {
 void Checker::visit(ir::CastInst *cast) {
     auto *val = cast->val();
     ENSURE(val->kind() != ir::ValueKind::Constant);
-    if (val->type()->is<BoolType>() && cast->type()->is<IntType>()) {
+    if (val->type()->is<ir::BoolType>() && cast->type()->is<ir::IntType>()) {
         cast->set_op(ir::CastOp::ZeroExtend);
         return;
     }
@@ -175,16 +175,16 @@ void Checker::visit(ir::CompareInst *compare) {
     const auto *type = resulting_type(lhs->type(), rhs->type());
     lhs->replace_all_uses_with(coerce(lhs, type));
     rhs->replace_all_uses_with(coerce(rhs, type));
-    compare->set_type(BoolType::get());
+    compare->set_type(ir::BoolType::get());
 }
 
 void Checker::visit(ir::CondBranchInst *cond_branch) {
     auto *cond = cond_branch->cond();
-    cond_branch->replace_uses_of_with(cond, coerce(cond, BoolType::get()));
+    cond_branch->replace_uses_of_with(cond, coerce(cond, ir::BoolType::get()));
 }
 
 void Checker::visit(ir::LoadInst *load) {
-    const auto *ptr_type = load->ptr()->type()->as<PointerType>();
+    const auto *ptr_type = load->ptr()->type()->as<ir::PointerType>();
     load->set_type(ptr_type->pointee_type());
 }
 
@@ -193,7 +193,7 @@ void Checker::visit(ir::PhiInst *) {
 }
 
 void Checker::visit(ir::StoreInst *store) {
-    const auto *ptr_type = store->ptr()->type()->as<PointerType>();
+    const auto *ptr_type = store->ptr()->type()->as<ir::PointerType>();
     const auto *type = resulting_type(ptr_type->pointee_type(), store->val()->type());
     store->replace_uses_of_with(store->val(), coerce(store->val(), type));
 }

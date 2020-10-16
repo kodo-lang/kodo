@@ -61,6 +61,9 @@ class IrGen {
 public:
     IrGen();
 
+    const ir::Type *gen_base_type(const ast::Node *, const std::string &);
+    const ir::Type *gen_type(const ast::Node *, const ast::Type &);
+
     ir::Value *gen_address_of(const ast::Node *);
     ir::Value *gen_deref(const ast::Node *);
 
@@ -106,6 +109,29 @@ IrGen::IrGen() {
 template <typename FmtStr, typename... Args>
 void IrGen::add_node_error(const ast::Node *node, const FmtStr &fmt, const Args &... args) {
     m_errors.push_back(format_error(node, fmt, args...));
+}
+
+const ir::Type *IrGen::gen_base_type(const ast::Node *node, const std::string &base) {
+    if (base == "bool") {
+        return ir::BoolType::get();
+    }
+    if (base == "void") {
+        return ir::VoidType::get();
+    }
+    if (base.starts_with('i') || base.starts_with('u')) {
+        int bit_width = std::stoi(base.substr(1));
+        return ir::IntType::get(bit_width, base.starts_with('i'));
+    }
+    add_node_error(node, "invalid type '{}'", base);
+    return ir::InvalidType::get();
+}
+
+const ir::Type *IrGen::gen_type(const ast::Node *node, const ast::Type &ast_type) {
+    const auto *type = gen_base_type(node, ast_type.base());
+    for (int i = 0; i < ast_type.pointer_levels(); i++) {
+        type = ir::PointerType::get(type);
+    }
+    return type;
 }
 
 ir::Value *IrGen::gen_address_of(const ast::Node *expr) {
@@ -168,12 +194,13 @@ ir::Value *IrGen::gen_call_expr(const ast::CallExpr *call_expr) {
 ir::Value *IrGen::gen_cast_expr(const ast::CastExpr *cast_expr) {
     // TODO: Always setting this to SignExtend is a bit misleading.
     auto *expr = gen_expr(cast_expr->val());
-    return m_block->append<ir::CastInst>(ir::CastOp::SignExtend, cast_expr->type(), expr);
+    const auto *type = gen_type(cast_expr, cast_expr->type());
+    return m_block->append<ir::CastInst>(ir::CastOp::SignExtend, type, expr);
 }
 
 ir::Value *IrGen::gen_num_lit(const ast::NumLit *num_lit) {
     // TODO: Work out best fit type based on constant value.
-    return ir::ConstantInt::get(InvalidType::get(), num_lit->value());
+    return ir::ConstantInt::get(ir::InvalidType::get(), num_lit->value());
 }
 
 ir::Value *IrGen::gen_string_lit(const ast::StringLit *string_lit) {
@@ -238,9 +265,8 @@ void IrGen::gen_decl_stmt(const ast::DeclStmt *decl_stmt) {
         add_node_error(decl_stmt, "redeclaration of variable '{}'", decl_stmt->name());
         return;
     }
-
-    ASSERT(decl_stmt->type() != nullptr);
-    auto *var = m_function->append_var(decl_stmt->type(), decl_stmt->is_mutable());
+    const auto *type = gen_type(decl_stmt, decl_stmt->type());
+    auto *var = m_function->append_var(type, decl_stmt->is_mutable());
     var->set_name(decl_stmt->name());
     if (decl_stmt->init_val() != nullptr) {
         auto *init_val = gen_expr(decl_stmt->init_val());
@@ -293,11 +319,12 @@ void IrGen::gen_block(const ast::Block *block) {
 }
 
 void IrGen::gen_function_decl(const ast::FunctionDecl *function_decl) {
-    m_function = m_program->append_function(function_decl->name(), function_decl->return_type());
+    const auto *return_type = gen_type(function_decl, function_decl->return_type());
+    m_function = m_program->append_function(function_decl->name(), return_type);
     for (const auto *ast_arg : function_decl->args()) {
         auto *arg = m_function->append_arg();
         arg->set_name(ast_arg->name());
-        arg->set_type(ast_arg->type());
+        arg->set_type(gen_type(ast_arg, ast_arg->type()));
     }
 
     if (function_decl->externed()) {
