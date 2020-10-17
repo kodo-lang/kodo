@@ -25,6 +25,7 @@ run_test "libc_hi.lang" 0 "Hi"
 run_test "malloc.lang" 0 "A"
 run_test "mutability.lang" 20 ""
 run_test "simple_if.lang" 0 "AAA"
+run_test "type_alias.lang" 5 ""
 
 # Expecting compile error.
 run_test "bad_if.lang" 1 "error: cannot implicitly cast from 'i32' to 'bool' on line 2
