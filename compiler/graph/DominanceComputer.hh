@@ -79,7 +79,7 @@ typename DominanceComputer<V>::result DominanceComputer<V>::run(const Graph<V> *
     for (auto [vertex, idom] : doms) {
         // Ignore self-domination (non-strict).
         if (vertex != idom) {
-            tree.template connect(idom, vertex);
+            tree.connect(idom, vertex);
         }
     }
     return std::move(tree);
