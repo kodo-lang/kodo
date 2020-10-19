@@ -3,6 +3,7 @@ add_executable(compiler
     analyses/ReachingDefAnalysis.cc
     ast/Dumper.cc
     ast/Nodes.cc
+    ast/Type.cc
     ir/BasicBlock.cc
     ir/Constants.cc
     ir/Dumper.cc

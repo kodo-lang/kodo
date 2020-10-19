@@ -54,6 +54,8 @@ std::string tok_str(TokenKind kind) {
         return ";";
     case TokenKind::StringLit:
         return "string";
+    case TokenKind::Struct:
+        return "struct";
     case TokenKind::Sub:
         return "-";
     case TokenKind::Type:

@@ -35,6 +35,7 @@ public:
     void visit(ir::CastInst *) override;
     void visit(ir::CompareInst *) override;
     void visit(ir::CondBranchInst *) override;
+    void visit(ir::CopyInst *) override;
     void visit(ir::LoadInst *) override;
     void visit(ir::PhiInst *) override;
     void visit(ir::StoreInst *) override;
@@ -182,6 +183,8 @@ void Checker::visit(ir::CondBranchInst *cond_branch) {
     auto *cond = cond_branch->cond();
     cond_branch->replace_uses_of_with(cond, coerce(cond, ir::BoolType::get()));
 }
+
+void Checker::visit(ir::CopyInst *) {}
 
 void Checker::visit(ir::LoadInst *load) {
     const auto *ptr_type = load->ptr()->type()->as<ir::PointerType>();

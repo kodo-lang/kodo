@@ -24,6 +24,10 @@ void CastExpr::accept(Visitor *visitor) const {
     visitor->visit(this);
 }
 
+void ConstructExpr::accept(Visitor *visitor) const {
+    visitor->visit(this);
+}
+
 void DeclStmt::accept(Visitor *visitor) const {
     visitor->visit(this);
 }

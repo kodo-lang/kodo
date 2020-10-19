@@ -106,6 +106,22 @@ public:
     const Node *val() const { return m_val.get(); }
 };
 
+class ConstructExpr : public Node {
+    const std::string m_name;
+    List<const Node> m_args;
+
+public:
+    static constexpr auto KIND = NodeKind::ConstructExpr;
+
+    ConstructExpr(int line, std::string name) : Node(KIND, line), m_name(std::move(name)) {}
+
+    void accept(Visitor *visitor) const override;
+    void add_arg(const Node *arg) { m_args.insert(m_args.end(), arg); }
+
+    const std::string &name() const { return m_name; }
+    const List<const Node> &args() const { return m_args; }
+};
+
 class DeclStmt : public Node {
     const std::string m_name;
     const Type m_type;

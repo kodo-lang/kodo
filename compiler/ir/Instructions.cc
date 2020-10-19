@@ -168,6 +168,38 @@ void CondBranchInst::replace_uses_of_with(Value *orig, Value *repl) {
     REPL_VALUE(m_false_dst)
 } // clang-format on
 
+CopyInst::CopyInst(Value *dst, Value *src, Value *len)
+    : Instruction(KIND), m_dst(dst), m_src(src), m_len(len) {
+    m_dst->add_user(this);
+    m_src->add_user(this);
+    m_len->add_user(this);
+}
+
+CopyInst::~CopyInst() {
+    if (m_dst != nullptr) {
+        m_dst->remove_user(this);
+    }
+    if (m_src != nullptr) {
+        m_src->remove_user(this);
+    }
+    if (m_len != nullptr) {
+        m_len->remove_user(this);
+    }
+}
+
+void CopyInst::accept(Visitor *visitor) {
+    visitor->visit(this);
+}
+
+// TODO: Figure out what's breaking clang-format here.
+// clang-format off
+void CopyInst::replace_uses_of_with(Value *orig, Value *repl) {
+    REPL_VALUE(m_dst)
+    REPL_VALUE(m_src)
+    REPL_VALUE(m_len)
+}
+// clang-format on
+
 LoadInst::LoadInst(Value *ptr)
     : Instruction(KIND), m_ptr(ptr) {
     m_ptr->add_user(this);

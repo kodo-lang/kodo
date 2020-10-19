@@ -18,6 +18,7 @@ public:
     void visit(const Block *) override;
     void visit(const CallExpr *) override;
     void visit(const CastExpr *) override;
+    void visit(const ConstructExpr *) override;
     void visit(const DeclStmt *) override;
     void visit(const FunctionArg *) override;
     void visit(const FunctionDecl *) override;
@@ -32,10 +33,32 @@ public:
 };
 
 void print_type(const Type &type) {
-    for (int i = 0; i < type.pointer_levels(); i++) {
+    switch (type.kind()) {
+    case TypeKind::Invalid:
+        std::cout << "INVALID";
+        break;
+    case TypeKind::Base:
+        std::cout << type.base();
+        break;
+    case TypeKind::Pointer:
         std::cout << '*';
+        print_type(type.pointee());
+        break;
+    case TypeKind::Struct:
+        std::cout << "struct {";
+        for (bool first = true; const auto &field : type.struct_fields()) {
+            if (!first) {
+                std::cout << ", ";
+            }
+            first = false;
+            std::cout << field.name << ": ";
+            print_type(field.type);
+        }
+        std::cout << '}';
+        break;
+    default:
+        ASSERT_NOT_REACHED();
     }
-    std::cout << type.base();
 }
 
 void Dumper::visit(const AssignExpr *assign_stmt) {
@@ -104,6 +127,16 @@ void Dumper::visit(const CastExpr *cast_expr) {
     print_type(cast_expr->type());
     std::cout << ", ";
     cast_expr->val()->accept(this);
+    std::cout << ')';
+}
+
+void Dumper::visit(const ConstructExpr *construct_expr) {
+    std::cout << "ConstructExpr(";
+    std::cout << construct_expr->name();
+    for (const auto *arg : construct_expr->args()) {
+        std::cout << ", ";
+        arg->accept(this);
+    }
     std::cout << ')';
 }
 

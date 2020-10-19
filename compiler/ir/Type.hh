@@ -4,6 +4,7 @@
 #include <support/HasKind.hh>
 
 #include <string>
+#include <vector>
 
 namespace ir {
 
@@ -12,6 +13,7 @@ enum class TypeKind {
     Bool,
     Int,
     Pointer,
+    Struct,
     Void,
 };
 
@@ -36,6 +38,7 @@ public:
     template <typename T>
     bool is() const requires HasKind<T, TypeKind>;
 
+    virtual int size_in_bytes() const;
     virtual std::string to_string() const = 0;
 
     TypeKind kind() const { return m_kind; }
@@ -54,9 +57,9 @@ struct BoolType : public Type {
     static constexpr auto KIND = TypeKind::Bool;
     static const BoolType *get();
 
-    std::string to_string() const override;
-
     BoolType() noexcept : Type(KIND) {}
+
+    std::string to_string() const override;
 };
 
 class IntType : public Type {
@@ -71,6 +74,7 @@ public:
 
     IntType(int bit_width, bool is_signed) : Type(KIND), m_bit_width(bit_width), m_is_signed(is_signed) {}
 
+    int size_in_bytes() const override;
     std::string to_string() const override;
 
     int bit_width() const { return m_bit_width; }
@@ -89,6 +93,21 @@ public:
     std::string to_string() const override;
 
     const Type *pointee_type() const { return m_pointee_type; }
+};
+
+class StructType : public Type {
+    std::vector<const Type *> m_fields;
+
+public:
+    static constexpr auto KIND = TypeKind::Struct;
+    static const StructType *get(std::vector<const Type *> &&fields);
+
+    explicit StructType(std::vector<const Type *> &&fields) : Type(KIND), m_fields(std::move(fields)) {}
+
+    int size_in_bytes() const override;
+    std::string to_string() const override;
+
+    const std::vector<const Type *> &fields() const { return m_fields; }
 };
 
 struct VoidType : public Type {

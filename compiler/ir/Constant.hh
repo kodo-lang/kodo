@@ -9,6 +9,7 @@ enum class ConstantKind {
     Int,
     Null,
     String,
+    Struct,
 };
 
 class Constant : public Value {

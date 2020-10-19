@@ -7,6 +7,7 @@ class BinExpr;
 class Block;
 class CallExpr;
 class CastExpr;
+class ConstructExpr;
 class DeclStmt;
 class FunctionArg;
 class FunctionDecl;
@@ -25,6 +26,7 @@ struct Visitor {
     virtual void visit(const Block *) = 0;
     virtual void visit(const CallExpr *) = 0;
     virtual void visit(const CastExpr *) = 0;
+    virtual void visit(const ConstructExpr *) = 0;
     virtual void visit(const DeclStmt *) = 0;
     virtual void visit(const FunctionArg *) = 0;
     virtual void visit(const FunctionDecl *) = 0;

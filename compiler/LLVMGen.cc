@@ -31,11 +31,13 @@ class LLVMGen {
 public:
     LLVMGen(const ir::Program *program, llvm::LLVMContext *llvm_context);
 
+    llvm::Type *llvm_struct_type(const ir::StructType *);
     llvm::Type *llvm_type(const ir::Type *);
     llvm::Value *llvm_value(const ir::Value *);
 
     llvm::Value *gen_constant_int(const ir::ConstantInt *);
     llvm::Value *gen_constant_string(const ir::ConstantString *);
+    llvm::Value *gen_constant_struct(const ir::ConstantStruct *);
 
     llvm::Value *gen_binary(const ir::BinaryInst *);
     llvm::Value *gen_call(const ir::CallInst *);
@@ -44,6 +46,7 @@ public:
     llvm::Value *gen_load(const ir::LoadInst *);
     void gen_branch(const ir::BranchInst *);
     void gen_cond_branch(const ir::CondBranchInst *);
+    void gen_copy(const ir::CopyInst *);
     void gen_store(const ir::StoreInst *);
     void gen_ret(const ir::RetInst *);
 
@@ -63,6 +66,15 @@ LLVMGen::LLVMGen(const ir::Program *program, llvm::LLVMContext *llvm_context)
     m_llvm_module = std::make_unique<llvm::Module>("main", *llvm_context);
 }
 
+llvm::Type *LLVMGen::llvm_struct_type(const ir::StructType *struct_type) {
+    // TODO: Size is already known here.
+    std::vector<llvm::Type *> fields;
+    for (const auto *field : struct_type->fields()) {
+        fields.push_back(llvm_type(field));
+    }
+    return llvm::StructType::get(*m_llvm_context, fields);
+}
+
 llvm::Type *LLVMGen::llvm_type(const ir::Type *type) {
     switch (type->kind()) {
     case ir::TypeKind::Bool:
@@ -71,6 +83,8 @@ llvm::Type *LLVMGen::llvm_type(const ir::Type *type) {
         return llvm::Type::getIntNTy(*m_llvm_context, type->as<ir::IntType>()->bit_width());
     case ir::TypeKind::Pointer:
         return llvm::PointerType::get(llvm_type(type->as<ir::PointerType>()->pointee_type()), 0);
+    case ir::TypeKind::Struct:
+        return llvm_struct_type(type->as<ir::StructType>());
     case ir::TypeKind::Void:
         return llvm::Type::getVoidTy(*m_llvm_context);
     default:
@@ -95,6 +109,19 @@ llvm::Value *LLVMGen::gen_constant_int(const ir::ConstantInt *constant_int) {
 
 llvm::Value *LLVMGen::gen_constant_string(const ir::ConstantString *constant_string) {
     return m_llvm_builder.CreateGlobalStringPtr(constant_string->value());
+}
+
+llvm::Value *LLVMGen::gen_constant_struct(const ir::ConstantStruct *constant_struct) {
+    // TODO: Size is already known here.
+    std::vector<llvm::Constant *> elems;
+    for (const auto *elem : constant_struct->elems()) {
+        elems.push_back(llvm::dyn_cast<llvm::Constant>(llvm_value(elem)));
+    }
+    auto *type = llvm::dyn_cast<llvm::StructType>(llvm_type(constant_struct->type()));
+    auto *value = llvm::ConstantStruct::get(type, elems);
+    auto *global = new llvm::GlobalVariable(*m_llvm_module, type, true, llvm::GlobalValue::PrivateLinkage, value);
+    global->setUnnamedAddr(llvm::GlobalValue::UnnamedAddr::Global);
+    return global;
 }
 
 llvm::Value *LLVMGen::gen_binary(const ir::BinaryInst *binary) {
@@ -164,6 +191,13 @@ void LLVMGen::gen_cond_branch(const ir::CondBranchInst *cond_branch) {
     m_llvm_builder.CreateCondBr(cond, true_dst, false_dst);
 }
 
+void LLVMGen::gen_copy(const ir::CopyInst *copy) {
+    auto *dst = llvm_value(copy->dst());
+    auto *src = llvm_value(copy->src());
+    auto *len = llvm_value(copy->len());
+    m_llvm_builder.CreateMemCpy(dst, llvm::MaybeAlign(), src, llvm::MaybeAlign(), len);
+}
+
 void LLVMGen::gen_store(const ir::StoreInst *store) {
     m_llvm_builder.CreateStore(llvm_value(store->val()), llvm_value(store->ptr()));
 }
@@ -182,6 +216,8 @@ llvm::Value *LLVMGen::gen_constant(const ir::Constant *constant) {
         return gen_constant_int(constant->as<ir::ConstantInt>());
     case ir::ConstantKind::String:
         return gen_constant_string(constant->as<ir::ConstantString>());
+    case ir::ConstantKind::Struct:
+        return gen_constant_struct(constant->as<ir::ConstantStruct>());
     default:
         ENSURE_NOT_REACHED();
     }
@@ -202,6 +238,9 @@ llvm::Value *LLVMGen::gen_instruction(const ir::Instruction *instruction) {
         return gen_compare(instruction->as<ir::CompareInst>());
     case ir::InstKind::CondBranch:
         gen_cond_branch(instruction->as<ir::CondBranchInst>());
+        return nullptr;
+    case ir::InstKind::Copy:
+        gen_copy(instruction->as<ir::CopyInst>());
         return nullptr;
     case ir::InstKind::Load:
         return gen_load(instruction->as<ir::LoadInst>());

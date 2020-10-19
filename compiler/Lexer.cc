@@ -131,6 +131,8 @@ Token Lexer::next_token() {
                 token.kind = TokenKind::Let;
             } else if (buf == "return") {
                 token.kind = TokenKind::Return;
+            } else if (buf == "struct") {
+                token.kind = TokenKind::Struct;
             } else if (buf == "type") {
                 token.kind = TokenKind::Type;
             } else if (buf == "var") {
@@ -147,6 +149,7 @@ Token Lexer::next_token() {
 }
 
 bool Lexer::has_next() {
+    // TODO: And not .peek() == EOF?
     return m_stream->has_next();
 }
 

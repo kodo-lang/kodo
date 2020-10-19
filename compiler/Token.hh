@@ -30,6 +30,7 @@ enum class TokenKind {
     RParen,
     Semi,
     StringLit,
+    Struct,
     Sub,
     Type,
     Var,

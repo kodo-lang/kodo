@@ -31,11 +31,26 @@ public:
     void visit(CastInst *) override;
     void visit(CompareInst *) override;
     void visit(CondBranchInst *) override;
+    void visit(CopyInst *) override;
     void visit(LoadInst *) override;
     void visit(PhiInst *) override;
     void visit(StoreInst *) override;
     void visit(RetInst *) override;
 };
+
+std::string printable_constant(const Constant *constant);
+
+std::string printable_constant_struct(const ConstantStruct *constant_struct) {
+    std::string ret = "{";
+    for (bool first = true; const auto *elem : constant_struct->elems()) {
+        if (!first) {
+            ret += ", ";
+        }
+        first = false;
+        ret += elem->type()->to_string() + ' ' + printable_constant(elem);
+    }
+    return ret + '}';
+}
 
 std::string printable_constant(const Constant *constant) {
     switch (constant->constant_kind()) {
@@ -45,6 +60,8 @@ std::string printable_constant(const Constant *constant) {
         return "nullptr";
     case ConstantKind::String:
         return constant->as<ConstantString>()->value();
+    case ConstantKind::Struct:
+        return printable_constant_struct(constant->as<ConstantStruct>());
     default:
         ENSURE_NOT_REACHED();
     }
@@ -195,6 +212,12 @@ void FunctionDumper::visit(CondBranchInst *cond_branch) {
     std::cout << ' ' << printable_value(cond_branch->cond());
     std::cout << ", " << printable_block(cond_branch->true_dst());
     std::cout << ", " << printable_block(cond_branch->false_dst());
+}
+
+void FunctionDumper::visit(CopyInst *copy) {
+    std::cout << "copy " << printable_value(copy->src()) << " -> ";
+    std::cout << printable_value(copy->dst()) << " * ";
+    std::cout << copy->len()->type()->to_string() << ' ' << printable_value(copy->len());
 }
 
 void FunctionDumper::visit(LoadInst *load) {

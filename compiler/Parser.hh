@@ -16,6 +16,7 @@ class Parser {
 
     ast::CallExpr *parse_call_expr(std::string name);
     ast::CastExpr *parse_cast_expr();
+    ast::ConstructExpr *parse_construct_expr(std::string name);
     ast::Node *parse_expr();
     void parse_stmt(ast::Block *);
     ast::Type parse_type();

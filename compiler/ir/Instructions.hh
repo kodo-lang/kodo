@@ -169,6 +169,30 @@ public:
     BasicBlock *false_dst() const { return m_false_dst; }
 };
 
+class CopyInst : public Instruction {
+    Value *m_dst;
+    Value *m_src;
+    Value *m_len;
+
+public:
+    static constexpr auto KIND = InstKind::Copy;
+
+    CopyInst(Value *dst, Value *src, Value *len);
+    CopyInst(const CopyInst &) = delete;
+    CopyInst(CopyInst &&) = delete;
+    ~CopyInst() override;
+
+    CopyInst &operator=(const CopyInst &) = delete;
+    CopyInst &operator=(CopyInst &&) = delete;
+
+    void accept(Visitor *visitor) override;
+    void replace_uses_of_with(Value *orig, Value *repl) override;
+
+    Value *dst() const { return m_dst; }
+    Value *src() const { return m_src; }
+    Value *len() const { return m_len; }
+};
+
 class LoadInst : public Instruction {
     Value *m_ptr;
 

@@ -140,6 +140,20 @@ ast::CastExpr *Parser::parse_cast_expr() {
     return new ast::CastExpr(m_lexer->line(), std::move(type), expr);
 }
 
+ast::ConstructExpr *Parser::parse_construct_expr(std::string name) {
+    auto *construct_expr = new ast::ConstructExpr(m_lexer->line(), std::move(name));
+    m_lexer->next();
+    while (m_lexer->has_next()) {
+        if (m_lexer->peek().kind == TokenKind::RBrace) {
+            break;
+        }
+        construct_expr->add_arg(parse_expr());
+        consume(TokenKind::Comma);
+    }
+    expect(TokenKind::RBrace);
+    return construct_expr;
+}
+
 ast::Node *Parser::parse_expr() {
     Stack<ast::Node *> operands;
     Stack<Op> operators;
@@ -182,6 +196,8 @@ ast::Node *Parser::parse_expr() {
                 auto name = std::move(std::get<std::string>(m_lexer->next().data));
                 if (m_lexer->peek().kind == TokenKind::LParen) {
                     operands.push(parse_call_expr(std::move(name)));
+                } else if (m_lexer->peek().kind == TokenKind::LBrace) {
+                    operands.push(parse_construct_expr(std::move(name)));
                 } else {
                     operands.push(new ast::Symbol(m_lexer->line(), std::move(name)));
                 }
@@ -261,12 +277,25 @@ void Parser::parse_stmt(ast::Block *block) {
 
 ast::Type Parser::parse_type() {
     // TODO: TokenKind::Mul misleading.
-    int pointer_levels = 0;
-    while (consume(TokenKind::Mul)) {
-        pointer_levels++;
+    if (consume(TokenKind::Mul)) {
+        return ast::Type::get_pointer(parse_type());
     }
-    auto base = std::get<std::string>(expect(TokenKind::Identifier).data);
-    return {std::move(base), pointer_levels};
+    if (consume(TokenKind::Struct)) {
+        std::vector<ast::StructField> fields;
+        expect(TokenKind::LBrace);
+        while (m_lexer->has_next()) {
+            if (m_lexer->peek().kind == TokenKind::RBrace) {
+                break;
+            }
+            auto name = expect(TokenKind::Identifier);
+            expect(TokenKind::Colon);
+            fields.emplace_back(std::move(std::get<std::string>(name.data)), parse_type());
+            expect(TokenKind::Semi);
+        }
+        expect(TokenKind::RBrace);
+        return ast::Type::get_struct(std::move(fields));
+    }
+    return ast::Type::get_base(std::move(std::get<std::string>(expect(TokenKind::Identifier).data)));
 }
 
 ast::Block *Parser::parse_block() {
@@ -309,7 +338,7 @@ std::unique_ptr<ast::Root> Parser::parse() {
         if (consume(TokenKind::Arrow)) {
             func->set_return_type(parse_type());
         } else {
-            func->set_return_type({"void", 0});
+            func->set_return_type(ast::Type::get_base("void"));
         }
         if (externed) {
             expect(TokenKind::Semi);
