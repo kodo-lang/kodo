@@ -1,0 +1,10 @@
+type Foo = struct {
+    a: i32;
+    b: i32;
+};
+
+fn main() -> i32 {
+    // TODO: Type inference here.
+    let foo: Foo = Foo{1, 2};
+    return foo.a + foo.b;
+}

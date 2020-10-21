@@ -1,0 +1,20 @@
+type Foo = struct {
+    a: i16;
+    b: i32;
+};
+
+fn set(foo: *Foo) -> i32 {
+    *foo = Foo{4, 5};
+    return 0;
+}
+
+fn add(foo: Foo) -> i32 {
+    return foo.a + foo.b;
+}
+
+fn main() -> i32 {
+    // TODO: Type inference here.
+    var foo: Foo = Foo{1, 2};
+    set(&foo);
+    return add(foo);
+}
