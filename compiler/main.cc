@@ -9,6 +9,7 @@
 #include <ir/Dumper.hh>
 #include <pass/PassManager.hh>
 #include <support/ArgsParser.hh>
+#include <support/Error.hh>
 
 #include <llvm/ExecutionEngine/MCJIT.h>
 #include <llvm/IR/LLVMContext.h>
@@ -62,6 +63,7 @@ int main(int argc, char **argv) {
         pass_manager.add<ir::Dumper>();
     }
     pass_manager.run(*program);
+    abort_if_error();
 
     llvm::LLVMContext context;
     auto module = gen_llvm(program.get(), &context);

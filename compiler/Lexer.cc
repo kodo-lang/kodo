@@ -1,23 +1,10 @@
 #include <Lexer.hh>
 
 #include <CharStream.hh>
-
-#include <fmt/color.h>
-#include <fmt/core.h>
+#include <support/Error.hh>
 
 #include <cctype>
 #include <string>
-
-namespace {
-
-template <typename FmtString, typename... Args>
-void error(const FmtString &fmt, const Args &... args) {
-    auto formatted = fmt::format(fmt, args...);
-    fmt::print(fmt::fg(fmt::color::orange_red), "lexer: {}\n", formatted);
-    abort();
-}
-
-} // namespace
 
 Token Lexer::next_token() {
     while (std::isspace(m_stream->peek()) != 0) {
@@ -145,7 +132,7 @@ Token Lexer::next_token() {
                 token.data = std::move(buf);
             }
         } else {
-            error("unexpected '{}' on line {}", ch, m_line);
+            print_error_and_abort("unexpected '{}' on line {}", ch, m_line);
         }
     }
     return token;

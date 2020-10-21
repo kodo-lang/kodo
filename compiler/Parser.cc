@@ -3,10 +3,8 @@
 #include <Lexer.hh>
 #include <Token.hh>
 #include <support/Assert.hh>
+#include <support/Error.hh>
 #include <support/Stack.hh>
-
-#include <fmt/color.h>
-#include <fmt/core.h>
 
 namespace {
 
@@ -90,14 +88,6 @@ ast::Node *create_expr(Op op, Stack<ast::Node *> *operands) {
     }
 }
 
-template <typename FmtStr, typename... Args>
-[[noreturn]] void error(const FmtStr &fmt, const Args &... args) {
-    auto formatted = fmt::format(fmt, args...);
-    fmt::print(fmt::fg(fmt::color::orange_red), "error: {}\n", formatted);
-    fmt::print(fmt::fg(fmt::color::orange_red), " note: Aborting due to previous errors\n");
-    exit(1);
-}
-
 } // namespace
 
 std::optional<Token> Parser::consume(TokenKind kind) {
@@ -110,7 +100,7 @@ std::optional<Token> Parser::consume(TokenKind kind) {
 Token Parser::expect(TokenKind kind) {
     auto next = m_lexer->next();
     if (next.kind != kind) {
-        error("expected {} but got {} on line {}", tok_str(kind), tok_str(next), m_lexer->line());
+        print_error_and_abort("expected {} but got '{}' on line {}", tok_str(kind), tok_str(next), m_lexer->line());
     }
     return next;
 }
@@ -239,7 +229,7 @@ ast::Node *Parser::parse_expr() {
     }
 
     if (operands.size() != 1) {
-        error("unfinished expression on line {}", m_lexer->line());
+        print_error_and_abort("unfinished expression on line {}", m_lexer->line());
     }
     return operands.pop();
 }

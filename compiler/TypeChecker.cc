@@ -1,6 +1,5 @@
 #include <TypeChecker.hh>
 
-#include <Error.hh>
 #include <ir/BasicBlock.hh>
 #include <ir/Constants.hh>
 #include <ir/Function.hh>
@@ -8,10 +7,7 @@
 #include <ir/Program.hh>
 #include <ir/Visitor.hh>
 #include <support/Assert.hh>
-
-#include <iostream>
-#include <string>
-#include <vector>
+#include <support/Error.hh>
 
 namespace {
 
@@ -20,10 +16,6 @@ class Checker : public ir::Visitor {
     ir::BasicBlock *m_block{nullptr};
     ir::Instruction *m_instruction{nullptr};
     ir::BasicBlock::iterator m_insert_pos{nullptr};
-    std::vector<std::string> m_errors;
-
-    template <typename FmtStr, typename... Args>
-    void add_error(const ir::Instruction *inst, const FmtStr &fmt, const Args &... args);
 
     ir::Value *build_coerce_cast(ir::Value *value, const ir::Type *type, ir::CastOp op);
     ir::Value *coerce(ir::Value *value, const ir::Type *type);
@@ -42,8 +34,6 @@ public:
     void visit(ir::PhiInst *) override;
     void visit(ir::StoreInst *) override;
     void visit(ir::RetInst *) override;
-
-    const std::vector<std::string> &errors() { return m_errors; }
 };
 
 const ir::Type *resulting_type(const ir::IntType *lhs, const ir::IntType *rhs) {
@@ -81,11 +71,6 @@ const ir::Type *resulting_type(const ir::Type *lhs, const ir::Type *rhs) {
     }
 }
 
-template <typename FmtStr, typename... Args>
-void Checker::add_error(const ir::Instruction *inst, const FmtStr &fmt, const Args &... args) {
-    m_errors.push_back(format_error(inst, fmt, args...));
-}
-
 ir::Value *Checker::build_coerce_cast(ir::Value *value, const ir::Type *type, ir::CastOp op) {
     if (auto *constant = value->as_or_null<ir::Constant>()) {
         return constant->clone(type);
@@ -113,7 +98,7 @@ ir::Value *Checker::coerce(ir::Value *value, const ir::Type *type) {
         inst = m_instruction;
     }
     ENSURE(inst != nullptr);
-    add_error(inst, "cannot implicitly cast from '{}' to '{}'", value->type()->to_string(), type->to_string());
+    print_error(inst, "cannot implicitly cast from '{}' to '{}'", value->type()->to_string(), type->to_string());
     return ir::ConstantNull::get();
 }
 
@@ -151,7 +136,7 @@ void Checker::visit(ir::BranchInst *) {}
 void Checker::visit(ir::CallInst *call) {
     auto *callee = call->callee();
     if (call->args().size() != callee->args().size()) {
-        add_error(call, "'{}' requires {} arguments, but {} were passed", callee->name(), callee->args().size(),
+        print_error(call, "'{}' requires {} arguments, but {} were passed", callee->name(), callee->args().size(),
                   call->args().size());
         return;
     }
@@ -169,7 +154,7 @@ void Checker::visit(ir::CastInst *cast) {
         cast->set_op(ir::CastOp::ZeroExtend);
         return;
     }
-    add_error(cast, "cannot cast from '{}' to '{}'", val->type()->to_string(), cast->type()->to_string());
+    print_error(cast, "cannot cast from '{}' to '{}'", val->type()->to_string(), cast->type()->to_string());
 }
 
 void Checker::visit(ir::CompareInst *compare) {
@@ -188,7 +173,7 @@ void Checker::visit(ir::CondBranchInst *cond_branch) {
 
 void Checker::visit(ir::CopyInst *) {}
 
-void Checker::visit(ir::LeaInst *lea) {}
+void Checker::visit(ir::LeaInst *) {}
 
 void Checker::visit(ir::LoadInst *load) {
     const auto *ptr_type = load->ptr()->type()->as<ir::PointerType>();
@@ -216,14 +201,5 @@ void TypeChecker::run(ir::Program *program) {
     Checker checker;
     for (auto *function : *program) {
         checker.check(function);
-    }
-    for (const auto &error : checker.errors()) {
-        // TODO: Fix this properly.
-        // fmt::print(error);
-        std::cout << error;
-    }
-    if (!checker.errors().empty()) {
-        fmt::print(fmt::fg(fmt::color::orange_red), " note: Aborting due to previous errors\n");
-        exit(1);
     }
 }

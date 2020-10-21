@@ -1,6 +1,5 @@
 #include <IrGen.hh>
 
-#include <Error.hh>
 #include <ast/Nodes.hh>
 #include <ir/BasicBlock.hh>
 #include <ir/Constants.hh>
@@ -8,6 +7,7 @@
 #include <ir/Instructions.hh>
 #include <ir/Program.hh>
 #include <support/Assert.hh>
+#include <support/Error.hh>
 #include <support/Stack.hh>
 
 #include <algorithm>
@@ -52,16 +52,12 @@ class IrGen {
     ir::Function *m_function{nullptr};
     ir::BasicBlock *m_block{nullptr};
     Stack<Scope> m_scope_stack;
-    std::vector<std::string> m_errors;
     std::unordered_map<const ir::StructType *, const std::vector<ast::StructField> &> m_struct_types;
 
     enum class DerefState {
         Deref,
         DontDeref,
     } m_deref_state{DerefState::Deref};
-
-    template <typename FmtStr, typename... Args>
-    void add_node_error(const ast::Node *node, const FmtStr &fmt, const Args &... args);
 
 public:
     IrGen();
@@ -99,7 +95,6 @@ public:
     void gen_type_decl(const ast::TypeDecl *);
     void gen_decl(const ast::Node *);
 
-    const std::vector<std::string> &errors() { return m_errors; }
     std::unique_ptr<ir::Program> program() { return std::move(m_program); }
 };
 
@@ -134,11 +129,6 @@ IrGen::IrGen() {
     m_scope_stack.emplace(/* parent */ nullptr);
 }
 
-template <typename FmtStr, typename... Args>
-void IrGen::add_node_error(const ast::Node *node, const FmtStr &fmt, const Args &... args) {
-    m_errors.push_back(format_error(node, fmt, args...));
-}
-
 ir::Instruction *IrGen::create_store(ir::Value *ptr, ir::Value *val) {
     // Generate memcpy for structs.
     if (val->type()->is<ir::StructType>()) {
@@ -165,7 +155,7 @@ const ir::Type *IrGen::gen_base_type(const ast::Node *node, const std::string &b
     if (const auto *type = m_scope_stack.peek().find_type(base)) {
         return type;
     }
-    add_node_error(node, "invalid type '{}'", base);
+    print_error(node, "invalid type '{}'", base);
     return ir::InvalidType::get();
 }
 
@@ -252,7 +242,7 @@ ir::Value *IrGen::gen_call_expr(const ast::CallExpr *call_expr) {
         return function->name() == call_expr->name();
     });
     if (it == m_program->end()) {
-        add_node_error(call_expr, "no function named '{}' in current context", call_expr->name());
+        print_error(call_expr, "no function named '{}' in current context", call_expr->name());
         return ir::ConstantNull::get();
     }
     return m_block->append<ir::CallInst>(*it, std::move(args));
@@ -288,7 +278,7 @@ ir::Value *IrGen::gen_member_expr(const ast::MemberExpr *member_expr) {
     });
     if (it == ast_fields.end()) {
         // TODO: Print struct type name.
-        add_node_error(member_expr, "struct has no member named '{}'", member_expr->name());
+        print_error(member_expr, "struct has no member named '{}'", member_expr->name());
         return ir::ConstantNull::get();
     }
     int index = std::distance(ast_fields.begin(), it);
@@ -313,7 +303,7 @@ ir::Value *IrGen::gen_string_lit(const ast::StringLit *string_lit) {
 ir::Value *IrGen::gen_symbol(const ast::Symbol *symbol) {
     auto *var = m_scope_stack.peek().find_var(symbol->name());
     if (var == nullptr) {
-        add_node_error(symbol, "no symbol named '{}' in current context", symbol->name());
+        print_error(symbol, "no symbol named '{}' in current context", symbol->name());
         return ir::ConstantNull::get();
     }
     if (m_deref_state == DerefState::DontDeref) {
@@ -370,7 +360,7 @@ ir::Value *IrGen::gen_expr(const ast::Node *expr) {
 
 void IrGen::gen_decl_stmt(const ast::DeclStmt *decl_stmt) {
     if (m_scope_stack.peek().find_var(decl_stmt->name()) != nullptr) {
-        add_node_error(decl_stmt, "redeclaration of variable '{}'", decl_stmt->name());
+        print_error(decl_stmt, "redeclaration of variable '{}'", decl_stmt->name());
         return;
     }
     const auto *type = gen_type(decl_stmt, decl_stmt->type());
@@ -478,13 +468,6 @@ std::unique_ptr<ir::Program> gen_ir(const ast::Root *root) {
     IrGen gen;
     for (const auto *decl : root->decls()) {
         gen.gen_decl(decl);
-    }
-    for (const auto &error : gen.errors()) {
-        fmt::print(error);
-    }
-    if (!gen.errors().empty()) {
-        fmt::print(fmt::fg(fmt::color::orange_red), " note: Aborting due to previous errors\n");
-        exit(1);
     }
     return gen.program();
 }

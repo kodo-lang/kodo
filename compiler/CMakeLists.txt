@@ -16,6 +16,7 @@ add_executable(compiler
     pass/PassManager.cc
     support/ArgsParser.cc
     support/Assert.cc
+    support/Error.cc
     CharStream.cc
     IrGen.cc
     Lexer.cc
