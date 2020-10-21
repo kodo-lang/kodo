@@ -91,6 +91,9 @@ Token Lexer::next_token() {
     case ',':
         token.kind = TokenKind::Comma;
         break;
+    case '.':
+        token.kind = TokenKind::Dot;
+        break;
     case ';':
         token.kind = TokenKind::Semi;
         break;

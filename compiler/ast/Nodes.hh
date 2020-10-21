@@ -132,7 +132,8 @@ public:
     static constexpr auto KIND = NodeKind::DeclStmt;
 
     DeclStmt(int line, std::string name, Type type, const Node *init_val, bool is_mutable)
-        : Node(KIND, line), m_name(std::move(name)), m_type(std::move(type)), m_init_val(init_val), m_is_mutable(is_mutable) {}
+        : Node(KIND, line), m_name(std::move(name)), m_type(std::move(type)), m_init_val(init_val),
+          m_is_mutable(is_mutable) {}
 
     void accept(Visitor *visitor) const override;
 
@@ -200,6 +201,24 @@ public:
 
     const Node *expr() const { return m_expr.get(); }
     const Block *block() const { return m_block.get(); }
+};
+
+class MemberExpr : public Node {
+    const std::string m_name;
+    const std::unique_ptr<const Node> m_lhs;
+    const bool m_is_pointer;
+
+public:
+    static constexpr auto KIND = NodeKind::MemberExpr;
+
+    MemberExpr(int line, std::string name, const Node *lhs, bool is_pointer)
+        : Node(KIND, line), m_name(std::move(name)), m_lhs(lhs), m_is_pointer(is_pointer) {}
+
+    void accept(Visitor *visitor) const override;
+
+    const std::string &name() const { return m_name; }
+    const Node *lhs() const { return m_lhs.get(); }
+    bool is_pointer() const { return m_is_pointer; }
 };
 
 class NumLit : public Node {
@@ -279,7 +298,8 @@ class TypeDecl : public Node {
 public:
     static constexpr auto KIND = NodeKind::TypeDecl;
 
-    TypeDecl(int line, std::string name, Type type) : Node(KIND, line), m_name(std::move(name)), m_type(std::move(type)) {}
+    TypeDecl(int line, std::string name, Type type)
+        : Node(KIND, line), m_name(std::move(name)), m_type(std::move(type)) {}
 
     void accept(Visitor *visitor) const override;
 

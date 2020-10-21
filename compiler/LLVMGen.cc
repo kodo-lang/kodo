@@ -43,6 +43,7 @@ public:
     llvm::Value *gen_call(const ir::CallInst *);
     llvm::Value *gen_cast(const ir::CastInst *);
     llvm::Value *gen_compare(const ir::CompareInst *);
+    llvm::Value *gen_lea(const ir::LeaInst *);
     llvm::Value *gen_load(const ir::LoadInst *);
     void gen_branch(const ir::BranchInst *);
     void gen_cond_branch(const ir::CondBranchInst *);
@@ -176,6 +177,16 @@ llvm::Value *LLVMGen::gen_compare(const ir::CompareInst *compare) {
     }
 }
 
+llvm::Value *LLVMGen::gen_lea(const ir::LeaInst *lea) {
+    auto *ptr = llvm_value(lea->ptr());
+    // TODO: Size is already known here.
+    std::vector<llvm::Value *> indices;
+    for (auto *index : lea->indices()) {
+        indices.push_back(llvm_value(index));
+    }
+    return m_llvm_builder.CreateInBoundsGEP(ptr, indices);
+}
+
 llvm::Value *LLVMGen::gen_load(const ir::LoadInst *load) {
     return m_llvm_builder.CreateLoad(llvm_value(load->ptr()));
 }
@@ -242,6 +253,8 @@ llvm::Value *LLVMGen::gen_instruction(const ir::Instruction *instruction) {
     case ir::InstKind::Copy:
         gen_copy(instruction->as<ir::CopyInst>());
         return nullptr;
+    case ir::InstKind::Lea:
+        return gen_lea(instruction->as<ir::LeaInst>());
     case ir::InstKind::Load:
         return gen_load(instruction->as<ir::LoadInst>());
     case ir::InstKind::Store:

@@ -53,6 +53,7 @@ class IrGen {
     ir::BasicBlock *m_block{nullptr};
     Stack<Scope> m_scope_stack;
     std::vector<std::string> m_errors;
+    std::unordered_map<const ir::StructType *, const std::vector<ast::StructField> &> m_struct_types;
 
     enum class DerefState {
         Deref,
@@ -64,6 +65,8 @@ class IrGen {
 
 public:
     IrGen();
+
+    ir::Instruction *create_store(ir::Value *, ir::Value *);
 
     const ir::Type *gen_base_type(const ast::Node *, const std::string &);
     const ir::Type *gen_pointer_type(const ast::Node *, const ast::Type &);
@@ -78,6 +81,7 @@ public:
     ir::Value *gen_call_expr(const ast::CallExpr *);
     ir::Value *gen_cast_expr(const ast::CastExpr *);
     ir::Value *gen_construct_expr(const ast::ConstructExpr *);
+    ir::Value *gen_member_expr(const ast::MemberExpr *);
     ir::Value *gen_num_lit(const ast::NumLit *);
     ir::Value *gen_string_lit(const ast::StringLit *);
     ir::Value *gen_symbol(const ast::Symbol *);
@@ -135,6 +139,15 @@ void IrGen::add_node_error(const ast::Node *node, const FmtStr &fmt, const Args 
     m_errors.push_back(format_error(node, fmt, args...));
 }
 
+ir::Instruction *IrGen::create_store(ir::Value *ptr, ir::Value *val) {
+    // Generate memcpy for structs.
+    if (val->type()->is<ir::StructType>()) {
+        auto *len = ir::ConstantInt::get(ir::IntType::get_unsigned(64), val->type()->size_in_bytes());
+        return m_block->append<ir::CopyInst>(ptr, val, len);
+    }
+    return m_block->append<ir::StoreInst>(ptr, val);
+}
+
 const ir::Type *IrGen::gen_base_type(const ast::Node *node, const std::string &base) {
     if (base == "bool") {
         return ir::BoolType::get();
@@ -168,7 +181,9 @@ const ir::Type *IrGen::gen_struct_type(const ast::Node *node, const std::vector<
         // TODO: StructField needs to be its own ast node for the line number to be correct.
         fields.push_back(gen_type(node, ast_field.type));
     }
-    return ir::StructType::get(std::move(fields));
+    const auto *type = ir::StructType::get(std::move(fields));
+    m_struct_types.emplace(type, ast_fields);
+    return type;
 }
 
 const ir::Type *IrGen::gen_type(const ast::Node *node, const ast::Type &ast_type) {
@@ -202,7 +217,7 @@ ir::Value *IrGen::gen_assign_expr(const ast::AssignExpr *assign_expr) {
         lhs = gen_expr(assign_expr->lhs());
     }
     auto *rhs = gen_expr(assign_expr->rhs());
-    auto *store = m_block->append<ir::StoreInst>(lhs, rhs);
+    auto *store = create_store(lhs, rhs);
     store->set_line(assign_expr->line());
     return lhs;
 }
@@ -263,6 +278,28 @@ ir::Value *IrGen::gen_construct_expr(const ast::ConstructExpr *construct_expr) {
     return ir::ConstantStruct::get(type, std::move(elems));
 }
 
+ir::Value *IrGen::gen_member_expr(const ast::MemberExpr *member_expr) {
+    StateChanger deref_state_changer(m_deref_state, DerefState::DontDeref);
+    auto *container = gen_expr(member_expr->lhs());
+    const auto *type = container->as<ir::LocalVar>()->var_type()->as<ir::StructType>();
+    const auto &ast_fields = m_struct_types.at(type);
+    auto it = std::find_if(ast_fields.begin(), ast_fields.end(), [member_expr](const auto &field) {
+        return field.name == member_expr->name();
+    });
+    if (it == ast_fields.end()) {
+        // TODO: Print struct type name.
+        add_node_error(member_expr, "struct has no member named '{}'", member_expr->name());
+        return ir::ConstantNull::get();
+    }
+    int index = std::distance(ast_fields.begin(), it);
+    std::vector<ir::Value *> indices;
+    indices.push_back(ir::ConstantInt::get(ir::IntType::get_unsigned(32), 0));
+    indices.push_back(ir::ConstantInt::get(ir::IntType::get_unsigned(32), index));
+    auto *lea = m_block->append<ir::LeaInst>(container, std::move(indices));
+    lea->set_type(ir::PointerType::get(type->fields()[index]));
+    return m_block->append<ir::LoadInst>(lea);
+}
+
 ir::Value *IrGen::gen_num_lit(const ast::NumLit *num_lit) {
     // TODO: Work out best fit type based on constant value.
     return ir::ConstantInt::get(ir::InvalidType::get(), num_lit->value());
@@ -308,6 +345,8 @@ ir::Value *IrGen::gen_expr_value(const ast::Node *expr) {
         return gen_cast_expr(expr->as<ast::CastExpr>());
     case ast::NodeKind::ConstructExpr:
         return gen_construct_expr(expr->as<ast::ConstructExpr>());
+    case ast::NodeKind::MemberExpr:
+        return gen_member_expr(expr->as<ast::MemberExpr>());
     case ast::NodeKind::NumLit:
         return gen_num_lit(expr->as<ast::NumLit>());
     case ast::NodeKind::StringLit:
@@ -339,14 +378,8 @@ void IrGen::gen_decl_stmt(const ast::DeclStmt *decl_stmt) {
     var->set_name(decl_stmt->name());
     if (decl_stmt->init_val() != nullptr) {
         auto *init_val = gen_expr(decl_stmt->init_val());
-        if (init_val->type()->is<ir::StructType>()) {
-            auto *len = ir::ConstantInt::get(ir::IntType::get_unsigned(64), init_val->type()->size_in_bytes());
-            auto *copy = m_block->append<ir::CopyInst>(var, init_val, len);
-            copy->set_line(decl_stmt->line());
-        } else {
-            auto *store = m_block->append<ir::StoreInst>(var, init_val);
-            store->set_line(decl_stmt->line());
-        }
+        auto *store = create_store(var, init_val);
+        store->set_line(decl_stmt->line());
     }
     m_scope_stack.peek().put_var(decl_stmt->name(), var);
 }

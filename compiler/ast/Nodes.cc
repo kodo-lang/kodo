@@ -44,6 +44,10 @@ void IfStmt::accept(Visitor *visitor) const {
     visitor->visit(this);
 }
 
+void MemberExpr::accept(Visitor *visitor) const {
+    visitor->visit(this);
+}
+
 void NumLit::accept(Visitor *visitor) const {
     visitor->visit(this);
 }

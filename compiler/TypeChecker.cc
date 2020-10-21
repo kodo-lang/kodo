@@ -9,6 +9,7 @@
 #include <ir/Visitor.hh>
 #include <support/Assert.hh>
 
+#include <iostream>
 #include <string>
 #include <vector>
 
@@ -36,6 +37,7 @@ public:
     void visit(ir::CompareInst *) override;
     void visit(ir::CondBranchInst *) override;
     void visit(ir::CopyInst *) override;
+    void visit(ir::LeaInst *) override;
     void visit(ir::LoadInst *) override;
     void visit(ir::PhiInst *) override;
     void visit(ir::StoreInst *) override;
@@ -186,6 +188,8 @@ void Checker::visit(ir::CondBranchInst *cond_branch) {
 
 void Checker::visit(ir::CopyInst *) {}
 
+void Checker::visit(ir::LeaInst *lea) {}
+
 void Checker::visit(ir::LoadInst *load) {
     const auto *ptr_type = load->ptr()->type()->as<ir::PointerType>();
     load->set_type(ptr_type->pointee_type());
@@ -214,7 +218,9 @@ void TypeChecker::run(ir::Program *program) {
         checker.check(function);
     }
     for (const auto &error : checker.errors()) {
-        fmt::print(error);
+        // TODO: Fix this properly.
+        // fmt::print(error);
+        std::cout << error;
     }
     if (!checker.errors().empty()) {
         fmt::print(fmt::fg(fmt::color::orange_red), " note: Aborting due to previous errors\n");

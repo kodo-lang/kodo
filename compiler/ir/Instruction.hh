@@ -26,6 +26,7 @@ enum class InstKind {
 
     // Memory instructions.
     Copy,
+    Lea,
     Load,
     Store,
 };

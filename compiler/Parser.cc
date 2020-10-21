@@ -192,7 +192,7 @@ ast::Node *Parser::parse_expr() {
         if (!op1) {
             switch (token.kind) {
             case TokenKind::Identifier: {
-                // TODO: Handle calls properly.
+                // TODO: Remove recursiveness.
                 auto name = std::move(std::get<std::string>(m_lexer->next().data));
                 if (m_lexer->peek().kind == TokenKind::LParen) {
                     operands.push(parse_call_expr(std::move(name)));
@@ -200,6 +200,11 @@ ast::Node *Parser::parse_expr() {
                     operands.push(parse_construct_expr(std::move(name)));
                 } else {
                     operands.push(new ast::Symbol(m_lexer->line(), std::move(name)));
+                }
+
+                if (consume(TokenKind::Dot)) {
+                    auto rhs_name = std::move(std::get<std::string>(expect(TokenKind::Identifier).data));
+                    operands.push(new ast::MemberExpr(m_lexer->line(), std::move(rhs_name), operands.pop(), false));
                 }
                 break;
             }

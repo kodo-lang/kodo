@@ -200,8 +200,37 @@ void CopyInst::replace_uses_of_with(Value *orig, Value *repl) {
 }
 // clang-format on
 
-LoadInst::LoadInst(Value *ptr)
-    : Instruction(KIND), m_ptr(ptr) {
+LeaInst::LeaInst(Value *ptr, std::vector<Value *> &&indices)
+    : Instruction(KIND), m_ptr(ptr), m_indices(std::move(indices)) {
+    m_ptr->add_user(this);
+    for (auto *index : m_indices) {
+        index->add_user(this);
+    }
+}
+
+LeaInst::~LeaInst() {
+    if (m_ptr != nullptr) {
+        m_ptr->remove_user(this);
+    }
+    for (auto *index : m_indices) {
+        if (index != nullptr) {
+            index->remove_user(this);
+        }
+    }
+}
+
+void LeaInst::accept(Visitor *visitor) {
+    visitor->visit(this);
+}
+
+void LeaInst::replace_uses_of_with(Value *orig, Value *repl) {
+    REPL_VALUE(m_ptr)
+    for (auto *&index : m_indices) {
+        REPL_VALUE(index)
+    }
+}
+
+LoadInst::LoadInst(Value *ptr) : Instruction(KIND), m_ptr(ptr) {
     m_ptr->add_user(this);
 }
 

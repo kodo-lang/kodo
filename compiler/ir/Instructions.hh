@@ -193,6 +193,28 @@ public:
     Value *len() const { return m_len; }
 };
 
+class LeaInst : public Instruction {
+    Value *m_ptr;
+    std::vector<Value *> m_indices;
+
+public:
+    static constexpr auto KIND = InstKind::Lea;
+
+    LeaInst(Value *ptr, std::vector<Value *> &&indices);
+    LeaInst(const LeaInst &) = delete;
+    LeaInst(LeaInst &&) = delete;
+    ~LeaInst() override;
+
+    LeaInst &operator=(const LeaInst &) = delete;
+    LeaInst &operator=(LeaInst &&) = delete;
+
+    void accept(Visitor *visitor) override;
+    void replace_uses_of_with(Value *orig, Value *repl) override;
+
+    Value *ptr() const { return m_ptr; }
+    const std::vector<Value *> &indices() const { return m_indices; }
+};
+
 class LoadInst : public Instruction {
     Value *m_ptr;
 

@@ -32,6 +32,7 @@ public:
     void visit(CompareInst *) override;
     void visit(CondBranchInst *) override;
     void visit(CopyInst *) override;
+    void visit(LeaInst *) override;
     void visit(LoadInst *) override;
     void visit(PhiInst *) override;
     void visit(StoreInst *) override;
@@ -218,6 +219,14 @@ void FunctionDumper::visit(CopyInst *copy) {
     std::cout << "copy " << printable_value(copy->src()) << " -> ";
     std::cout << printable_value(copy->dst()) << " * ";
     std::cout << copy->len()->type()->to_string() << ' ' << printable_value(copy->len());
+}
+
+void FunctionDumper::visit(LeaInst *lea) {
+    std::cout << printable_value(lea) << " = ";
+    std::cout << "lea " << lea->ptr()->type()->to_string() << ' ' << printable_value(lea->ptr());
+    for (auto *index : lea->indices()) {
+        std::cout << ", " << index->type()->to_string() << ' ' << printable_value(index);
+    }
 }
 
 void FunctionDumper::visit(LoadInst *load) {

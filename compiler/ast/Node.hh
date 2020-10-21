@@ -19,6 +19,7 @@ enum class NodeKind {
     FunctionArg,
     FunctionDecl,
     IfStmt,
+    MemberExpr,
     NumLit,
     RetStmt,
     Root,

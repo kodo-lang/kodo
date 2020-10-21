@@ -9,6 +9,7 @@ class CastInst;
 class CompareInst;
 class CondBranchInst;
 class CopyInst;
+class LeaInst;
 class LoadInst;
 class PhiInst;
 class StoreInst;
@@ -22,6 +23,7 @@ struct Visitor {
     virtual void visit(CompareInst *) = 0;
     virtual void visit(CondBranchInst *) = 0;
     virtual void visit(CopyInst *) = 0;
+    virtual void visit(LeaInst *) = 0;
     virtual void visit(LoadInst *) = 0;
     virtual void visit(PhiInst *) = 0;
     virtual void visit(StoreInst *) = 0;

@@ -12,6 +12,7 @@ enum class TokenKind {
     Colon,
     Comma,
     Div,
+    Dot,
     Eof,
     Eq,
     Extern,

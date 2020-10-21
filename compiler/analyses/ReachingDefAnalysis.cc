@@ -1,14 +1,13 @@
 #include <analyses/ReachingDefAnalysis.hh>
 
 #include <analyses/ControlFlowAnalysis.hh>
+#include <ir/Constants.hh>
 #include <ir/Function.hh>
 #include <ir/Instructions.hh>
 #include <pass/PassManager.hh>
 #include <pass/PassUsage.hh>
 #include <support/Assert.hh>
 #include <support/Stack.hh>
-
-#include <ir/Constants.hh>
 
 #include <unordered_map>
 #include <unordered_set>
@@ -85,13 +84,15 @@ void ReachingDefAnalyser::run(ir::Function *function) {
     std::unordered_map<ir::Value *, std::unordered_set<ir::BasicBlock *>> visited_map;
     for (auto *block : *function) {
         for (auto *inst : *block) {
+            auto *copy = inst->as_or_null<ir::CopyInst>();
             auto *store = inst->as_or_null<ir::StoreInst>();
-            if (store == nullptr) {
+            if (copy == nullptr && store == nullptr) {
                 continue;
             }
+            auto *ptr = copy != nullptr ? copy->dst() : store->ptr();
             for (auto *df : cfa->frontiers(block)) {
-                if (visited_map[store->ptr()].insert(df).second) {
-                    memory_phis[df].emplace_back(new MemoryPhi(store->ptr()));
+                if (visited_map[ptr].insert(df).second) {
+                    memory_phis[df].emplace_back(new MemoryPhi(ptr));
                 }
             }
         }
@@ -108,7 +109,13 @@ void ReachingDefAnalyser::run(ir::Function *function) {
         }
 
         for (auto *inst : *block) {
-            if (auto *load = inst->as_or_null<ir::LoadInst>()) {
+            if (auto *copy = inst->as_or_null<ir::CopyInst>()) {
+                if (auto *constant = copy->len()->as_or_null<ir::Constant>()) {
+                    std::size_t len = constant->as<ir::ConstantInt>()->value();
+                    ASSERT(copy->src()->type()->size_in_bytes() == len);
+                }
+                def_stacks[copy->dst()].push(copy->src());
+            } else if (auto *load = inst->as_or_null<ir::LoadInst>()) {
                 // TODO: pop_or_null helper function.
                 auto &def_stack = def_stacks[load->ptr()];
                 auto *reaching_def = !def_stack.empty() ? def_stack.peek() : nullptr;

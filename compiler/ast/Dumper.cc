@@ -23,6 +23,7 @@ public:
     void visit(const FunctionArg *) override;
     void visit(const FunctionDecl *) override;
     void visit(const IfStmt *) override;
+    void visit(const MemberExpr *) override;
     void visit(const NumLit *) override;
     void visit(const RetStmt *) override;
     void visit(const Root *) override;
@@ -175,6 +176,13 @@ void Dumper::visit(const IfStmt *if_stmt) {
     if_stmt->expr()->accept(this);
     std::cout << ')';
     if_stmt->block()->accept(this);
+}
+
+void Dumper::visit(const MemberExpr *member_expr) {
+    std::cout << "MemberExpr(";
+    std::cout << (member_expr->is_pointer() ? "->" : ".") << member_expr->name() << ", ";
+    member_expr->lhs()->accept(this);
+    std::cout << ')';
 }
 
 void Dumper::visit(const NumLit *num_lit) {

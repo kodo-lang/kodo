@@ -18,6 +18,8 @@ std::string tok_str(TokenKind kind) {
         return ",";
     case TokenKind::Div:
         return "/";
+    case TokenKind::Dot:
+        return ".";
     case TokenKind::Eof:
         return "eof";
     case TokenKind::Eq:
