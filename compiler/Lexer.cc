@@ -139,8 +139,7 @@ Token Lexer::next_token() {
 }
 
 bool Lexer::has_next() {
-    // TODO: And not .peek() == EOF?
-    return m_stream->has_next();
+    return m_stream->has_next() && peek().kind != TokenKind::Eof;
 }
 
 Token Lexer::next() {
