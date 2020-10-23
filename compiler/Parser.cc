@@ -25,6 +25,7 @@ enum class Op {
 
     // Other operators.
     Assign,
+    Member,
 };
 
 constexpr int precedence(Op op) {
@@ -43,6 +44,8 @@ constexpr int precedence(Op op) {
     case Op::AddressOf:
     case Op::Deref:
         return 4;
+    case Op::Member:
+        return 5;
     default:
         ENSURE_NOT_REACHED();
     }
@@ -83,6 +86,8 @@ ast::Node *create_expr(Op op, Stack<ast::Node *> *operands) {
         return new ast::BinExpr(rhs->line(), ast::BinOp::GreaterThan, lhs, rhs);
     case Op::Assign:
         return new ast::AssignExpr(rhs->line(), lhs, rhs);
+    case Op::Member:
+        return new ast::MemberExpr(rhs->line(), lhs, rhs, false);
     default:
         ENSURE_NOT_REACHED();
     }
@@ -174,6 +179,8 @@ ast::Node *Parser::parse_expr() {
                 return Op::AddressOf;
             case TokenKind::Eq:
                 return Op::Assign;
+            case TokenKind::Dot:
+                return Op::Member;
             default:
                 return std::nullopt;
             }
@@ -190,11 +197,6 @@ ast::Node *Parser::parse_expr() {
                     operands.push(parse_construct_expr(std::move(name)));
                 } else {
                     operands.push(new ast::Symbol(m_lexer->line(), std::move(name)));
-                }
-
-                if (consume(TokenKind::Dot)) {
-                    auto rhs_name = std::move(std::get<std::string>(expect(TokenKind::Identifier).data));
-                    operands.push(new ast::MemberExpr(m_lexer->line(), std::move(rhs_name), operands.pop(), false));
                 }
                 break;
             }
@@ -214,7 +216,8 @@ ast::Node *Parser::parse_expr() {
         m_lexer->next();
         while (!operators.empty()) {
             auto op2 = operators.peek();
-            if (compare_op(*op1, op2) >= 0) {
+            int pred_cmp = compare_op(*op1, op2);
+            if (pred_cmp > 0 || (pred_cmp == 0 && *op1 != Op::Member)) {
                 break;
             }
             auto op = operators.pop();

@@ -204,20 +204,20 @@ public:
 };
 
 class MemberExpr : public Node {
-    const std::string m_name;
     const std::unique_ptr<const Node> m_lhs;
+    const std::unique_ptr<const Node> m_rhs;
     const bool m_is_pointer;
 
 public:
     static constexpr auto KIND = NodeKind::MemberExpr;
 
-    MemberExpr(int line, std::string name, const Node *lhs, bool is_pointer)
-        : Node(KIND, line), m_name(std::move(name)), m_lhs(lhs), m_is_pointer(is_pointer) {}
+    MemberExpr(int line, const Node *lhs, const Node *rhs, bool is_pointer)
+        : Node(KIND, line), m_lhs(lhs), m_rhs(rhs), m_is_pointer(is_pointer) {}
 
     void accept(Visitor *visitor) const override;
 
-    const std::string &name() const { return m_name; }
     const Node *lhs() const { return m_lhs.get(); }
+    const Node *rhs() const { return m_rhs.get(); }
     bool is_pointer() const { return m_is_pointer; }
 };
 

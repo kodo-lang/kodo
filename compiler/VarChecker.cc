@@ -43,8 +43,13 @@ void VarChecker::run(ir::Function *function) {
             if (load == nullptr) {
                 continue;
             }
-            auto *var = load->ptr();
-            if (var->kind() != ir::ValueKind::LocalVar) {
+            auto *var = load->ptr()->as_or_null<ir::LocalVar>();
+            if (var == nullptr) {
+                continue;
+            }
+            // Ignore structs for now.
+            // TODO: Work for structs.
+            if (var->var_type()->is<ir::StructType>()) {
                 continue;
             }
             for (auto *reaching_val : rda->reaching_values(load)) {

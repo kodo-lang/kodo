@@ -59,10 +59,16 @@ class IrGen {
         DontDeref,
     } m_deref_state{DerefState::Deref};
 
+    enum class MemberLoadState {
+        DontLoad,
+        Load,
+    } m_member_load_state{MemberLoadState::Load};
+
 public:
     IrGen();
 
-    ir::Instruction *create_store(ir::Value *, ir::Value *);
+    void create_store(const ast::Node *, ir::Value *, ir::Value *);
+    ir::Value *get_member_ptr(ir::Value *, int);
 
     const ir::Type *gen_base_type(const ast::Node *, const std::string &);
     const ir::Type *gen_pointer_type(const ast::Node *, const ast::Type &);
@@ -129,13 +135,39 @@ IrGen::IrGen() {
     m_scope_stack.emplace(/* parent */ nullptr);
 }
 
-ir::Instruction *IrGen::create_store(ir::Value *ptr, ir::Value *val) {
+void IrGen::create_store(const ast::Node *node, ir::Value *ptr, ir::Value *val) {
     // Generate memcpy for structs.
-    if (val->type()->is<ir::StructType>()) {
+    // TODO: Re-enable this.
+    if (false && val->type()->is<ir::StructType>()) {
         auto *len = ir::ConstantInt::get(ir::IntType::get_unsigned(64), val->type()->size_in_bytes());
-        return m_block->append<ir::CopyInst>(ptr, val, len);
+        auto *copy = m_block->append<ir::CopyInst>(ptr, val, len);
+        copy->set_line(node->line());
+        return;
     }
-    return m_block->append<ir::StoreInst>(ptr, val);
+    if (const auto *type = val->type()->as_or_null<ir::StructType>()) {
+        const auto *struct_val = val->as<ir::Constant>()->as<ir::ConstantStruct>();
+        for (int i = 0; i < type->fields().size(); i++) {
+            auto *member_ptr = get_member_ptr(ptr, i);
+            member_ptr->set_type(ir::PointerType::get(type->fields()[i]));
+            // Break up nested structs.
+            if (type->fields()[i]->is<ir::StructType>()) {
+                create_store(node, member_ptr, struct_val->elems()[i]);
+                continue;
+            }
+            m_block->append<ir::StoreInst>(member_ptr, struct_val->elems()[i]);
+        }
+        return;
+    }
+    auto *store = m_block->append<ir::StoreInst>(ptr, val);
+    store->set_line(node->line());
+}
+
+ir::Value *IrGen::get_member_ptr(ir::Value *ptr, int index) {
+    std::vector<ir::Value *> indices;
+    indices.reserve(2);
+    indices.push_back(ir::ConstantInt::get(ir::IntType::get_unsigned(32), 0));
+    indices.push_back(ir::ConstantInt::get(ir::IntType::get_unsigned(32), index));
+    return m_block->append<ir::LeaInst>(ptr, std::move(indices));
 }
 
 const ir::Type *IrGen::gen_base_type(const ast::Node *node, const std::string &base) {
@@ -204,11 +236,11 @@ ir::Value *IrGen::gen_assign_expr(const ast::AssignExpr *assign_expr) {
     ir::Value *lhs = nullptr;
     {
         StateChanger deref_state_changer(m_deref_state, DerefState::DontDeref);
+        StateChanger member_load_state_changer(m_member_load_state, MemberLoadState::DontLoad);
         lhs = gen_expr(assign_expr->lhs());
     }
     auto *rhs = gen_expr(assign_expr->rhs());
-    auto *store = create_store(lhs, rhs);
-    store->set_line(assign_expr->line());
+    create_store(assign_expr, lhs, rhs);
     return lhs;
 }
 
@@ -269,25 +301,37 @@ ir::Value *IrGen::gen_construct_expr(const ast::ConstructExpr *construct_expr) {
 }
 
 ir::Value *IrGen::gen_member_expr(const ast::MemberExpr *member_expr) {
-    StateChanger deref_state_changer(m_deref_state, DerefState::DontDeref);
-    auto *container = gen_expr(member_expr->lhs());
-    const auto *type = container->as<ir::LocalVar>()->var_type()->as<ir::StructType>();
-    const auto &ast_fields = m_struct_types.at(type);
-    auto it = std::find_if(ast_fields.begin(), ast_fields.end(), [member_expr](const auto &field) {
-        return field.name == member_expr->name();
+    ir::Value *lhs = nullptr;
+    {
+        StateChanger deref_state_changer(m_deref_state, DerefState::DontDeref);
+        StateChanger member_load_state_changer(m_member_load_state, MemberLoadState::DontLoad);
+        lhs = gen_expr(member_expr->lhs());
+    }
+    const auto *rhs = member_expr->rhs()->as<ast::Symbol>();
+    const auto *type = lhs->type();
+    if (auto *var = lhs->as_or_null<ir::LocalVar>()) {
+        type = var->var_type();
+    }
+    if (const auto *ptr_type = type->as_or_null<ir::PointerType>()) {
+        type = ptr_type->pointee_type();
+    }
+    const auto *struct_type = type->as<ir::StructType>();
+    const auto &ast_fields = m_struct_types.at(struct_type);
+    auto it = std::find_if(ast_fields.begin(), ast_fields.end(), [rhs](const auto &field) {
+        return field.name == rhs->name();
     });
     if (it == ast_fields.end()) {
         // TODO: Print struct type name.
-        print_error(member_expr, "struct has no member named '{}'", member_expr->name());
+        print_error(member_expr, "struct has no member named '{}'", rhs->name());
         return ir::ConstantNull::get();
     }
     int index = std::distance(ast_fields.begin(), it);
-    std::vector<ir::Value *> indices;
-    indices.push_back(ir::ConstantInt::get(ir::IntType::get_unsigned(32), 0));
-    indices.push_back(ir::ConstantInt::get(ir::IntType::get_unsigned(32), index));
-    auto *lea = m_block->append<ir::LeaInst>(container, std::move(indices));
-    lea->set_type(ir::PointerType::get(type->fields()[index]));
-    return m_block->append<ir::LoadInst>(lea);
+    auto *lea = get_member_ptr(lhs, index);
+    lea->set_type(ir::PointerType::get(struct_type->fields()[index]));
+    if (m_member_load_state == MemberLoadState::Load) {
+        return m_block->append<ir::LoadInst>(lea);
+    }
+    return lea;
 }
 
 ir::Value *IrGen::gen_num_lit(const ast::NumLit *num_lit) {
@@ -368,8 +412,7 @@ void IrGen::gen_decl_stmt(const ast::DeclStmt *decl_stmt) {
     var->set_name(decl_stmt->name());
     if (decl_stmt->init_val() != nullptr) {
         auto *init_val = gen_expr(decl_stmt->init_val());
-        auto *store = create_store(var, init_val);
-        store->set_line(decl_stmt->line());
+        create_store(decl_stmt, var, init_val);
     }
     m_scope_stack.peek().put_var(decl_stmt->name(), var);
 }

@@ -180,8 +180,9 @@ void Dumper::visit(const IfStmt *if_stmt) {
 
 void Dumper::visit(const MemberExpr *member_expr) {
     std::cout << "MemberExpr(";
-    std::cout << (member_expr->is_pointer() ? "->" : ".") << member_expr->name() << ", ";
     member_expr->lhs()->accept(this);
+    std::cout << ", " << (member_expr->is_pointer() ? "->" : ".");
+    member_expr->rhs()->accept(this);
     std::cout << ')';
 }
 
