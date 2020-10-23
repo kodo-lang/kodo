@@ -58,7 +58,7 @@ std::string printable_constant(const Constant *constant) {
     case ConstantKind::Int:
         return std::to_string(constant->as<ConstantInt>()->value());
     case ConstantKind::Null:
-        return "nullptr";
+        return "null";
     case ConstantKind::String:
         return constant->as<ConstantString>()->value();
     case ConstantKind::Struct:

@@ -25,6 +25,7 @@ ConstantInt *ConstantInt::get(const Type *type, std::size_t value) {
 }
 
 ConstantNull *ConstantNull::get() {
+    s_constant_null.set_type(InvalidType::get());
     return &s_constant_null;
 }
 
