@@ -223,7 +223,8 @@ void FunctionDumper::visit(CopyInst *copy) {
 
 void FunctionDumper::visit(LeaInst *lea) {
     std::cout << printable_value(lea) << " = ";
-    std::cout << "lea " << lea->ptr()->type()->to_string() << ' ' << printable_value(lea->ptr());
+    std::cout << "lea " << lea->type()->to_string() << ", ";
+    std::cout << lea->ptr()->type()->to_string() << ' ' << printable_value(lea->ptr());
     for (auto *index : lea->indices()) {
         std::cout << ", " << index->type()->to_string() << ' ' << printable_value(index);
     }
