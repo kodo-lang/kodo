@@ -3,18 +3,25 @@ type Foo = struct {
     b: i32;
 };
 
-fn set(foo: *Foo) -> i32 {
-    *foo = Foo{4, 5};
-    return 0;
-}
+type Bar = struct {
+    a: Foo;
+    b: Foo;
+};
 
-fn add(foo: Foo) -> i32 {
-    return foo.a + foo.b;
+fn add_foo(a: Foo, b: Foo) -> Foo {
+    // TODO: Allow `return Foo{a.a + b.a, a.b + b.b};`.
+    var ret: Foo;
+    ret.a = a.a + b.a;
+    ret.b = a.b + b.b;
+    return ret;
 }
 
 fn main() -> i32 {
     // TODO: Type inference here.
-    var foo: Foo = Foo{1, 2};
-    set(&foo);
-    return add(foo);
+    let foo: Foo = Foo{1, 2};
+    var bar: Bar;
+    bar.a = foo;
+    bar.b = Foo{3, 4};
+    let added: Foo = add_foo(bar.a, bar.b);
+    return added.a * added.b;
 }

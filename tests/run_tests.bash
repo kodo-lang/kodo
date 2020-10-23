@@ -36,7 +36,7 @@ error: use of possibly uninitialised variable 'c' on line 8
 run_test "success/basic_struct.lang" 3 ""
 run_test "success/comparison.lang" 1 ""
 run_test "success/complex_expression.lang" 55 ""
-run_test "success/complex_struct.lang" 9 ""
+run_test "success/complex_struct.lang" 24 ""
 run_test "success/hello_world.lang" 0 "Hello, world!"
 run_test "success/implicit_extension.lang" 10 ""
 run_test "success/libc_hi.lang" 0 "Hi"
