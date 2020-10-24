@@ -3,6 +3,7 @@
 #include <ir/Value.hh>
 // TODO: Only include ListIterator and ListNode.
 #include <support/Assert.hh>
+#include <support/Castable.hh>
 #include <support/List.hh>
 #include <support/ListNode.hh>
 
@@ -42,6 +43,7 @@ protected:
 public:
     static constexpr auto KIND = ValueKind::Instruction;
 
+    // TODO: Remove code duplication from Castable.
     template <typename T>
     T *as() requires HasKind<T, InstKind>;
     template <typename T>
@@ -59,7 +61,7 @@ public:
     void set_line(int line);
     void set_parent(BasicBlock *parent);
 
-    InstKind inst_kind() const { return m_kind; }
+    InstKind kind() const { return m_kind; }
     int line() const { return m_line; }
     BasicBlock *parent() const { return m_parent; }
 };

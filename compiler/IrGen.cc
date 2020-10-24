@@ -424,7 +424,7 @@ void IrGen::gen_if_stmt(const ast::IfStmt *if_stmt) {
     m_block->append<ir::CondBranchInst>(cond, true_dst, false_dst);
     m_block = true_dst;
     gen_block(if_stmt->block());
-    if ((m_block->begin() == m_block->end()) || m_block->terminator()->inst_kind() != ir::InstKind::Ret) {
+    if ((m_block->begin() == m_block->end()) || m_block->terminator()->kind() != ir::InstKind::Ret) {
         m_block->append<ir::BranchInst>(false_dst);
     }
     m_block = false_dst;
@@ -488,7 +488,7 @@ void IrGen::gen_function_decl(const ast::FunctionDecl *function_decl) {
 
     // Insert implicit return if needed.
     auto *return_block = *(--m_function->end());
-    if (m_function->return_type()->is<ir::VoidType>() && return_block->terminator()->inst_kind() != ir::InstKind::Ret) {
+    if (m_function->return_type()->is<ir::VoidType>() && return_block->terminator()->kind() != ir::InstKind::Ret) {
         // TODO: Special return void instruction?
         return_block->append<ir::RetInst>(nullptr);
     }

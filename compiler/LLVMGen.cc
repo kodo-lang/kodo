@@ -226,7 +226,7 @@ llvm::Value *LLVMGen::gen_argument(const ir::Argument *argument) {
 }
 
 llvm::Value *LLVMGen::gen_constant(const ir::Constant *constant) {
-    switch (constant->constant_kind()) {
+    switch (constant->kind()) {
     case ir::ConstantKind::Int:
         return gen_constant_int(constant->as<ir::ConstantInt>());
     case ir::ConstantKind::String:
@@ -239,7 +239,7 @@ llvm::Value *LLVMGen::gen_constant(const ir::Constant *constant) {
 }
 
 llvm::Value *LLVMGen::gen_instruction(const ir::Instruction *instruction) {
-    switch (instruction->inst_kind()) {
+    switch (instruction->kind()) {
     case ir::InstKind::Binary:
         return gen_binary(instruction->as<ir::BinaryInst>());
     case ir::InstKind::Branch:

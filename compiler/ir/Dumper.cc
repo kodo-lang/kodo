@@ -54,7 +54,7 @@ std::string printable_constant_struct(const ConstantStruct *constant_struct) {
 }
 
 std::string printable_constant(const Constant *constant) {
-    switch (constant->constant_kind()) {
+    switch (constant->kind()) {
     case ConstantKind::Int:
         return std::to_string(constant->as<ConstantInt>()->value());
     case ConstantKind::Null:

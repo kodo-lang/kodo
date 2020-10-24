@@ -1,7 +1,7 @@
 #pragma once
 
 #include <support/Assert.hh>
-#include <support/HasKind.hh>
+#include <support/Castable.hh>
 
 #include <string>
 #include <vector>
@@ -17,7 +17,7 @@ enum class TypeKind {
     Void,
 };
 
-class Type {
+class Type : public Castable<Type, TypeKind, false> {
     TypeKind m_kind;
 
 protected:
@@ -30,13 +30,6 @@ public:
 
     Type &operator=(const Type &) = delete;
     Type &operator=(Type &&) = delete;
-
-    template <typename T>
-    const T *as() const requires HasKind<T, TypeKind>;
-    template <typename T>
-    const T *as_or_null() const requires HasKind<T, TypeKind>;
-    template <typename T>
-    bool is() const requires HasKind<T, TypeKind>;
 
     virtual int size_in_bytes() const;
     virtual std::string to_string() const = 0;
@@ -118,22 +111,5 @@ struct VoidType : public Type {
 
     VoidType() noexcept : Type(KIND) {}
 };
-
-template <typename T>
-const T *Type::as() const requires HasKind<T, TypeKind> {
-    ASSERT(m_kind == T::KIND);
-    ASSERT_PEDANTIC(dynamic_cast<const T *>(this) != nullptr);
-    return static_cast<const T *>(this);
-}
-
-template <typename T>
-const T *Type::as_or_null() const requires HasKind<T, TypeKind> {
-    return is<T>() ? as<T>() : nullptr;
-}
-
-template <typename T>
-bool Type::is() const requires HasKind<T, TypeKind> {
-    return m_kind == T::KIND;
-}
 
 } // namespace ir

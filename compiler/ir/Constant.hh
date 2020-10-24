@@ -2,6 +2,7 @@
 
 #include <ir/Value.hh>
 #include <support/Assert.hh>
+#include <support/Castable.hh>
 
 namespace ir {
 
@@ -21,6 +22,7 @@ protected:
 public:
     static constexpr auto KIND = ValueKind::Constant;
 
+    // TODO: Remove code duplication from Castable.
     template <typename T>
     const T *as() const requires HasKind<T, ConstantKind>;
     template <typename T>
@@ -28,7 +30,7 @@ public:
 
     virtual Constant *clone(const Type *type) const = 0;
 
-    ConstantKind constant_kind() const { return m_kind; }
+    ConstantKind kind() const { return m_kind; }
 };
 
 template <typename T>

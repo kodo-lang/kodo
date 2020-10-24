@@ -1,7 +1,7 @@
 #pragma once
 
 #include <support/Assert.hh>
-#include <support/HasKind.hh>
+#include <support/Castable.hh>
 #include <support/ListNode.hh>
 
 namespace ast {
@@ -29,7 +29,7 @@ enum class NodeKind {
     UnaryExpr,
 };
 
-class Node : public ListNode {
+class Node : public Castable<Node, NodeKind, false>, public ListNode {
     const NodeKind m_kind;
     const int m_line;
 
@@ -39,18 +39,8 @@ protected:
 public:
     virtual void accept(Visitor *visitor) const = 0;
 
-    template <typename T>
-    const T *as() const requires HasKind<T, NodeKind>;
-
     NodeKind kind() const { return m_kind; }
     int line() const { return m_line; }
 };
-
-template <typename T>
-const T *Node::as() const requires HasKind<T, NodeKind> {
-    ASSERT(m_kind == T::KIND);
-    ASSERT_PEDANTIC(dynamic_cast<const T *>(this) != nullptr);
-    return static_cast<const T *>(this);
-}
 
 } // namespace ast

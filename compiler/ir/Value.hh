@@ -2,7 +2,7 @@
 
 #include <ir/Type.hh>
 #include <support/Assert.hh>
-#include <support/HasKind.hh>
+#include <support/Castable.hh>
 
 #include <string>
 #include <vector>
@@ -18,7 +18,7 @@ enum class ValueKind {
     MemoryPhi,
 };
 
-class Value {
+class Value : public Castable<Value, ValueKind, true> {
     const ValueKind m_kind;
     const Type *m_type{nullptr};
     std::string m_name;
@@ -36,16 +36,6 @@ public:
     Value &operator=(const Value &) = delete;
     Value &operator=(Value &&) = delete;
 
-    template <typename T>
-    T *as() requires HasKind<T, ValueKind>;
-    template <typename T>
-    T *as_or_null() requires HasKind<T, ValueKind>;
-
-    template <typename T>
-    const T *as() const requires HasKind<T, ValueKind>;
-    template <typename T>
-    const T *as_or_null() const requires HasKind<T, ValueKind>;
-
     void add_user(Value *user);
     void remove_user(Value *user);
     void replace_all_uses_with(Value *repl);
@@ -62,27 +52,5 @@ public:
     const std::string &name() const { return m_name; }
     const std::vector<Value *> &users() const { return m_users; }
 };
-
-template <typename T>
-T *Value::as() requires HasKind<T, ValueKind> {
-    ASSERT(m_kind == T::KIND);
-    ASSERT_PEDANTIC(dynamic_cast<T *>(this) != nullptr);
-    return static_cast<T *>(this);
-}
-
-template <typename T>
-T *Value::as_or_null() requires HasKind<T, ValueKind> {
-    return m_kind == T::KIND ? as<T>() : nullptr;
-}
-
-template <typename T>
-const T *Value::as() const requires HasKind<T, ValueKind> {
-    return const_cast<Value *>(this)->as<T>();
-}
-
-template <typename T>
-const T *Value::as_or_null() const requires HasKind<T, ValueKind> {
-    return const_cast<Value *>(this)->as_or_null<T>();
-}
 
 } // namespace ir
