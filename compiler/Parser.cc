@@ -287,7 +287,9 @@ ast::Type Parser::parse_type() {
             }
             auto name = expect(TokenKind::Identifier);
             expect(TokenKind::Colon);
-            fields.emplace_back(std::move(std::get<std::string>(name.data)), parse_type());
+            // TODO: Why doesn't this build with clang?
+            // fields.emplace_back(std::move(std::get<std::string>(name.data)), parse_type());
+            fields.push_back(ast::StructField{std::move(std::get<std::string>(name.data)), parse_type()});
             expect(TokenKind::Semi);
         }
         expect(TokenKind::RBrace);
