@@ -6,8 +6,8 @@
 // TODO: Default List<T>::emplace() U param to T.
 namespace ir {
 
-Argument *Function::append_arg() {
-    return m_args.emplace<Argument>(m_args.end());
+Argument *Function::append_arg(bool is_mutable) {
+    return m_args.emplace<Argument>(m_args.end(), is_mutable);
 }
 
 BasicBlock *Function::append_block() {

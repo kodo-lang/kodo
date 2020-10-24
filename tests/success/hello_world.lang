@@ -1,4 +1,4 @@
-extern fn puts(string: *u8) -> i32;
+extern fn puts(let string: *u8) -> i32;
 
 fn main() -> i32 {
     puts("Hello, world!");

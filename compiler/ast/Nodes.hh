@@ -146,17 +146,19 @@ public:
 class FunctionArg : public Node {
     const std::string m_name;
     const Type m_type;
+    const bool m_is_mutable;
 
 public:
     static constexpr auto KIND = NodeKind::FunctionArg;
 
-    FunctionArg(int line, std::string name, Type type)
-        : Node(KIND, line), m_name(std::move(name)), m_type(std::move(type)) {}
+    FunctionArg(int line, std::string name, Type type, bool is_mutable)
+        : Node(KIND, line), m_name(std::move(name)), m_type(std::move(type)), m_is_mutable(is_mutable) {}
 
     void accept(Visitor *visitor) const override;
 
     const std::string &name() const { return m_name; }
     const Type &type() const { return m_type; }
+    bool is_mutable() const { return m_is_mutable; }
 };
 
 class FunctionDecl : public Node {

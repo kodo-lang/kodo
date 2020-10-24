@@ -329,9 +329,14 @@ std::unique_ptr<ast::Root> Parser::parse() {
             root->add<ast::FunctionDecl>(m_lexer->line(), std::move(std::get<std::string>(name.data)), externed);
         expect(TokenKind::LParen);
         while (m_lexer->peek().kind != TokenKind::RParen) {
+            // TODO: `is_mutable = expect(TokenKind::Let, TokenKind::Var).kind == TokenKind::Var`.
+            bool is_mutable = consume(TokenKind::Var).has_value();
+            if (!is_mutable) {
+                expect(TokenKind::Let);
+            }
             auto arg_name = expect(TokenKind::Identifier);
             expect(TokenKind::Colon);
-            func->add_arg(m_lexer->line(), std::move(std::get<std::string>(arg_name.data)), parse_type());
+            func->add_arg(m_lexer->line(), std::move(std::get<std::string>(arg_name.data)), parse_type(), is_mutable);
             consume(TokenKind::Comma);
         }
         expect(TokenKind::RParen);

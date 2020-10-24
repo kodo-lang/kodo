@@ -463,7 +463,7 @@ void IrGen::gen_function_decl(const ast::FunctionDecl *function_decl) {
     const auto *return_type = gen_type(function_decl, function_decl->return_type());
     m_function = m_program->append_function(function_decl->name(), return_type);
     for (const auto *ast_arg : function_decl->args()) {
-        auto *arg = m_function->append_arg();
+        auto *arg = m_function->append_arg(ast_arg->is_mutable());
         arg->set_name(ast_arg->name());
         arg->set_type(gen_type(ast_arg, ast_arg->type()));
     }
@@ -475,9 +475,9 @@ void IrGen::gen_function_decl(const ast::FunctionDecl *function_decl) {
     m_block = m_function->append_block();
     m_scope_stack.emplace(m_scope_stack.peek());
     for (auto *arg : m_function->args()) {
-        // TODO: let and var syntax for function args.
         // TODO: This is a very lazy (clang-inspired) approach to arguments.
-        auto *arg_var = m_function->append_var(arg->type(), true);
+        auto *arg_var = m_function->append_var(arg->type(), arg->is_mutable());
+        arg_var->set_name(arg->name());
         m_block->append<ir::StoreInst>(arg_var, arg);
         m_scope_stack.peek().put_var(arg->name(), arg_var);
     }

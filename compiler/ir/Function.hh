@@ -9,10 +9,15 @@
 
 namespace ir {
 
-struct Argument : public Value, public ListNode {
+class Argument : public Value, public ListNode {
+    const bool m_is_mutable;
+
+public:
     static constexpr auto KIND = ValueKind::Argument;
 
-    Argument() : Value(KIND) {}
+    explicit Argument(bool is_mutable) : Value(KIND), m_is_mutable(is_mutable) {}
+
+    bool is_mutable() const { return m_is_mutable; }
 };
 
 class LocalVar : public Value, public ListNode {
@@ -50,7 +55,7 @@ public:
     Function &operator=(const Function &) = delete;
     Function &operator=(Function &&) = delete;
 
-    Argument *append_arg();
+    Argument *append_arg(bool is_mutable);
     BasicBlock *append_block();
     LocalVar *append_var(const Type *type, bool is_mutable);
 

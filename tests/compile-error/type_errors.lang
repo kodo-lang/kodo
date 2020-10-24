@@ -1,4 +1,4 @@
-fn test(foo: *i32, bar: i32) {
+fn test(let foo: *i32, let bar: i32) {
     *foo = bar;
 }
 
