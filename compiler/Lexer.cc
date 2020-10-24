@@ -103,7 +103,7 @@ Token Lexer::next_token() {
             }
             token.kind = TokenKind::NumLit;
             token.data = static_cast<std::uint64_t>(std::stol(buf));
-        } else if (std::isalpha(ch) != 0) {
+        } else if (std::isalpha(ch) != 0 || ch == '_') {
             std::string buf;
             buf += ch;
             while (std::isalpha(ch = m_stream->peek()) != 0 || std::isdigit(ch) != 0 || ch == '_') {
