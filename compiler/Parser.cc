@@ -105,7 +105,7 @@ std::optional<Token> Parser::consume(TokenKind kind) {
 Token Parser::expect(TokenKind kind) {
     auto next = m_lexer->next();
     if (next.kind != kind) {
-        print_error_and_abort("expected {} but got '{}' on line {}", tok_str(kind), tok_str(next), m_lexer->line());
+        print_error_and_abort("expected {} but got {} on line {}", tok_str(kind), tok_str(next), m_lexer->line());
     }
     return next;
 }
