@@ -3,9 +3,8 @@ type Foo = struct {
     b: i32;
 };
 
-fn set(foo: *Foo) -> i32 {
+fn set(foo: *Foo) {
     *foo = Foo{4, 5};
-    return 0;
 }
 
 fn add(foo: Foo) -> i32 {

@@ -214,6 +214,10 @@ void LLVMGen::gen_store(const ir::StoreInst *store) {
 }
 
 void LLVMGen::gen_ret(const ir::RetInst *ret) {
+    if (ret->val() == nullptr) {
+        m_llvm_builder.CreateRetVoid();
+        return;
+    }
     m_llvm_builder.CreateRet(llvm_value(ret->val()));
 }
 

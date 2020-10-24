@@ -278,7 +278,9 @@ void StoreInst::replace_uses_of_with(Value *orig, Value *repl) {
 
 RetInst::RetInst(Value *val)
     : Instruction(KIND), m_val(val) {
-    m_val->add_user(this);
+    if (m_val != nullptr) {
+        m_val->add_user(this);
+    }
 }
 
 RetInst::~RetInst() {

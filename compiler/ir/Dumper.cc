@@ -245,6 +245,10 @@ void FunctionDumper::visit(StoreInst *store) {
 }
 
 void FunctionDumper::visit(RetInst *ret) {
+    if (ret->val() == nullptr) {
+        std::cout << "ret";
+        return;
+    }
     std::cout << "ret " << ret->val()->type()->to_string() << ' ' << printable_value(ret->val());
 }
 

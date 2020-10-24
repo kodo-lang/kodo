@@ -485,6 +485,13 @@ void IrGen::gen_function_decl(const ast::FunctionDecl *function_decl) {
     ASSERT(function_decl->block() != nullptr);
     gen_block(function_decl->block());
     m_scope_stack.pop();
+
+    // Insert implicit return if needed.
+    auto *return_block = *(--m_function->end());
+    if (m_function->return_type()->is<ir::VoidType>() && return_block->terminator()->inst_kind() != ir::InstKind::Ret) {
+        // TODO: Special return void instruction?
+        return_block->append<ir::RetInst>(nullptr);
+    }
 }
 
 void IrGen::gen_type_decl(const ast::TypeDecl *type_decl) {

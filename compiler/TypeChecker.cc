@@ -191,8 +191,12 @@ void Checker::visit(ir::StoreInst *store) {
 }
 
 void Checker::visit(ir::RetInst *ret) {
-    const auto *expected_type = m_function->return_type();
-    ret->replace_uses_of_with(ret->val(), coerce(ret->val(), expected_type));
+    const auto *return_type = m_function->return_type();
+    if (ret->val() == nullptr) {
+        ASSERT(return_type->is<ir::VoidType>());
+        return;
+    }
+    ret->replace_uses_of_with(ret->val(), coerce(ret->val(), return_type));
 }
 
 } // namespace
