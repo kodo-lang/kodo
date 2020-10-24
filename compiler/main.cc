@@ -13,7 +13,9 @@
 
 #include <llvm/ExecutionEngine/MCJIT.h>
 #include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/LegacyPassManager.h>
 #include <llvm/IR/Verifier.h>
+#include <llvm/Support/TargetRegistry.h>
 #include <llvm/Support/TargetSelect.h>
 #include <llvm/Support/raw_ostream.h>
 
@@ -67,26 +69,37 @@ int main(int argc, char **argv) {
 
     llvm::LLVMContext context;
     auto module = gen_llvm(program.get(), &context);
-    if (verify_llvm_opt.present_or_true() && llvm::verifyModule(*module, &llvm::errs())) {
-        llvm::errs() << '\n';
-        return 1;
+    if (verify_llvm_opt.present_or_true()) {
+        auto print_newline = [] {
+            llvm::errs() << '\n';
+            return true;
+        };
+        ENSURE(!llvm::verifyModule(*module, &llvm::errs()) || !print_newline());
     }
 
     bool dump_llvm = dump_llvm_opt.present_or_true();
-    dump_llvm |= !run;
     if (dump_llvm) {
         module->print(llvm::errs(), nullptr);
     }
-    if (!run) {
-        return 0;
-    }
 
-    auto *function = module->getFunction("main");
-    llvm::InitializeAllAsmPrinters();
-    llvm::InitializeAllTargets();
-    llvm::InitializeAllTargetMCs();
-    llvm::EngineBuilder engine_builder(std::move(module));
-    engine_builder.setEngineKind(llvm::EngineKind::Either);
-    std::unique_ptr<llvm::ExecutionEngine> engine(engine_builder.create());
-    return engine->runFunctionAsMain(function, {"hello"}, nullptr);
+    llvm::InitializeNativeTarget();
+    llvm::InitializeNativeTargetAsmPrinter();
+    if (run) {
+        auto *function = module->getFunction("main");
+        ENSURE(function != nullptr);
+        llvm::EngineBuilder engine_builder(std::move(module));
+        engine_builder.setEngineKind(llvm::EngineKind::Either);
+        std::unique_ptr<llvm::ExecutionEngine> engine(engine_builder.create());
+        return engine->runFunctionAsMain(function, {"hello"}, nullptr);
+    }
+    llvm::TargetOptions options;
+    const auto *target = &*llvm::TargetRegistry::targets().begin();
+    auto *machine = target->createTargetMachine(llvm::sys::getDefaultTargetTriple(), llvm::sys::getHostCPUName(), "",
+                                                options, llvm::Reloc::DynamicNoPIC);
+    std::error_code ec;
+    llvm::raw_fd_ostream output("out.o", ec, llvm::sys::fs::OF_None);
+    llvm::legacy::PassManager pm;
+    machine->addPassesToEmitFile(pm, output, nullptr, llvm::CodeGenFileType::CGFT_ObjectFile);
+    pm.run(*module);
+    output.flush();
 }
