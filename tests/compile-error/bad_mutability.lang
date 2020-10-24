@@ -1,5 +1,10 @@
+fn func(let bar: i32) {
+    bar = 5;
+}
+
 fn main() -> i32 {
     let foo: i32 = 0;
     foo = 5;
+    func(foo);
     return foo;
 }
