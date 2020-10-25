@@ -71,7 +71,7 @@ public:
     ir::Value *get_member_ptr(ir::Value *, int);
 
     const ir::Type *gen_base_type(const ast::Node *, const std::string &);
-    const ir::Type *gen_pointer_type(const ast::Node *, const ast::Type &);
+    const ir::Type *gen_pointer_type(const ast::Node *, const ast::Type &, bool is_mutable);
     const ir::Type *gen_struct_type(const ast::Node *, const std::vector<ast::StructField> &);
     const ir::Type *gen_type(const ast::Node *, const ast::Type &);
 
@@ -148,7 +148,7 @@ void IrGen::create_store(const ast::Node *node, ir::Value *ptr, ir::Value *val) 
         const auto *struct_val = val->as<ir::Constant>()->as<ir::ConstantStruct>();
         for (int i = 0; i < type->fields().size(); i++) {
             auto *member_ptr = get_member_ptr(ptr, i);
-            member_ptr->set_type(ir::PointerType::get(type->fields()[i]));
+            member_ptr->set_type(ir::PointerType::get(type->fields()[i], true));
             // Break up nested structs.
             if (type->fields()[i]->is<ir::StructType>()) {
                 create_store(node, member_ptr, struct_val->elems()[i]);
@@ -191,9 +191,9 @@ const ir::Type *IrGen::gen_base_type(const ast::Node *node, const std::string &b
     return ir::InvalidType::get();
 }
 
-const ir::Type *IrGen::gen_pointer_type(const ast::Node *node, const ast::Type &ast_pointee) {
+const ir::Type *IrGen::gen_pointer_type(const ast::Node *node, const ast::Type &ast_pointee, bool is_mutable) {
     const auto *pointee = gen_type(node, ast_pointee);
-    return ir::PointerType::get(pointee);
+    return ir::PointerType::get(pointee, is_mutable);
 }
 
 const ir::Type *IrGen::gen_struct_type(const ast::Node *node, const std::vector<ast::StructField> &ast_fields) {
@@ -215,7 +215,7 @@ const ir::Type *IrGen::gen_type(const ast::Node *node, const ast::Type &ast_type
     case ast::TypeKind::Base:
         return gen_base_type(node, ast_type.base());
     case ast::TypeKind::Pointer:
-        return gen_pointer_type(node, ast_type.pointee());
+        return gen_pointer_type(node, ast_type.pointee(), ast_type.is_mutable());
     case ast::TypeKind::Struct:
         return gen_struct_type(node, ast_type.struct_fields());
     default:
@@ -327,7 +327,7 @@ ir::Value *IrGen::gen_member_expr(const ast::MemberExpr *member_expr) {
     }
     int index = std::distance(ast_fields.begin(), it);
     auto *lea = get_member_ptr(lhs, index);
-    lea->set_type(ir::PointerType::get(struct_type->fields()[index]));
+    lea->set_type(ir::PointerType::get(struct_type->fields()[index], true));
     if (m_member_load_state == MemberLoadState::Load) {
         return m_block->append<ir::LoadInst>(lea);
     }

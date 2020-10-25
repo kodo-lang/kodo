@@ -32,7 +32,7 @@ ConstantNull *ConstantNull::get() {
 ConstantString *ConstantString::get(std::string value) {
     if (!s_constant_strings.contains(value)) {
         s_constant_strings.emplace(std::piecewise_construct, std::forward_as_tuple(value),
-                                   std::forward_as_tuple(PointerType::get(IntType::get_unsigned(8)), value));
+                                   std::forward_as_tuple(PointerType::get(IntType::get_unsigned(8), false), value));
     }
     return &s_constant_strings.at(value);
 }

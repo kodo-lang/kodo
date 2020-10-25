@@ -39,6 +39,19 @@ void VarChecker::run(ir::Function *function) {
     auto *rda = m_manager->get<ReachingDefAnalysis>(function);
     for (auto *block : *function) {
         for (auto *inst : *block) {
+            if (auto *store = inst->as_or_null<ir::StoreInst>()) {
+                // Ignore stores directly to a local variable's value, as they are handled above.
+                if (store->ptr()->is<ir::LocalVar>()) {
+                    continue;
+                }
+                const auto *type = store->ptr()->type()->as<ir::PointerType>();
+                if (!type->is_mutable()) {
+                    print_error(store, "attempted assignment of '{}' value pointed to by an immutable pointer",
+                                type->pointee_type()->to_string());
+                }
+                continue;
+            }
+
             auto *load = inst->as_or_null<ir::LoadInst>();
             if (load == nullptr) {
                 continue;

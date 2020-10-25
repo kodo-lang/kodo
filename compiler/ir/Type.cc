@@ -16,7 +16,7 @@ VoidType s_void_type;
 
 // Derived types.
 std::unordered_map<std::pair<int, bool>, IntType, PairHash> s_int_types;
-std::unordered_map<const Type *, PointerType> s_pointer_types;
+std::unordered_map<std::pair<const Type *, bool>, PointerType, PairHash> s_pointer_types;
 std::vector<std::unique_ptr<StructType>> s_struct_types;
 
 } // namespace
@@ -46,11 +46,13 @@ const IntType *IntType::get_unsigned(int bit_width) {
     return get(bit_width, false);
 }
 
-const PointerType *PointerType::get(const Type *pointee_type) {
-    if (!s_pointer_types.contains(pointee_type)) {
-        s_pointer_types.emplace(pointee_type, pointee_type);
+const PointerType *PointerType::get(const Type *pointee_type, bool is_mutable) {
+    std::pair<const Type *, bool> pair(pointee_type, is_mutable);
+    if (!s_pointer_types.contains(pair)) {
+        s_pointer_types.emplace(std::piecewise_construct, std::forward_as_tuple(pair),
+                                std::forward_as_tuple(pointee_type, is_mutable));
     }
-    return &s_pointer_types.at(pointee_type);
+    return &s_pointer_types.at(pair);
 }
 
 const StructType *StructType::get(std::vector<const Type *> &&fields) {
@@ -98,7 +100,10 @@ std::string IntType::to_string() const {
 }
 
 std::string PointerType::to_string() const {
-    return m_pointee_type->to_string() + "*";
+    std::string ret = "*";
+    ret += m_is_mutable ? "mut " : "";
+    ret += m_pointee_type->to_string();
+    return std::move(ret);
 }
 
 int StructType::size_in_bytes() const {

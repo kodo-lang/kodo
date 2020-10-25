@@ -76,16 +76,19 @@ public:
 
 class PointerType : public Type {
     const Type *m_pointee_type;
+    bool m_is_mutable;
 
 public:
     static constexpr auto KIND = TypeKind::Pointer;
-    static const PointerType *get(const Type *pointee_type);
+    static const PointerType *get(const Type *pointee_type, bool is_mutable);
 
-    explicit PointerType(const Type *pointee_type) : Type(KIND), m_pointee_type(pointee_type) {}
+    PointerType(const Type *pointee_type, bool is_mutable)
+        : Type(KIND), m_pointee_type(pointee_type), m_is_mutable(is_mutable) {}
 
     std::string to_string() const override;
 
     const Type *pointee_type() const { return m_pointee_type; }
+    bool is_mutable() const { return m_is_mutable; }
 };
 
 class StructType : public Type {

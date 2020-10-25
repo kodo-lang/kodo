@@ -276,7 +276,8 @@ void Parser::parse_stmt(ast::Block *block) {
 ast::Type Parser::parse_type() {
     // TODO: TokenKind::Mul misleading.
     if (consume(TokenKind::Mul)) {
-        return ast::Type::get_pointer(parse_type());
+        bool is_mutable = consume(TokenKind::Mut).has_value();
+        return ast::Type::get_pointer(parse_type(), is_mutable);
     }
     if (consume(TokenKind::Struct)) {
         std::vector<ast::StructField> fields;

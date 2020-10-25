@@ -22,15 +22,16 @@ public:
 
 class LocalVar : public Value, public ListNode {
     const Type *const m_var_type;
-    const bool m_is_mutable;
 
 public:
     static constexpr auto KIND = ValueKind::LocalVar;
 
-    LocalVar(const Type *var_type, bool is_mutable) : Value(KIND), m_var_type(var_type), m_is_mutable(is_mutable) {}
+    LocalVar(const Type *var_type, bool is_mutable) : Value(KIND), m_var_type(var_type) {
+        set_type(PointerType::get(var_type, is_mutable));
+    }
 
     const Type *var_type() const { return m_var_type; }
-    bool is_mutable() const { return m_is_mutable; }
+    bool is_mutable() const { return type()->as<PointerType>()->is_mutable(); }
 };
 
 class Function : public ListNode {

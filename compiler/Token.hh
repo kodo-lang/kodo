@@ -25,6 +25,7 @@ enum class TokenKind {
     Let,
     LParen,
     Mul,
+    Mut,
     NumLit,
     Return,
     RBrace,

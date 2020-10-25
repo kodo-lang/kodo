@@ -93,6 +93,14 @@ ir::Value *Checker::coerce(ir::Value *value, const ir::Type *type) {
             }
         }
     }
+    if (const auto *from = value->type()->as_or_null<ir::PointerType>()) {
+        if (const auto *to = type->as_or_null<ir::PointerType>()) {
+            if (from->pointee_type() == to->pointee_type() && from->is_mutable()) {
+                ASSERT(!to->is_mutable());
+                return value;
+            }
+        }
+    }
     auto *inst = value->as_or_null<ir::Instruction>();
     if (inst == nullptr) {
         inst = m_instruction;
@@ -107,9 +115,6 @@ void Checker::check(ir::Function *function) {
     ASSERT(function->return_type() != nullptr);
     for (auto *arg : function->args()) {
         ASSERT(arg->has_type());
-    }
-    for (auto *var : function->vars()) {
-        var->set_type(ir::PointerType::get(var->var_type()));
     }
     for (auto *block : *function) {
         m_block = block;

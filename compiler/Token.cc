@@ -44,6 +44,8 @@ std::string tok_str(TokenKind kind) {
         return "(";
     case TokenKind::Mul:
         return "*";
+    case TokenKind::Mut:
+        return "mut";
     case TokenKind::NumLit:
         return "number";
     case TokenKind::Return:
