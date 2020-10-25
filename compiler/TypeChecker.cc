@@ -180,10 +180,7 @@ void Checker::visit(ir::CopyInst *) {}
 
 void Checker::visit(ir::LeaInst *) {}
 
-void Checker::visit(ir::LoadInst *load) {
-    const auto *ptr_type = load->ptr()->type()->as<ir::PointerType>();
-    load->set_type(ptr_type->pointee_type());
-}
+void Checker::visit(ir::LoadInst *) {}
 
 void Checker::visit(ir::PhiInst *) {
     ASSERT_NOT_REACHED();

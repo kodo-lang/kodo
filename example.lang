@@ -3,18 +3,17 @@ type Foo = struct {
     b: i32;
 };
 
-fn set(foo: *Foo) {
+fn set(let foo: *mut Foo) {
     *foo = Foo{4, 5};
 }
 
-fn add(foo: Foo) -> i32 {
+fn add(let foo: Foo) -> i32 {
     return foo.a + foo.b;
 }
 
 fn main() -> i32 {
-    // TODO: Shouldn't be able to be let!
     // TODO: Type inference here.
-    let foo: Foo = Foo{1, 2};
+    var foo: Foo = Foo{1, 2};
     set(&foo);
     return add(foo);
 }

@@ -144,19 +144,25 @@ void IrGen::create_store(const ast::Node *node, ir::Value *ptr, ir::Value *val) 
         copy->set_line(node->line());
         return;
     }
+    const auto *ptr_type = ptr->type()->as<ir::PointerType>();
     if (const auto *type = val->type()->as_or_null<ir::StructType>()) {
-        const auto *struct_val = val->as<ir::Constant>()->as<ir::ConstantStruct>();
-        for (int i = 0; i < type->fields().size(); i++) {
-            auto *member_ptr = get_member_ptr(ptr, i);
-            member_ptr->set_type(ir::PointerType::get(type->fields()[i], true));
-            // Break up nested structs.
-            if (type->fields()[i]->is<ir::StructType>()) {
-                create_store(node, member_ptr, struct_val->elems()[i]);
-                continue;
+        const auto *constant_val = val->as_or_null<ir::Constant>();
+        const auto *struct_val = constant_val != nullptr ? constant_val->as_or_null<ir::ConstantStruct>() : nullptr;
+        if (struct_val != nullptr) {
+            bool is_mutable = ptr_type->is_mutable();
+            is_mutable |= ptr->is<ir::LocalVar>();
+            for (int i = 0; i < type->fields().size(); i++) {
+                auto *member_ptr = get_member_ptr(ptr, i);
+                member_ptr->set_type(ir::PointerType::get(type->fields()[i], is_mutable));
+                // Break up nested structs.
+                if (type->fields()[i]->is<ir::StructType>()) {
+                    create_store(node, member_ptr, struct_val->elems()[i]);
+                    continue;
+                }
+                m_block->append<ir::StoreInst>(member_ptr, struct_val->elems()[i]);
             }
-            m_block->append<ir::StoreInst>(member_ptr, struct_val->elems()[i]);
+            return;
         }
-        return;
     }
     auto *store = m_block->append<ir::StoreInst>(ptr, val);
     store->set_line(node->line());

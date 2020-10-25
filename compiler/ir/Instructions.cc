@@ -232,6 +232,7 @@ void LeaInst::replace_uses_of_with(Value *orig, Value *repl) {
 
 LoadInst::LoadInst(Value *ptr) : Instruction(KIND), m_ptr(ptr) {
     m_ptr->add_user(this);
+    set_type(m_ptr->type()->as<PointerType>()->pointee_type());
 }
 
 LoadInst::~LoadInst() {
