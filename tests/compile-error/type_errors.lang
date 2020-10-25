@@ -2,7 +2,7 @@ fn test(let foo: *mut i32, let bar: i32) {
     *foo = bar;
 }
 
-fn main() -> i32 {
+fn main(): i32 {
     // TODO: This shouldn't be able to be let.
     let foo: i32 = 10;
     test();

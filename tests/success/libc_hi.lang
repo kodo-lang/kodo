@@ -1,7 +1,7 @@
 // extern libc function.
-extern fn putchar(let character: i32) -> i32;
+extern fn putchar(let character: i32): i32;
 
-fn main() -> i32 {
+fn main(): i32 {
     putchar(72); // H
     putchar(105); // i
     putchar(10); // \n

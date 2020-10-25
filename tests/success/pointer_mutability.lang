@@ -4,7 +4,7 @@ fn change(let foo: *mut i32, var bar: *mut i32) {
     *bar = 40;
 }
 
-fn main() -> i32 {
+fn main(): i32 {
     // Both variables have to be var here.
     var foo: i32 = 10;
     var bar: i32 = 20;

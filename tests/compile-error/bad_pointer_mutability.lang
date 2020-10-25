@@ -3,7 +3,7 @@ fn change(let foo: *i32, var bar: *mut i32) {
     *bar = 40;
 }
 
-fn main() -> i32 {
+fn main(): i32 {
     // Both variables have to be var here.
     var foo: i32 = 10;
     let bar: i32 = 20;

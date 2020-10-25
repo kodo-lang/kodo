@@ -341,7 +341,7 @@ std::unique_ptr<ast::Root> Parser::parse() {
             consume(TokenKind::Comma);
         }
         expect(TokenKind::RParen);
-        if (consume(TokenKind::Arrow)) {
+        if (consume(TokenKind::Colon)) {
             func->set_return_type(parse_type());
         } else {
             func->set_return_type(ast::Type::get_base("void"));

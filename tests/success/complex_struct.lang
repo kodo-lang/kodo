@@ -8,7 +8,7 @@ type Bar = struct {
     b: Foo;
 };
 
-fn add_foo(let a: Foo, let b: Foo) -> Foo {
+fn add_foo(let a: Foo, let b: Foo): Foo {
     // TODO: Allow `return Foo{a.a + b.a, a.b + b.b};`.
     var ret: Foo;
     ret.a = a.a + b.a;
@@ -16,7 +16,7 @@ fn add_foo(let a: Foo, let b: Foo) -> Foo {
     return ret;
 }
 
-fn main() -> i32 {
+fn main(): i32 {
     // TODO: Type inference here.
     let foo: Foo = Foo{1, 2};
     var bar: Bar;

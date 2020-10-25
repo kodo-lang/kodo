@@ -1,7 +1,7 @@
 type TypeOne = i32;
 type TypeTwo = TypeOne;
 
-fn main() -> i32 {
+fn main(): i32 {
     let foo: TypeOne = 3;
     let bar: TypeTwo = 2;
     return foo + bar;
