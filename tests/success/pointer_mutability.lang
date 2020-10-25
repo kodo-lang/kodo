@@ -1,0 +1,13 @@
+// let/var doesn't matter in this case, we aren't changing the actual pointer.
+fn change(let foo: *mut i32, var bar: *mut i32) {
+    *foo = 30;
+    *bar = 40;
+}
+
+fn main() -> i32 {
+    // Both variables have to be var here.
+    var foo: i32 = 10;
+    var bar: i32 = 20;
+    change(&foo, &bar);
+    return foo + bar;
+}

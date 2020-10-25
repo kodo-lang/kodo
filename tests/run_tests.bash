@@ -22,6 +22,9 @@ run_test "compile-error/bad_if.lang" 1 "error: cannot implicitly cast from 'i32'
 run_test "compile-error/bad_mutability.lang" 1 "error: attempted assignment of immutable variable 'bar' on line 2
 error: attempted assignment of immutable variable 'foo' on line 7
  note: Aborting due to previous errors"
+run_test "compile-error/bad_pointer_mutability.lang" 1 "error: cannot implicitly cast from '*i32' to '*mut i32' on line 10
+error: attempted assignment of 'i32' value pointed to by an immutable pointer on line 2
+ note: Aborting due to previous errors"
 run_test "compile-error/type_errors.lang" 1 "error: 'test' requires 2 arguments, but 0 were passed on line 8
 error: cannot implicitly cast from 'i32' to '*mut i32' on line 9
 error: cannot implicitly cast from '*i32' to 'i32' on line 9
@@ -43,5 +46,6 @@ run_test "success/implicit_extension.lang" 10 ""
 run_test "success/libc_hi.lang" 0 "Hi"
 run_test "success/malloc.lang" 0 "A"
 run_test "success/mutability.lang" 20 ""
+run_test "success/pointer_mutability.lang" 70 ""
 run_test "success/simple_if.lang" 0 "AAA"
 run_test "success/type_alias.lang" 5 ""
