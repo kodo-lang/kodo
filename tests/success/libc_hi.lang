@@ -2,6 +2,7 @@
 extern fn putchar(let character: i32): i32;
 
 fn main(): i32 {
+    // TODO: Char literals.
     putchar(72); // H
     putchar(105); // i
     putchar(10); // \n

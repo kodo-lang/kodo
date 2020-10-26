@@ -1,8 +1,8 @@
 fn main(): i32 {
     let foo: i16 = 5;
     let bar: i32 = 10;
-    let foo_addr: *i16 = &foo;
-    let bar_addr: *i32 = &bar;
-    let bar_addr_addr: **i32 = &bar_addr;
+    let foo_addr = &foo;
+    let bar_addr = &bar;
+    let bar_addr_addr = &bar_addr;
     return foo + *foo_addr * **bar_addr_addr;
 }

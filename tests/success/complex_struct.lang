@@ -17,8 +17,7 @@ fn add_foo(let a: Foo, let b: Foo): Foo {
 }
 
 fn main(): i32 {
-    // TODO: Type inference here.
-    let foo: Foo = Foo{1, 2};
+    let foo = Foo{1, 2};
     var bar: Bar;
     bar.a = foo;
     bar.b = Foo{3, 4};

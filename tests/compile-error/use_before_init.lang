@@ -1,6 +1,6 @@
 fn main(): i32 {
     let a: i32;
-    let b: i32 = a;
+    let b = a;
     let c: i32;
     if (15 < 10) {
         c = 5;

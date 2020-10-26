@@ -4,6 +4,7 @@ extern fn free(let ptr: *i32);
 extern fn putchar(let character: i32): i32;
 
 fn main(): i32 {
+    // TODO: Type inference broken for line below.
     let mem: *mut i32 = malloc(4);
     *mem = 65;
     putchar(*mem);

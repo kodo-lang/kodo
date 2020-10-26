@@ -6,6 +6,6 @@ fn func(var foo: i32, let bar: i32): i32 {
 fn main(): i32 {
     var foo: i32 = 5;
     foo = 10;
-    let bar: i32 = foo;
+    let bar = foo;
     return func(foo, bar);
 }
