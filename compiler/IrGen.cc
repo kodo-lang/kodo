@@ -220,6 +220,8 @@ const ir::Type *IrGen::gen_type(const ast::Node *node, const ast::Type &ast_type
         return ir::InvalidType::get();
     case ast::TypeKind::Base:
         return gen_base_type(node, ast_type.base());
+    case ast::TypeKind::Inferred:
+        return ir::InferredType::get();
     case ast::TypeKind::Pointer:
         return gen_pointer_type(node, ast_type.pointee(), ast_type.is_mutable());
     case ast::TypeKind::Struct:
@@ -341,8 +343,9 @@ ir::Value *IrGen::gen_member_expr(const ast::MemberExpr *member_expr) {
 }
 
 ir::Value *IrGen::gen_num_lit(const ast::NumLit *num_lit) {
-    // TODO: Work out best fit type based on constant value.
-    return ir::ConstantInt::get(ir::InvalidType::get(), num_lit->value());
+    // `+ 1` for signed bit.
+    int bit_width = static_cast<int>(std::ceil(std::log2(num_lit->value()))) + 1;
+    return ir::ConstantInt::get(ir::IntType::get_signed(bit_width), num_lit->value());
 }
 
 ir::Value *IrGen::gen_string_lit(const ast::StringLit *string_lit) {
@@ -419,6 +422,9 @@ void IrGen::gen_decl_stmt(const ast::DeclStmt *decl_stmt) {
     if (decl_stmt->init_val() != nullptr) {
         auto *init_val = gen_expr(decl_stmt->init_val());
         create_store(decl_stmt, var, init_val);
+        if (type->is<ir::InferredType>()) {
+            var->set_var_type(init_val->type());
+        }
     }
     m_scope_stack.peek().put_var(decl_stmt->name(), var);
 }

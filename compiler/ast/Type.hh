@@ -13,6 +13,7 @@ struct StructField;
 enum class TypeKind {
     Invalid,
     Base,
+    Inferred,
     Pointer,
     Struct,
 };
@@ -21,11 +22,14 @@ class Type {
     TypeKind m_kind{TypeKind::Invalid};
     std::variant<std::string, std::pair<std::unique_ptr<Type>, bool>, std::vector<StructField>> m_data;
 
+    explicit Type(TypeKind kind) : m_kind(kind) {}
+
     template <typename T>
     Type(TypeKind kind, T data) : m_kind(kind), m_data(std::move(data)) {}
 
 public:
     static Type get_base(std::string &&base);
+    static Type get_inferred();
     static Type get_pointer(Type &&pointee, bool is_mutable);
     static Type get_struct(std::vector<StructField> &&fields);
 

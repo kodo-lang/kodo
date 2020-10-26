@@ -12,6 +12,7 @@ namespace {
 // Primitive types.
 InvalidType s_invalid_type;
 BoolType s_bool_type;
+InferredType s_inferred_type;
 VoidType s_void_type;
 
 // Derived types.
@@ -27,6 +28,10 @@ const InvalidType *InvalidType::get() {
 
 const BoolType *BoolType::get() {
     return &s_bool_type;
+}
+
+const InferredType *InferredType::get() {
+    return &s_inferred_type;
 }
 
 const IntType *IntType::get(int bit_width, bool is_signed) {
@@ -88,6 +93,10 @@ std::string InvalidType::to_string() const {
 
 std::string BoolType::to_string() const {
     return "bool";
+}
+
+std::string InferredType::to_string() const {
+    return "inferred";
 }
 
 int IntType::size_in_bytes() const {

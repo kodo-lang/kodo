@@ -55,10 +55,6 @@ const ir::Type *resulting_type(const ir::IntType *lhs, const ir::Type *rhs) {
 
 const ir::Type *resulting_type(const ir::Type *lhs, const ir::Type *rhs) {
     if (lhs == rhs) {
-        // TODO: Hacky. resulting_type should take in two values and have special handling for constants.
-        if (lhs->is<ir::InvalidType>()) {
-            return ir::IntType::get_signed(32);
-        }
         return lhs;
     }
     switch (lhs->kind()) {

@@ -11,6 +11,7 @@ namespace ir {
 enum class TypeKind {
     Invalid,
     Bool,
+    Inferred,
     Int,
     Pointer,
     Struct,
@@ -51,6 +52,15 @@ struct BoolType : public Type {
     static const BoolType *get();
 
     BoolType() noexcept : Type(KIND) {}
+
+    std::string to_string() const override;
+};
+
+struct InferredType : public Type {
+    static constexpr auto KIND = TypeKind::Inferred;
+    static const InferredType *get();
+
+    InferredType() noexcept : Type(KIND) {}
 
     std::string to_string() const override;
 };

@@ -254,8 +254,10 @@ void Parser::parse_stmt(ast::Block *block) {
             expect(TokenKind::Let);
         }
         auto name = std::move(std::get<std::string>(expect(TokenKind::Identifier).data));
-        expect(TokenKind::Colon);
-        auto type = parse_type();
+        auto type = ast::Type::get_inferred();
+        if (consume(TokenKind::Colon)) {
+            type = parse_type();
+        }
         const auto *init_val = consume(TokenKind::Eq) ? parse_expr() : nullptr;
         block->add_stmt<ast::DeclStmt>(m_lexer->line(), std::move(name), std::move(type), init_val, is_mutable);
         expect(TokenKind::Semi);

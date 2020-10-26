@@ -21,13 +21,18 @@ public:
 };
 
 class LocalVar : public Value, public ListNode {
-    const Type *const m_var_type;
+    const Type *m_var_type;
 
 public:
     static constexpr auto KIND = ValueKind::LocalVar;
 
     LocalVar(const Type *var_type, bool is_mutable) : Value(KIND), m_var_type(var_type) {
         set_type(PointerType::get(var_type, is_mutable));
+    }
+
+    void set_var_type(const Type *var_type) {
+        m_var_type = var_type;
+        set_type(PointerType::get(m_var_type, is_mutable()));
     }
 
     const Type *var_type() const { return m_var_type; }
