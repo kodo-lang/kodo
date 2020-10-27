@@ -1,0 +1,19 @@
+fn write(let fd: u64, let buf: *u8, let len: u64) {
+    // TODO: Remove variable when inline asm has proper type checking (e.g. values inputting to rax get extended to 64
+    // bits automatically).
+    let num: u64 = 1;
+    asm(
+        "syscall",
+        clobber("rcx"),
+        clobber("r11"),
+        in("rax", num),
+        in("rdi", fd),
+        in("rsi", buf),
+        in("rdx", len),
+    );
+}
+
+fn main(): i32 {
+    write(1, "Hello, world!", 13);
+    return 0;
+}
