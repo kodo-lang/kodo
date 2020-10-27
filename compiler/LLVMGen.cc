@@ -8,6 +8,7 @@
 #include <support/Assert.hh>
 
 #include <llvm/IR/IRBuilder.h>
+#include <llvm/IR/InlineAsm.h>
 
 #include <unordered_map>
 #include <utility>
@@ -43,6 +44,7 @@ public:
     llvm::Value *gen_call(const ir::CallInst *);
     llvm::Value *gen_cast(const ir::CastInst *);
     llvm::Value *gen_compare(const ir::CompareInst *);
+    llvm::Value *gen_inline_asm(const ir::InlineAsmInst *);
     llvm::Value *gen_lea(const ir::LeaInst *);
     llvm::Value *gen_load(const ir::LoadInst *);
     void gen_branch(const ir::BranchInst *);
@@ -177,6 +179,37 @@ llvm::Value *LLVMGen::gen_compare(const ir::CompareInst *compare) {
     }
 }
 
+llvm::Value *LLVMGen::gen_inline_asm(const ir::InlineAsmInst *inline_asm) {
+    std::string llvm_str;
+    bool first = true;
+    for (const auto &clobber : inline_asm->clobbers()) {
+        if (!first) {
+            llvm_str += ',';
+        }
+        first = false;
+        llvm_str += "~{" + clobber + '}';
+    }
+
+    std::vector<llvm::Value *> args;
+    std::vector<llvm::Type *> arg_types;
+    args.reserve(inline_asm->inputs().size());
+    arg_types.reserve(inline_asm->inputs().size());
+    for (const auto &[input, value] : inline_asm->inputs()) {
+        if (!first) {
+            llvm_str += ',';
+        }
+        first = false;
+        llvm_str += '{' + input + '}';
+        args.push_back(llvm_value(value));
+        arg_types.push_back(llvm_type(value->type()));
+    }
+
+    auto *type = llvm::FunctionType::get(llvm::Type::getVoidTy(*m_llvm_context), arg_types, false);
+    auto *llvm_asm =
+        llvm::InlineAsm::get(type, inline_asm->instruction(), llvm_str, true, true, llvm::InlineAsm::AD_Intel);
+    return m_llvm_builder.CreateCall(llvm_asm, args);
+}
+
 llvm::Value *LLVMGen::gen_lea(const ir::LeaInst *lea) {
     auto *ptr = llvm_value(lea->ptr());
     // TODO: Size is already known here.
@@ -257,6 +290,8 @@ llvm::Value *LLVMGen::gen_instruction(const ir::Instruction *instruction) {
     case ir::InstKind::Copy:
         gen_copy(instruction->as<ir::CopyInst>());
         return nullptr;
+    case ir::InstKind::InlineAsm:
+        return gen_inline_asm(instruction->as<ir::InlineAsmInst>());
     case ir::InstKind::Lea:
         return gen_lea(instruction->as<ir::LeaInst>());
     case ir::InstKind::Load:

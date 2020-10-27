@@ -10,8 +10,12 @@ std::string tok_str(TokenKind kind) {
         return "&";
     case TokenKind::Arrow:
         return "->";
+    case TokenKind::Asm:
+        return "asm";
     case TokenKind::Cast:
         return "cast";
+    case TokenKind::Clobber:
+        return "clobber";
     case TokenKind::Colon:
         return ":";
     case TokenKind::Comma:
@@ -34,6 +38,8 @@ std::string tok_str(TokenKind kind) {
         return "identifier";
     case TokenKind::If:
         return "if";
+    case TokenKind::In:
+        return "in";
     case TokenKind::LBrace:
         return "{";
     case TokenKind::LessThan:

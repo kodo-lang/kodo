@@ -9,6 +9,7 @@ namespace ast {
 class Visitor;
 
 enum class NodeKind {
+    AsmExpr,
     AssignExpr,
     BinExpr,
     Block,

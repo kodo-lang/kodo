@@ -2,6 +2,7 @@
 
 namespace ast {
 
+class AsmExpr;
 class AssignExpr;
 class BinExpr;
 class Block;
@@ -22,6 +23,7 @@ class TypeDecl;
 class UnaryExpr;
 
 struct Visitor {
+    virtual void visit(const AsmExpr *) = 0;
     virtual void visit(const AssignExpr *) = 0;
     virtual void visit(const BinExpr *) = 0;
     virtual void visit(const Block *) = 0;

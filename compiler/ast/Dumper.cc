@@ -13,6 +13,7 @@ class Dumper : public Visitor {
     int m_indent_width{0};
 
 public:
+    void visit(const AsmExpr *) override;
     void visit(const AssignExpr *) override;
     void visit(const BinExpr *) override;
     void visit(const Block *) override;
@@ -60,6 +61,11 @@ void print_type(const Type &type) {
     default:
         ASSERT_NOT_REACHED();
     }
+}
+
+void Dumper::visit(const AsmExpr *asm_expr) {
+    // TODO
+    std::cout << "AsmExpr()";
 }
 
 void Dumper::visit(const AssignExpr *assign_stmt) {

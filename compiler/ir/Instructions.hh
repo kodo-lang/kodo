@@ -193,6 +193,31 @@ public:
     Value *len() const { return m_len; }
 };
 
+class InlineAsmInst : public Instruction {
+    std::string m_instruction;
+    std::vector<std::string> m_clobbers;
+    std::vector<std::pair<std::string, Value *>> m_inputs;
+
+public:
+    static constexpr auto KIND = InstKind::InlineAsm;
+
+    InlineAsmInst(std::string instruction, std::vector<std::string> &&clobbers,
+                  std::vector<std::pair<std::string, Value *>> &&inputs);
+    InlineAsmInst(const InlineAsmInst &) = delete;
+    InlineAsmInst(InlineAsmInst &&) = delete;
+    ~InlineAsmInst() override;
+
+    InlineAsmInst &operator=(const InlineAsmInst &) = delete;
+    InlineAsmInst &operator=(InlineAsmInst &&) = delete;
+
+    void accept(Visitor *visitor) override;
+    void replace_uses_of_with(Value *orig, Value *repl) override;
+
+    const std::string &instruction() const { return m_instruction; }
+    const std::vector<std::string> &clobbers() const { return m_clobbers; }
+    const std::vector<std::pair<std::string, Value *>> &inputs() const { return m_inputs; }
+};
+
 class LeaInst : public Instruction {
     Value *m_ptr;
     std::vector<Value *> m_indices;

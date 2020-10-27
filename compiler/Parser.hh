@@ -14,6 +14,7 @@ class Parser {
     std::optional<Token> consume(TokenKind kind);
     Token expect(TokenKind kind);
 
+    ast::AsmExpr *parse_asm_expr();
     ast::CallExpr *parse_call_expr(std::string name);
     ast::CastExpr *parse_cast_expr();
     ast::ConstructExpr *parse_construct_expr(std::string name);

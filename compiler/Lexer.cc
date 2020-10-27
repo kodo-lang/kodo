@@ -109,14 +109,20 @@ Token Lexer::next_token() {
             while (std::isalpha(ch = m_stream->peek()) != 0 || std::isdigit(ch) != 0 || ch == '_') {
                 buf += m_stream->next();
             }
-            if (buf == "cast") {
+            if (buf == "asm") {
+                token.kind = TokenKind::Asm;
+            } else if (buf == "cast") {
                 token.kind = TokenKind::Cast;
+            } else if (buf == "clobber") {
+                token.kind = TokenKind::Clobber;
             } else if (buf == "extern") {
                 token.kind = TokenKind::Extern;
             } else if (buf == "fn") {
                 token.kind = TokenKind::Fn;
             } else if (buf == "if") {
                 token.kind = TokenKind::If;
+            } else if (buf == "in") {
+                token.kind = TokenKind::In;
             } else if (buf == "let") {
                 token.kind = TokenKind::Let;
             } else if (buf == "mut") {

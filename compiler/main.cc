@@ -83,6 +83,7 @@ int main(int argc, char **argv) {
     }
 
     llvm::InitializeNativeTarget();
+    llvm::InitializeNativeTargetAsmParser();
     llvm::InitializeNativeTargetAsmPrinter();
     if (run) {
         auto *function = module->getFunction("main");

@@ -110,6 +110,50 @@ Token Parser::expect(TokenKind kind) {
     return next;
 }
 
+ast::AsmExpr *Parser::parse_asm_expr() {
+    expect(TokenKind::Asm);
+    expect(TokenKind::LParen);
+    auto *asm_expr =
+        new ast::AsmExpr(m_lexer->line(), std::move(std::get<std::string>(expect(TokenKind::StringLit).data)));
+    expect(TokenKind::Comma);
+    while (m_lexer->has_next()) {
+        if (m_lexer->peek().kind == TokenKind::RParen) {
+            break;
+        }
+        enum class PartKind {
+            Clobber,
+            Input,
+        } part_kind;
+        auto next = m_lexer->next();
+        switch (next.kind) {
+        case TokenKind::Clobber:
+            part_kind = PartKind::Clobber;
+            break;
+        case TokenKind::In:
+            part_kind = PartKind::Input;
+            break;
+        default:
+            print_error_and_abort("expected clobber or in on line {}", m_lexer->line());
+        }
+        expect(TokenKind::LParen);
+        auto reg = std::move(std::get<std::string>(expect(TokenKind::StringLit).data));
+        switch (part_kind) {
+        case PartKind::Clobber:
+            asm_expr->add_clobber(std::move(reg));
+            break;
+        case PartKind::Input:
+            expect(TokenKind::Comma);
+            asm_expr->add_input(std::move(reg), parse_expr());
+            break;
+        }
+        expect(TokenKind::RParen);
+        // TODO: Be more strict on this.
+        consume(TokenKind::Comma);
+    }
+    expect(TokenKind::RParen);
+    return asm_expr;
+}
+
 ast::CallExpr *Parser::parse_call_expr(std::string name) {
     auto *call_expr = new ast::CallExpr(m_lexer->line(), std::move(name));
     m_lexer->next();
@@ -156,6 +200,10 @@ ast::Node *Parser::parse_expr() {
     bool last_was_operator = true;
     while (keep_parsing) {
         auto token = m_lexer->peek();
+        if (token.kind == TokenKind::Asm) {
+            operands.push(parse_asm_expr());
+            continue;
+        }
         if (token.kind == TokenKind::Cast) {
             operands.push(parse_cast_expr());
             continue;

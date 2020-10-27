@@ -4,6 +4,10 @@
 
 namespace ast {
 
+void AsmExpr::accept(Visitor *visitor) const {
+    visitor->visit(this);
+}
+
 void AssignExpr::accept(Visitor *visitor) const {
     visitor->visit(this);
 }

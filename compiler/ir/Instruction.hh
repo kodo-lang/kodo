@@ -17,6 +17,7 @@ enum class InstKind {
     Binary,
     Cast,
     Compare,
+    InlineAsm,
 
     // Control flow instructions.
     Branch,

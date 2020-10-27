@@ -78,6 +78,7 @@ public:
     ir::Value *gen_address_of(const ast::Node *);
     ir::Value *gen_deref(const ast::Node *);
 
+    ir::Value *gen_asm_expr(const ast::AsmExpr *);
     ir::Value *gen_assign_expr(const ast::AssignExpr *);
     ir::Value *gen_bin_expr(const ast::BinExpr *);
     ir::Value *gen_call_expr(const ast::CallExpr *);
@@ -240,6 +241,17 @@ ir::Value *IrGen::gen_deref(const ast::Node *expr) {
     return m_block->append<ir::LoadInst>(gen_expr(expr));
 }
 
+ir::Value *IrGen::gen_asm_expr(const ast::AsmExpr *asm_expr) {
+    // TODO: Avoid copying.
+    auto clobbers = asm_expr->clobbers();
+    std::vector<std::pair<std::string, ir::Value *>> inputs;
+    inputs.reserve(asm_expr->inputs().size());
+    for (const auto &[input, expr] : asm_expr->inputs()) {
+        inputs.emplace_back(input, gen_expr(expr.get()));
+    }
+    return m_block->append<ir::InlineAsmInst>(asm_expr->instruction(), std::move(clobbers), std::move(inputs));
+}
+
 ir::Value *IrGen::gen_assign_expr(const ast::AssignExpr *assign_expr) {
     ir::Value *lhs = nullptr;
     {
@@ -378,6 +390,8 @@ ir::Value *IrGen::gen_unary_expr(const ast::UnaryExpr *unary_expr) {
 
 ir::Value *IrGen::gen_expr_value(const ast::Node *expr) {
     switch (expr->kind()) {
+    case ast::NodeKind::AsmExpr:
+        return gen_asm_expr(expr->as<ast::AsmExpr>());
     case ast::NodeKind::AssignExpr:
         return gen_assign_expr(expr->as<ast::AssignExpr>());
     case ast::NodeKind::BinExpr:

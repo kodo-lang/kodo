@@ -200,6 +200,34 @@ void CopyInst::replace_uses_of_with(Value *orig, Value *repl) {
 }
 // clang-format on
 
+InlineAsmInst::InlineAsmInst(std::string instruction, std::vector<std::string> &&clobbers,
+                             std::vector<std::pair<std::string, Value *>> &&inputs)
+    : Instruction(KIND), m_instruction(std::move(instruction)), m_clobbers(std::move(clobbers)),
+      m_inputs(std::move(inputs)) {
+    for (auto &[input, value] : m_inputs) {
+        value->add_user(this);
+    }
+    set_type(VoidType::get());
+}
+
+InlineAsmInst::~InlineAsmInst() {
+    for (auto &[input, value] : m_inputs) {
+        if (value != nullptr) {
+            value->remove_user(this);
+        }
+    }
+}
+
+void InlineAsmInst::accept(Visitor *visitor) {
+    visitor->visit(this);
+}
+
+void InlineAsmInst::replace_uses_of_with(Value *orig, Value *repl) {
+    for (auto &[input, value] : m_inputs) {
+        REPL_VALUE(value)
+    }
+}
+
 LeaInst::LeaInst(Value *ptr, std::vector<Value *> &&indices)
     : Instruction(KIND), m_ptr(ptr), m_indices(std::move(indices)) {
     m_ptr->add_user(this);

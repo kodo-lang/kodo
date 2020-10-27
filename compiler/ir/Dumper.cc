@@ -32,6 +32,7 @@ public:
     void visit(CompareInst *) override;
     void visit(CondBranchInst *) override;
     void visit(CopyInst *) override;
+    void visit(InlineAsmInst *) override;
     void visit(LeaInst *) override;
     void visit(LoadInst *) override;
     void visit(PhiInst *) override;
@@ -219,6 +220,19 @@ void FunctionDumper::visit(CopyInst *copy) {
     std::cout << "copy " << printable_value(copy->src()) << " -> ";
     std::cout << printable_value(copy->dst()) << " * ";
     std::cout << copy->len()->type()->to_string() << ' ' << printable_value(copy->len());
+}
+
+void FunctionDumper::visit(InlineAsmInst *inline_asm) {
+    std::cout << printable_value(inline_asm) << " = ";
+    std::cout << "asm " << inline_asm->type()->to_string() << ' ';
+    std::cout << '"' << inline_asm->instruction() << '"';
+    for (const auto &clobber : inline_asm->clobbers()) {
+        std::cout << ", clob(" << clobber << ')';
+    }
+    for (const auto &[input, value] : inline_asm->inputs()) {
+        std::cout << ", in(" << input << ", ";
+        std::cout << printable_value(value) << ')';
+    }
 }
 
 void FunctionDumper::visit(LeaInst *lea) {

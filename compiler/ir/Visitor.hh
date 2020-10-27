@@ -2,6 +2,7 @@
 
 namespace ir {
 
+class InlineAsmInst;
 class BinaryInst;
 class BranchInst;
 class CallInst;
@@ -23,6 +24,7 @@ struct Visitor {
     virtual void visit(CompareInst *) = 0;
     virtual void visit(CondBranchInst *) = 0;
     virtual void visit(CopyInst *) = 0;
+    virtual void visit(InlineAsmInst *) = 0;
     virtual void visit(LeaInst *) = 0;
     virtual void visit(LoadInst *) = 0;
     virtual void visit(PhiInst *) = 0;

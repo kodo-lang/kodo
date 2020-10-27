@@ -29,6 +29,7 @@ public:
     void visit(ir::CompareInst *) override;
     void visit(ir::CondBranchInst *) override;
     void visit(ir::CopyInst *) override;
+    void visit(ir::InlineAsmInst *) override;
     void visit(ir::LeaInst *) override;
     void visit(ir::LoadInst *) override;
     void visit(ir::PhiInst *) override;
@@ -138,7 +139,7 @@ void Checker::visit(ir::CallInst *call) {
     auto *callee = call->callee();
     if (call->args().size() != callee->args().size()) {
         print_error(call, "'{}' requires {} arguments, but {} were passed", callee->name(), callee->args().size(),
-                  call->args().size());
+                    call->args().size());
         return;
     }
     for (int i = 0; auto *param : callee->args()) {
@@ -150,7 +151,13 @@ void Checker::visit(ir::CallInst *call) {
 
 void Checker::visit(ir::CastInst *cast) {
     auto *val = cast->val();
-    ENSURE(val->kind() != ir::ValueKind::Constant);
+    if (const auto *from = val->type()->as_or_null<ir::IntType>()) {
+        if (const auto *to = cast->type()->as_or_null<ir::IntType>()) {
+            if (from->bit_width() <= to->bit_width()) {
+                return;
+            }
+        }
+    }
     if (val->type()->is<ir::BoolType>() && cast->type()->is<ir::IntType>()) {
         cast->set_op(ir::CastOp::ZeroExtend);
         return;
@@ -173,6 +180,8 @@ void Checker::visit(ir::CondBranchInst *cond_branch) {
 }
 
 void Checker::visit(ir::CopyInst *) {}
+
+void Checker::visit(ir::InlineAsmInst *) {}
 
 void Checker::visit(ir::LeaInst *) {}
 
