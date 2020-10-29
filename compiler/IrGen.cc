@@ -68,6 +68,7 @@ public:
     IrGen();
 
     void create_store(const ast::Node *, ir::Value *, ir::Value *);
+    ir::Function *find_or_create_function(const std::string &, const ir::Type *);
     ir::Value *get_member_ptr(ir::Value *, int);
 
     const ir::Type *gen_base_type(const ast::Node *, const std::string &);
@@ -167,6 +168,16 @@ void IrGen::create_store(const ast::Node *node, ir::Value *ptr, ir::Value *val) 
     }
     auto *store = m_block->append<ir::StoreInst>(ptr, val);
     store->set_line(node->line());
+}
+
+ir::Function *IrGen::find_or_create_function(const std::string &name, const ir::Type *return_type) {
+    for (auto *function : *m_program) {
+        if (function->name() == name) {
+            ASSERT(function->return_type() == return_type);
+            return function;
+        }
+    }
+    return m_program->append_function(name, return_type);
 }
 
 ir::Value *IrGen::get_member_ptr(ir::Value *ptr, int index) {
@@ -487,7 +498,7 @@ void IrGen::gen_block(const ast::Block *block) {
 
 void IrGen::gen_function_decl(const ast::FunctionDecl *function_decl) {
     const auto *return_type = gen_type(function_decl, function_decl->return_type());
-    m_function = m_program->append_function(function_decl->name(), return_type);
+    m_function = find_or_create_function(function_decl->name(), return_type);
     for (const auto *ast_arg : function_decl->args()) {
         auto *arg = m_function->append_arg(ast_arg->is_mutable());
         arg->set_name(ast_arg->name());
@@ -530,6 +541,9 @@ void IrGen::gen_decl(const ast::Node *decl) {
     case ast::NodeKind::FunctionDecl:
         gen_function_decl(decl->as<ast::FunctionDecl>());
         break;
+    case ast::NodeKind::ImportStmt:
+        // Handled in Compiler.
+        break;
     case ast::NodeKind::TypeDecl:
         gen_type_decl(decl->as<ast::TypeDecl>());
         break;
@@ -540,10 +554,12 @@ void IrGen::gen_decl(const ast::Node *decl) {
 
 } // namespace
 
-std::unique_ptr<ir::Program> gen_ir(const ast::Root *root) {
+std::unique_ptr<ir::Program> gen_ir(std::vector<std::unique_ptr<ast::Root>> &&roots) {
     IrGen gen;
-    for (const auto *decl : root->decls()) {
-        gen.gen_decl(decl);
+    for (auto &root : roots) {
+        for (const auto *decl : root->decls()) {
+            gen.gen_decl(decl);
+        }
     }
     return gen.program();
 }

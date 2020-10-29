@@ -22,6 +22,7 @@ enum class TokenKind {
     GreaterThan,
     Identifier,
     If,
+    Import,
     In,
     LBrace,
     LessThan,

@@ -17,7 +17,6 @@
 namespace {
 
 class LLVMGen {
-    const ir::Program *const m_program;
     llvm::LLVMContext *const m_llvm_context;
 
     std::unique_ptr<llvm::Module> m_llvm_module;
@@ -30,7 +29,7 @@ class LLVMGen {
     std::unordered_map<const ir::Value *, llvm::Value *> m_value_map;
 
 public:
-    LLVMGen(const ir::Program *program, llvm::LLVMContext *llvm_context);
+    explicit LLVMGen(llvm::LLVMContext *llvm_context);
 
     llvm::Type *llvm_struct_type(const ir::StructType *);
     llvm::Type *llvm_type(const ir::Type *);
@@ -60,13 +59,13 @@ public:
 
     void gen_block(const ir::BasicBlock *);
     void gen_function(const ir::Function *);
+    void gen_program(const ir::Program *);
 
     std::unique_ptr<llvm::Module> module() { return std::move(m_llvm_module); }
 };
 
-LLVMGen::LLVMGen(const ir::Program *program, llvm::LLVMContext *llvm_context)
-    : m_program(program), m_llvm_context(llvm_context), m_llvm_builder(*llvm_context) {
-    m_llvm_module = std::make_unique<llvm::Module>("main", *llvm_context);
+LLVMGen::LLVMGen(llvm::LLVMContext *llvm_context) : m_llvm_context(llvm_context), m_llvm_builder(*llvm_context) {
+    m_llvm_module = std::make_unique<llvm::Module>("main", *m_llvm_context);
 }
 
 llvm::Type *LLVMGen::llvm_struct_type(const ir::StructType *struct_type) {
@@ -332,21 +331,14 @@ void LLVMGen::gen_block(const ir::BasicBlock *block) {
 }
 
 void LLVMGen::gen_function(const ir::Function *function) {
-    std::vector<llvm::Type *> arg_types;
-    for (const auto *arg : function->args()) {
-        ASSERT(arg->has_type());
-        arg_types.push_back(llvm_type(arg->type()));
-    }
-
-    auto *function_type = llvm::FunctionType::get(llvm_type(function->return_type()), arg_types, false);
-    m_llvm_function =
-        llvm::Function::Create(function_type, llvm::Function::ExternalLinkage, function->name(), *m_llvm_module);
-
     // If the function has no blocks, return early.
     if (function->begin() == function->end()) {
         ASSERT(function->vars().empty());
         return;
     }
+
+    m_llvm_function = m_llvm_module->getFunction(function->name());
+    ASSERT(m_llvm_function != nullptr);
 
     m_llvm_block = llvm::BasicBlock::Create(*m_llvm_context, "vars", m_llvm_function);
     m_llvm_builder.SetInsertPoint(m_llvm_block);
@@ -367,12 +359,27 @@ void LLVMGen::gen_function(const ir::Function *function) {
     }
 }
 
+void LLVMGen::gen_program(const ir::Program *program) {
+    for (auto *function : *program) {
+        std::vector<llvm::Type *> arg_types;
+        for (const auto *arg : function->args()) {
+            ASSERT(arg->has_type());
+            arg_types.push_back(llvm_type(arg->type()));
+        }
+
+        ASSERT(m_llvm_module->getFunction(function->name()) == nullptr);
+        auto *function_type = llvm::FunctionType::get(llvm_type(function->return_type()), arg_types, false);
+        llvm::Function::Create(function_type, llvm::Function::ExternalLinkage, function->name(), *m_llvm_module);
+    }
+    for (auto *function : *program) {
+        gen_function(function);
+    }
+}
+
 } // namespace
 
 std::unique_ptr<llvm::Module> gen_llvm(const ir::Program *program, llvm::LLVMContext *llvm_context) {
-    LLVMGen gen(program, llvm_context);
-    for (const auto *function : *program) {
-        gen.gen_function(function);
-    }
+    LLVMGen gen(llvm_context);
+    gen.gen_program(program);
     return gen.module();
 }

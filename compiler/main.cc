@@ -1,11 +1,7 @@
-#include <CharStream.hh>
-#include <IrGen.hh>
+#include <Compiler.hh>
 #include <LLVMGen.hh>
-#include <Lexer.hh>
-#include <Parser.hh>
 #include <TypeChecker.hh>
 #include <VarChecker.hh>
-#include <ast/Dumper.hh>
 #include <ir/Dumper.hh>
 #include <pass/PassManager.hh>
 #include <support/ArgsParser.hh>
@@ -19,7 +15,6 @@
 #include <llvm/Support/TargetSelect.h>
 #include <llvm/Support/raw_ostream.h>
 
-#include <fstream>
 #include <iostream>
 #include <memory>
 #include <stdexcept>
@@ -46,18 +41,9 @@ int main(int argc, char **argv) {
         throw std::runtime_error("Invalid mode " + mode_string);
     }
 
-    std::ifstream ifstream(input_file);
-    CharStream stream(&ifstream);
-    Lexer lexer(&stream);
-    Parser parser(&lexer);
+    Compiler compiler;
+    auto program = compiler.compile(input_file);
 
-    auto ast = parser.parse();
-    if (dump_ast_opt.present_or_true()) {
-        ast::dump(ast.get());
-        std::cout << '\n';
-    }
-
-    auto program = gen_ir(ast.get());
     PassManager pass_manager;
     pass_manager.add<TypeChecker>();
     pass_manager.add<VarChecker>();

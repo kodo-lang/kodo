@@ -19,8 +19,8 @@ run_test() {
 # Expecting compile error.
 run_test "compile-error/bad_if.lang" 1 "error: cannot implicitly cast from 'i4' to 'bool' on line 2
  note: Aborting due to previous errors"
-run_test "compile-error/bad_mutability.lang" 1 "error: attempted assignment of immutable variable 'bar' on line 2
-error: attempted assignment of immutable variable 'foo' on line 7
+run_test "compile-error/bad_mutability.lang" 1 "error: attempted assignment of immutable variable 'foo' on line 7
+error: attempted assignment of immutable variable 'bar' on line 2
  note: Aborting due to previous errors"
 run_test "compile-error/bad_pointer_mutability.lang" 1 "error: cannot implicitly cast from '*i32' to '*mut i32' on line 10
 error: attempted assignment of 'i32' value pointed to by an immutable pointer on line 2

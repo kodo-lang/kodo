@@ -121,6 +121,8 @@ Token Lexer::next_token() {
                 token.kind = TokenKind::Fn;
             } else if (buf == "if") {
                 token.kind = TokenKind::If;
+            } else if (buf == "import") {
+                token.kind = TokenKind::Import;
             } else if (buf == "in") {
                 token.kind = TokenKind::In;
             } else if (buf == "let") {

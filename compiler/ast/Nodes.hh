@@ -224,6 +224,19 @@ public:
     const Block *block() const { return m_block.get(); }
 };
 
+class ImportStmt : public Node {
+    const std::string m_path;
+
+public:
+    static constexpr auto KIND = NodeKind::ImportStmt;
+
+    ImportStmt(int line, std::string path) : Node(KIND, line), m_path(std::move(path)) {}
+
+    void accept(Visitor *visitor) const override;
+
+    const std::string &path() const { return m_path; }
+};
+
 class MemberExpr : public Node {
     const std::unique_ptr<const Node> m_lhs;
     const std::unique_ptr<const Node> m_rhs;

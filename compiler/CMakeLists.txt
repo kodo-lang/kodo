@@ -18,6 +18,7 @@ add_executable(compiler
     support/Assert.cc
     support/Error.cc
     CharStream.cc
+    Compiler.cc
     IrGen.cc
     Lexer.cc
     LLVMGen.cc
@@ -26,7 +27,11 @@ add_executable(compiler
     Token.cc
     TypeChecker.cc
     VarChecker.cc)
+configure_file(Config.hh.in Config.hh)
 target_compile_definitions(compiler PRIVATE ${LLVM_DEFINITIONS})
 target_compile_features(compiler PRIVATE cxx_std_20)
-target_include_directories(compiler PRIVATE . ${LLVM_INCLUDE_DIRS})
+target_include_directories(compiler PRIVATE
+    .
+    ${CMAKE_CURRENT_BINARY_DIR}
+    ${LLVM_INCLUDE_DIRS})
 target_link_libraries(compiler PRIVATE fmt::fmt LLVM)

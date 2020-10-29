@@ -13,6 +13,7 @@ class DeclStmt;
 class FunctionArg;
 class FunctionDecl;
 class IfStmt;
+class ImportStmt;
 class MemberExpr;
 class NumLit;
 class RetStmt;
@@ -34,6 +35,7 @@ struct Visitor {
     virtual void visit(const FunctionArg *) = 0;
     virtual void visit(const FunctionDecl *) = 0;
     virtual void visit(const IfStmt *) = 0;
+    virtual void visit(const ImportStmt *) = 0;
     virtual void visit(const MemberExpr *) = 0;
     virtual void visit(const NumLit *) = 0;
     virtual void visit(const RetStmt *) = 0;

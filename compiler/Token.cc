@@ -38,6 +38,8 @@ std::string tok_str(TokenKind kind) {
         return "identifier";
     case TokenKind::If:
         return "if";
+    case TokenKind::Import:
+        return "import";
     case TokenKind::In:
         return "in";
     case TokenKind::LBrace:

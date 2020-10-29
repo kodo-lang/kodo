@@ -20,6 +20,7 @@ enum class NodeKind {
     FunctionArg,
     FunctionDecl,
     IfStmt,
+    ImportStmt,
     MemberExpr,
     NumLit,
     RetStmt,

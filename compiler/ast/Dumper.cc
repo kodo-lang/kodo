@@ -24,6 +24,7 @@ public:
     void visit(const FunctionArg *) override;
     void visit(const FunctionDecl *) override;
     void visit(const IfStmt *) override;
+    void visit(const ImportStmt *) override;
     void visit(const MemberExpr *) override;
     void visit(const NumLit *) override;
     void visit(const RetStmt *) override;
@@ -182,6 +183,12 @@ void Dumper::visit(const IfStmt *if_stmt) {
     if_stmt->expr()->accept(this);
     std::cout << ')';
     if_stmt->block()->accept(this);
+}
+
+void Dumper::visit(const ImportStmt *import_stmt) {
+    std::cout << "ImportStmt(";
+    std::cout << import_stmt->path();
+    std::cout << ')';
 }
 
 void Dumper::visit(const MemberExpr *member_expr) {

@@ -365,6 +365,12 @@ ast::Block *Parser::parse_block() {
 std::unique_ptr<ast::Root> Parser::parse() {
     auto root = std::make_unique<ast::Root>();
     while (m_lexer->has_next() && m_lexer->peek().kind != TokenKind::Eof) {
+        if (consume(TokenKind::Import)) {
+            auto path = expect(TokenKind::StringLit);
+            expect(TokenKind::Semi);
+            root->add<ast::ImportStmt>(m_lexer->line(), std::move(std::get<std::string>(path.data)));
+            continue;
+        }
         if (consume(TokenKind::Type)) {
             auto name = expect(TokenKind::Identifier);
             expect(TokenKind::Eq);

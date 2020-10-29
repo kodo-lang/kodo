@@ -48,6 +48,10 @@ void IfStmt::accept(Visitor *visitor) const {
     visitor->visit(this);
 }
 
+void ImportStmt::accept(Visitor *visitor) const {
+    visitor->visit(this);
+}
+
 void MemberExpr::accept(Visitor *visitor) const {
     visitor->visit(this);
 }

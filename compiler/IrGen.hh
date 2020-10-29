@@ -1,13 +1,9 @@
 #pragma once
 
+#include <ast/Nodes.hh>
 #include <ir/Program.hh>
 
 #include <memory>
+#include <vector>
 
-namespace ast {
-
-class Root;
-
-} // namespace ast
-
-std::unique_ptr<ir::Program> gen_ir(const ast::Root *root);
+std::unique_ptr<ir::Program> gen_ir(std::vector<std::unique_ptr<ast::Root>> &&roots);
