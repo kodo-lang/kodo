@@ -1,0 +1,6 @@
+import "std/syscall.lang";
+
+extern fn main(): i32;
+fn _start() {
+    exit(main());
+}

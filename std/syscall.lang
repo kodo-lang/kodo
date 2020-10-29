@@ -1,0 +1,26 @@
+// TODO: Remove num variables when inline asm has proper type checking (e.g. values inputted to rax get extended to 64
+// bits automatically).
+
+fn write(let fd: u64, let buf: *u8, let len: u64) {
+    let num: u64 = 1;
+    asm(
+        "syscall",
+        clobber("rcx"),
+        clobber("r11"),
+        in("rax", num),
+        in("rdi", fd),
+        in("rsi", buf),
+        in("rdx", len),
+    );
+}
+
+fn exit(let code: u64) {
+    let num: u64 = 60;
+    asm(
+        "syscall",
+        clobber("rcx"),
+        clobber("r11"),
+        in("rax", num),
+        in("rdi", code),
+    );
+}
