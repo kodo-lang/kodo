@@ -1,4 +1,4 @@
-import "std/syscall.lang";
+import "std/syscall.kd";
 
 extern fn main(): i32;
 fn _start() {

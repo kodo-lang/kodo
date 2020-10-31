@@ -1,4 +1,4 @@
-import "std/syscall.lang";
+import "std/syscall.kd";
 
 type Foo = struct {
     a: i16;

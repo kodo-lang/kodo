@@ -1,4 +1,4 @@
-import "std/syscall.lang";
+import "std/syscall.kd";
 
 fn main(): i32 {
     write(1, "Hello, world!", 13);

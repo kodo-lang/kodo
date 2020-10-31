@@ -35,7 +35,7 @@ void Compiler::add_code(const std::string &path) {
 }
 
 std::unique_ptr<ir::Program> Compiler::compile(const std::string &main_path) {
-    add_code("std/start.lang");
+    add_code("std/start.kd");
     add_code(main_path);
     return gen_ir(std::move(m_roots));
 }
