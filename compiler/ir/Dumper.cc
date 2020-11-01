@@ -97,8 +97,9 @@ void FunctionDumper::dump(const Function *function) {
             std::cout << ", ";
         }
         first = false;
-        std::cout << arg->type()->to_string() << ' ';
-        std::cout << printable_value(arg);
+        std::cout << (arg->is_mutable() ? "var" : "let") << ' ';
+        std::cout << printable_value(arg) << ": ";
+        std::cout << arg->type()->to_string();
     }
     std::cout << ')';
 
@@ -108,16 +109,12 @@ void FunctionDumper::dump(const Function *function) {
     }
 
     std::cout << ":\n";
-    std::cout << "  vars = [";
-    for (bool first = true; const auto *var : function->vars()) {
-        if (!first) {
-            std::cout << ", ";
-        }
-        first = false;
-        std::cout << var->var_type()->to_string() << ' ';
-        std::cout << printable_value(var);
+    for (const auto *var : function->vars()) {
+        std::cout << "  " << (var->is_mutable() ? "var" : "let") << ' ';
+        std::cout << printable_value(var) << ": ";
+        std::cout << var->var_type()->to_string();
+        std::cout << '\n';
     }
-    std::cout << "]\n";
 
     for (const auto *block : *function) {
         std::cout << "  " << printable_block(block) << ":\n";
