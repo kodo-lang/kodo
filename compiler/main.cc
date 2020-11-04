@@ -57,17 +57,15 @@ int main(int argc, char **argv) {
 
     llvm::LLVMContext context;
     auto module = gen_llvm(program.get(), &context);
+    if (dump_llvm_opt.present_or_true()) {
+        module->print(llvm::errs(), nullptr);
+    }
     if (verify_llvm_opt.present_or_true()) {
         auto print_newline = [] {
             llvm::errs() << '\n';
             return true;
         };
         ENSURE(!llvm::verifyModule(*module, &llvm::errs()) || !print_newline());
-    }
-
-    bool dump_llvm = dump_llvm_opt.present_or_true();
-    if (dump_llvm) {
-        module->print(llvm::errs(), nullptr);
     }
 
     llvm::InitializeNativeTarget();
