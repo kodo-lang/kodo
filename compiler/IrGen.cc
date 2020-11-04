@@ -68,7 +68,8 @@ public:
     IrGen();
 
     void create_store(const ast::Node *, ir::Value *, ir::Value *);
-    ir::Function *find_or_create_function(const std::string &, const ir::Type *);
+    ir::Function *find_function(const ast::Symbol *);
+    ir::Function *find_or_create_function(const ast::Symbol *, const ir::Type *);
     ir::Value *get_member_ptr(ir::Value *, int);
 
     const ir::Type *gen_base_type(const ast::Node *, const std::string &);
@@ -170,14 +171,34 @@ void IrGen::create_store(const ast::Node *node, ir::Value *ptr, ir::Value *val) 
     store->set_line(node->line());
 }
 
-ir::Function *IrGen::find_or_create_function(const std::string &name, const ir::Type *return_type) {
+std::string mangle(const ast::Symbol *name) {
+    std::string mangled_name;
+    for (bool first = true; const auto &part : name->parts()) {
+        if (!first) {
+            mangled_name += '_';
+        }
+        first = false;
+        mangled_name += part;
+    }
+    return std::move(mangled_name);
+}
+
+ir::Function *IrGen::find_function(const ast::Symbol *name) {
+    auto mangled_name = mangle(name);
     for (auto *function : *m_program) {
-        if (function->name() == name) {
-            ASSERT(function->return_type() == return_type);
+        if (function->name() == mangled_name) {
             return function;
         }
     }
-    return m_program->append_function(name, return_type);
+    return nullptr;
+}
+
+ir::Function *IrGen::find_or_create_function(const ast::Symbol *name, const ir::Type *return_type) {
+    if (auto *function = find_function(name)) {
+        ASSERT(function->return_type() == return_type);
+        return function;
+    }
+    return m_program->append_function(mangle(name), return_type);
 }
 
 ir::Value *IrGen::get_member_ptr(ir::Value *ptr, int index) {
@@ -308,14 +329,12 @@ ir::Value *IrGen::gen_call_expr(const ast::CallExpr *call_expr) {
     for (const auto *ast_arg : call_expr->args()) {
         args.push_back(gen_expr(ast_arg));
     }
-    auto it = std::find_if(m_program->begin(), m_program->end(), [call_expr](const ir::Function *function) {
-        return function->name() == call_expr->name();
-    });
-    if (it == m_program->end()) {
-        print_error(call_expr, "no function named '{}' in current context", call_expr->name());
+    auto *callee = find_function(call_expr->name());
+    if (callee == nullptr) {
+        print_error(call_expr, "no function named '{}' in current context", call_expr->name()->parts()[0]);
         return ir::ConstantNull::get();
     }
-    return m_block->append<ir::CallInst>(*it, std::move(args));
+    return m_block->append<ir::CallInst>(callee, std::move(args));
 }
 
 ir::Value *IrGen::gen_cast_expr(const ast::CastExpr *cast_expr) {
@@ -335,7 +354,11 @@ ir::Value *IrGen::gen_construct_expr(const ast::ConstructExpr *construct_expr) {
     for (int i = 0; i < elems.size(); i++) {
         elems[i]->set_type(type->fields()[i]);
     }
-    return ir::ConstantStruct::get(type, std::move(elems));
+    auto *constant = ir::ConstantStruct::get(type, std::move(elems));
+    if (m_deref_state == DerefState::DontDeref) {
+        return constant;
+    }
+    return m_block->append<ir::LoadInst>(constant);
 }
 
 ir::Value *IrGen::gen_member_expr(const ast::MemberExpr *member_expr) {
@@ -346,6 +369,8 @@ ir::Value *IrGen::gen_member_expr(const ast::MemberExpr *member_expr) {
         lhs = gen_expr(member_expr->lhs());
     }
     const auto *rhs = member_expr->rhs()->as<ast::Symbol>();
+    ASSERT(rhs->parts().size() == 1);
+    const auto &rhs_name = rhs->parts()[0];
     const auto *type = lhs->type();
     if (auto *var = lhs->as_or_null<ir::LocalVar>()) {
         type = var->var_type();
@@ -355,12 +380,12 @@ ir::Value *IrGen::gen_member_expr(const ast::MemberExpr *member_expr) {
     }
     const auto *struct_type = type->as<ir::StructType>();
     const auto &ast_fields = m_struct_types.at(struct_type);
-    auto it = std::find_if(ast_fields.begin(), ast_fields.end(), [rhs](const auto &field) {
-        return field.name == rhs->name();
+    auto it = std::find_if(ast_fields.begin(), ast_fields.end(), [&rhs_name](const auto &field) {
+        return field.name == rhs_name;
     });
     if (it == ast_fields.end()) {
         // TODO: Print struct type name.
-        print_error(member_expr, "struct has no member named '{}'", rhs->name());
+        print_error(member_expr, "struct has no member named '{}'", rhs_name);
         return ir::ConstantNull::get();
     }
     int index = std::distance(ast_fields.begin(), it);
@@ -384,9 +409,11 @@ ir::Value *IrGen::gen_string_lit(const ast::StringLit *string_lit) {
 }
 
 ir::Value *IrGen::gen_symbol(const ast::Symbol *symbol) {
-    auto *var = m_scope_stack.peek().find_var(symbol->name());
+    ASSERT(symbol->parts().size() == 1);
+    const auto &name = symbol->parts()[0];
+    auto *var = m_scope_stack.peek().find_var(name);
     if (var == nullptr) {
-        print_error(symbol, "no symbol named '{}' in current context", symbol->name());
+        print_error(symbol, "no symbol named '{}' in current context", name);
         return ir::ConstantNull::get();
     }
     if (m_deref_state == DerefState::DontDeref) {

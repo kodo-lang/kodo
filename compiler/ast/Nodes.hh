@@ -100,18 +100,18 @@ public:
 };
 
 class CallExpr : public Node {
-    const std::string m_name;
+    std::unique_ptr<const Symbol> m_name;
     List<const Node> m_args;
 
 public:
     static constexpr auto KIND = NodeKind::CallExpr;
 
-    CallExpr(int line, std::string name) : Node(KIND, line), m_name(std::move(name)) {}
+    CallExpr(int line, const Symbol *name) : Node(KIND, line), m_name(name) {}
 
     void accept(Visitor *visitor) const override;
     void add_arg(const Node *arg) { m_args.insert(m_args.end(), arg); }
 
-    const std::string &name() const { return m_name; }
+    const Symbol *name() const { return m_name.get(); }
     const List<const Node> &args() const { return m_args; }
 };
 
@@ -186,7 +186,7 @@ public:
 };
 
 class FunctionDecl : public Node {
-    const std::string m_name;
+    std::unique_ptr<const Symbol> m_name;
     const bool m_externed;
     Type m_return_type;
     List<const FunctionArg> m_args;
@@ -195,8 +195,8 @@ class FunctionDecl : public Node {
 public:
     static constexpr auto KIND = NodeKind::FunctionDecl;
 
-    FunctionDecl(int line, std::string name, bool externed)
-        : Node(KIND, line), m_name(std::move(name)), m_externed(externed) {}
+    FunctionDecl(int line, const Symbol *name, bool externed)
+        : Node(KIND, line), m_name(name), m_externed(externed) {}
 
     void accept(Visitor *visitor) const override;
     void set_block(const Block *block) { m_block.reset(block); }
@@ -207,7 +207,7 @@ public:
         return m_args.emplace<FunctionArg>(m_args.end(), std::forward<Args>(args)...);
     }
 
-    const std::string &name() const { return m_name; }
+    const Symbol *name() const { return m_name.get(); }
     bool externed() const { return m_externed; }
     const Type &return_type() const { return m_return_type; }
     const List<const FunctionArg> &args() const { return m_args; }
@@ -318,16 +318,16 @@ public:
 };
 
 class Symbol : public Node {
-    const std::string m_name;
+    const std::vector<std::string> m_parts;
 
 public:
     static constexpr auto KIND = NodeKind::Symbol;
 
-    Symbol(int line, std::string name) : Node(KIND, line), m_name(std::move(name)) {}
+    Symbol(int line, std::vector<std::string> &&parts) : Node(KIND, line), m_parts(std::move(parts)) {}
 
     void accept(Visitor *visitor) const override;
 
-    const std::string &name() const { return m_name; }
+    const std::vector<std::string> &parts() const { return m_parts; }
 };
 
 class TypeDecl : public Node {

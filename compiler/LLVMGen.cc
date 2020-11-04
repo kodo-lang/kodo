@@ -31,7 +31,7 @@ class LLVMGen {
 public:
     explicit LLVMGen(llvm::LLVMContext *llvm_context);
 
-    llvm::Type *llvm_struct_type(const ir::StructType *);
+    llvm::StructType *llvm_struct_type(const ir::StructType *);
     llvm::Type *llvm_type(const ir::Type *);
     llvm::Value *llvm_value(const ir::Value *);
 
@@ -68,7 +68,7 @@ LLVMGen::LLVMGen(llvm::LLVMContext *llvm_context) : m_llvm_context(llvm_context)
     m_llvm_module = std::make_unique<llvm::Module>("main", *m_llvm_context);
 }
 
-llvm::Type *LLVMGen::llvm_struct_type(const ir::StructType *struct_type) {
+llvm::StructType *LLVMGen::llvm_struct_type(const ir::StructType *struct_type) {
     // TODO: Size is already known here.
     std::vector<llvm::Type *> fields;
     for (const auto *field : struct_type->fields()) {
@@ -119,7 +119,7 @@ llvm::Value *LLVMGen::gen_constant_struct(const ir::ConstantStruct *constant_str
     for (const auto *elem : constant_struct->elems()) {
         elems.push_back(llvm::dyn_cast<llvm::Constant>(llvm_value(elem)));
     }
-    auto *type = llvm::dyn_cast<llvm::StructType>(llvm_type(constant_struct->type()));
+    auto *type = llvm_struct_type(constant_struct->struct_type());
     auto *value = llvm::ConstantStruct::get(type, elems);
     auto *global = new llvm::GlobalVariable(*m_llvm_module, type, true, llvm::GlobalValue::PrivateLinkage, value);
     global->setUnnamedAddr(llvm::GlobalValue::UnnamedAddr::Global);

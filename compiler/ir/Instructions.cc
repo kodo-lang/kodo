@@ -67,6 +67,7 @@ CallInst::CallInst(Function *callee, std::vector<Value *> args)
     for (auto *arg : m_args) {
         arg->add_user(this);
     }
+    set_type(callee->return_type());
 }
 
 CallInst::~CallInst() {

@@ -122,7 +122,7 @@ void Dumper::visit(const Block *block) {
 
 void Dumper::visit(const CallExpr *call_expr) {
     std::cout << "CallExpr(";
-    std::cout << call_expr->name();
+    call_expr->name()->accept(this);
     for (const auto *arg : call_expr->args()) {
         std::cout << ", ";
         arg->accept(this);
@@ -166,7 +166,7 @@ void Dumper::visit(const FunctionArg *function_arg) {
 
 void Dumper::visit(const FunctionDecl *function_decl) {
     std::cout << "FunctionDecl(";
-    std::cout << function_decl->name();
+    function_decl->name()->accept(this);
     for (const auto *arg : function_decl->args()) {
         std::cout << ", ";
         arg->accept(this);
@@ -226,7 +226,13 @@ void Dumper::visit(const StringLit *string_lit) {
 
 void Dumper::visit(const Symbol *symbol) {
     std::cout << "Symbol(";
-    std::cout << symbol->name();
+    for (bool first = true; const auto &part : symbol->parts()) {
+        if (!first) {
+            std::cout << ", ";
+        }
+        first = false;
+        std::cout << part;
+    }
     std::cout << ')';
 }
 

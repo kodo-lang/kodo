@@ -146,7 +146,6 @@ void Checker::visit(ir::CallInst *call) {
         auto *arg = call->args().at(i++);
         call->replace_uses_of_with(arg, coerce(arg, param->type()));
     }
-    call->set_type(callee->return_type());
 }
 
 void Checker::visit(ir::CastInst *cast) {

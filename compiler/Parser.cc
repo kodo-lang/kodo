@@ -162,8 +162,8 @@ ast::AsmExpr *Parser::parse_asm_expr() {
     return asm_expr;
 }
 
-ast::CallExpr *Parser::parse_call_expr(std::string name) {
-    auto *call_expr = new ast::CallExpr(m_lexer->line(), std::move(name));
+ast::CallExpr *Parser::parse_call_expr(const ast::Symbol *name) {
+    auto *call_expr = new ast::CallExpr(m_lexer->line(), name);
     m_lexer->next();
     while (m_lexer->has_next()) {
         if (m_lexer->peek().kind == TokenKind::RParen) {
@@ -187,8 +187,9 @@ ast::CastExpr *Parser::parse_cast_expr() {
     return new ast::CastExpr(m_lexer->line(), std::move(type), expr);
 }
 
-ast::ConstructExpr *Parser::parse_construct_expr(std::string name) {
-    auto *construct_expr = new ast::ConstructExpr(m_lexer->line(), std::move(name));
+ast::ConstructExpr *Parser::parse_construct_expr(const ast::Symbol *name) {
+    ASSERT(name->parts().size() == 1);
+    auto *construct_expr = new ast::ConstructExpr(m_lexer->line(), name->parts()[0]);
     m_lexer->next();
     while (m_lexer->has_next()) {
         if (m_lexer->peek().kind == TokenKind::RBrace) {
@@ -199,6 +200,15 @@ ast::ConstructExpr *Parser::parse_construct_expr(std::string name) {
     }
     expect(TokenKind::RBrace);
     return construct_expr;
+}
+
+ast::Symbol *Parser::parse_symbol() {
+    std::vector<std::string> parts;
+    parts.push_back(std::move(std::get<std::string>(expect(TokenKind::Identifier).data)));
+    while (consume(TokenKind::DoubleColon)) {
+        parts.push_back(std::move(std::get<std::string>(expect(TokenKind::Identifier).data)));
+    }
+    return new ast::Symbol(m_lexer->line(), std::move(parts));
 }
 
 ast::Node *Parser::parse_expr() {
@@ -246,13 +256,13 @@ ast::Node *Parser::parse_expr() {
             switch (token.kind) {
             case TokenKind::Identifier: {
                 // TODO: Remove recursiveness.
-                auto name = std::move(std::get<std::string>(m_lexer->next().data));
+                auto *symbol = parse_symbol();
                 if (m_lexer->peek().kind == TokenKind::LParen) {
-                    operands.push(parse_call_expr(std::move(name)));
+                    operands.push(parse_call_expr(symbol));
                 } else if (m_lexer->peek().kind == TokenKind::LBrace) {
-                    operands.push(parse_construct_expr(std::move(name)));
+                    operands.push(parse_construct_expr(symbol));
                 } else {
-                    operands.push(new ast::Symbol(m_lexer->line(), std::move(name)));
+                    operands.push(symbol);
                 }
                 break;
             }
@@ -389,9 +399,7 @@ std::unique_ptr<ast::Root> Parser::parse() {
         }
         bool externed = consume(TokenKind::Extern).has_value();
         expect(TokenKind::Fn);
-        auto name = expect(TokenKind::Identifier);
-        auto *func =
-            root->add<ast::FunctionDecl>(m_lexer->line(), std::move(std::get<std::string>(name.data)), externed);
+        auto *func = root->add<ast::FunctionDecl>(m_lexer->line(), parse_symbol(), externed);
         expect(TokenKind::LParen);
         while (m_lexer->peek().kind != TokenKind::RParen) {
             // TODO: `is_mutable = expect(TokenKind::Let, TokenKind::Var).kind == TokenKind::Var`.

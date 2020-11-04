@@ -57,11 +57,12 @@ public:
     static ConstantStruct *get(const StructType *type, std::vector<Constant *> &&elems);
 
     ConstantStruct(const StructType *type, std::vector<Constant *> &&elems)
-        : Constant(KIND, type), m_elems(std::move(elems)) {}
+        : Constant(KIND, PointerType::get(type, false)), m_elems(std::move(elems)) {}
 
     Constant *clone(const Type *type) const override;
 
     const std::vector<Constant *> &elems() const { return m_elems; }
+    const StructType *struct_type() const { return type()->as<PointerType>()->pointee_type()->as<StructType>(); }
 };
 
 } // namespace ir

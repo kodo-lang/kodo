@@ -73,7 +73,7 @@ Token Lexer::next_token() {
         token.kind = TokenKind::Ampersand;
         break;
     case ':':
-        token.kind = TokenKind::Colon;
+        token.kind = consume_if(':') ? TokenKind::DoubleColon : TokenKind::Colon;
         break;
     case ',':
         token.kind = TokenKind::Comma;

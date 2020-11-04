@@ -24,6 +24,8 @@ std::string tok_str(TokenKind kind) {
         return "/";
     case TokenKind::Dot:
         return ".";
+    case TokenKind::DoubleColon:
+        return "::";
     case TokenKind::Eof:
         return "eof";
     case TokenKind::Eq:
