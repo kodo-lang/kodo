@@ -1,0 +1,9 @@
+type Foo = struct {};
+
+fn Foo::bar(let baz: i32): i32 {
+    return baz;
+}
+
+fn main(): i32 {
+    return Foo::bar(5);
+}
