@@ -1,4 +1,4 @@
-// TODO: Remove num variables when inline asm has proper type checking (e.g. values inputted to rax get extended to 64
+// TODO: Remove temp variables when inline asm has proper type checking (e.g. values inputted to rax get extended to 64
 // bits automatically).
 
 fn write(let fd: u64, let buf: *u8, let len: u64) {
@@ -12,6 +12,22 @@ fn write(let fd: u64, let buf: *u8, let len: u64) {
         in("rsi", buf),
         in("rdx", len),
     );
+}
+
+fn open(let filename: *u8, let flags: i32, let mode: i32): i32 {
+    let num: u64 = 2;
+    var ret: i32;
+    asm(
+        "syscall",
+        clobber("rcx"),
+        clobber("r11"),
+        in("rax", num),
+        in("rdi", filename),
+        in("rsi", flags),
+        in("rdx", mode),
+        output("rax", ret),
+    );
+    return ret;
 }
 
 fn exit(let code: u64) {
