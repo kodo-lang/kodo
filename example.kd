@@ -1,21 +1,20 @@
 import "std/syscall.kd";
 
-type Foo = struct {
-    a: i16;
-    b: i32;
+type File = struct {
+    fd: i32;
 };
 
-fn set(let foo: *mut Foo) {
-    *foo = Foo{4, 5};
-}
-
-fn add(let foo: Foo): i32 {
-    return foo.a + foo.b;
+fn File::open(let path: *u8): File {
+    // 101 = `O_WRONLY | O_CREAT`.
+    // 438 dec = 666 octal.
+    let fd = open(path, 101, 438);
+    var file: File;
+    file.fd = fd;
+    return file;
 }
 
 fn main(): i32 {
-    write(1, "Hello, world!", 13);
-    var foo = Foo{1, 2};
-    set(&foo);
-    return add(foo);
+    let file = File::open("Hello");
+    write(file.fd, "Hello, world!", 13);
+    return 0;
 }
