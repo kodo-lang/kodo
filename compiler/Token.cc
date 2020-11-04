@@ -56,6 +56,8 @@ std::string tok_str(TokenKind kind) {
         return "mut";
     case TokenKind::NumLit:
         return "number";
+    case TokenKind::Output:
+        return "output";
     case TokenKind::Return:
         return "return";
     case TokenKind::RBrace:

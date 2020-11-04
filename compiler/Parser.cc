@@ -123,6 +123,7 @@ ast::AsmExpr *Parser::parse_asm_expr() {
         enum class PartKind {
             Clobber,
             Input,
+            Output,
         } part_kind;
         auto next = m_lexer->next();
         switch (next.kind) {
@@ -131,6 +132,9 @@ ast::AsmExpr *Parser::parse_asm_expr() {
             break;
         case TokenKind::In:
             part_kind = PartKind::Input;
+            break;
+        case TokenKind::Output:
+            part_kind = PartKind::Output;
             break;
         default:
             print_error_and_abort("expected clobber or in on line {}", m_lexer->line());
@@ -144,6 +148,10 @@ ast::AsmExpr *Parser::parse_asm_expr() {
         case PartKind::Input:
             expect(TokenKind::Comma);
             asm_expr->add_input(std::move(reg), parse_expr());
+            break;
+        case PartKind::Output:
+            expect(TokenKind::Comma);
+            asm_expr->add_output(std::move(reg), parse_expr());
             break;
         }
         expect(TokenKind::RParen);

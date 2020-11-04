@@ -197,12 +197,14 @@ class InlineAsmInst : public Instruction {
     std::string m_instruction;
     std::vector<std::string> m_clobbers;
     std::vector<std::pair<std::string, Value *>> m_inputs;
+    std::vector<std::pair<std::string, Value *>> m_outputs;
 
 public:
     static constexpr auto KIND = InstKind::InlineAsm;
 
     InlineAsmInst(std::string instruction, std::vector<std::string> &&clobbers,
-                  std::vector<std::pair<std::string, Value *>> &&inputs);
+                  std::vector<std::pair<std::string, Value *>> &&inputs,
+                  std::vector<std::pair<std::string, Value *>> &&outputs);
     InlineAsmInst(const InlineAsmInst &) = delete;
     InlineAsmInst(InlineAsmInst &&) = delete;
     ~InlineAsmInst() override;
@@ -216,6 +218,7 @@ public:
     const std::string &instruction() const { return m_instruction; }
     const std::vector<std::string> &clobbers() const { return m_clobbers; }
     const std::vector<std::pair<std::string, Value *>> &inputs() const { return m_inputs; }
+    const std::vector<std::pair<std::string, Value *>> &outputs() const { return m_outputs; }
 };
 
 class LeaInst : public Instruction {

@@ -129,6 +129,8 @@ Token Lexer::next_token() {
                 token.kind = TokenKind::Let;
             } else if (buf == "mut") {
                 token.kind = TokenKind::Mut;
+            } else if (buf == "output") {
+                token.kind = TokenKind::Output;
             } else if (buf == "return") {
                 token.kind = TokenKind::Return;
             } else if (buf == "struct") {

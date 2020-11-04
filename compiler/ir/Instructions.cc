@@ -201,10 +201,14 @@ void CopyInst::replace_uses_of_with(Value *orig, Value *repl) {
 // clang-format on
 
 InlineAsmInst::InlineAsmInst(std::string instruction, std::vector<std::string> &&clobbers,
-                             std::vector<std::pair<std::string, Value *>> &&inputs)
+                             std::vector<std::pair<std::string, Value *>> &&inputs,
+                             std::vector<std::pair<std::string, Value *>> &&outputs)
     : Instruction(KIND), m_instruction(std::move(instruction)), m_clobbers(std::move(clobbers)),
-      m_inputs(std::move(inputs)) {
+      m_inputs(std::move(inputs)), m_outputs(std::move(outputs)) {
     for (auto &[input, value] : m_inputs) {
+        value->add_user(this);
+    }
+    for (auto &[output, value] : m_outputs) {
         value->add_user(this);
     }
     set_type(VoidType::get());
@@ -212,6 +216,11 @@ InlineAsmInst::InlineAsmInst(std::string instruction, std::vector<std::string> &
 
 InlineAsmInst::~InlineAsmInst() {
     for (auto &[input, value] : m_inputs) {
+        if (value != nullptr) {
+            value->remove_user(this);
+        }
+    }
+    for (auto &[output, value] : m_outputs) {
         if (value != nullptr) {
             value->remove_user(this);
         }
@@ -224,6 +233,9 @@ void InlineAsmInst::accept(Visitor *visitor) {
 
 void InlineAsmInst::replace_uses_of_with(Value *orig, Value *repl) {
     for (auto &[input, value] : m_inputs) {
+        REPL_VALUE(value)
+    }
+    for (auto &[output, value] : m_outputs) {
         REPL_VALUE(value)
     }
 }

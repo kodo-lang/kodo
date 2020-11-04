@@ -230,6 +230,10 @@ void FunctionDumper::visit(InlineAsmInst *inline_asm) {
         std::cout << ", in(" << input << ", ";
         std::cout << printable_value(value) << ')';
     }
+    for (const auto &[output, value] : inline_asm->outputs()) {
+        std::cout << ", output(" << output << ", ";
+        std::cout << printable_value(value) << ')';
+    }
 }
 
 void FunctionDumper::visit(LeaInst *lea) {

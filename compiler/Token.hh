@@ -31,6 +31,7 @@ enum class TokenKind {
     Mul,
     Mut,
     NumLit,
+    Output,
     Return,
     RBrace,
     RParen,

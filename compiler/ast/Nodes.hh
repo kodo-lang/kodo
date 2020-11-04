@@ -10,10 +10,13 @@
 
 namespace ast {
 
+class Symbol;
+
 class AsmExpr : public Node {
     const std::string m_instruction;
     std::vector<std::string> m_clobbers;
     std::vector<std::pair<std::string, std::unique_ptr<const Node>>> m_inputs;
+    std::vector<std::pair<std::string, std::unique_ptr<const Node>>> m_outputs;
 
 public:
     static constexpr auto KIND = NodeKind::AsmExpr;
@@ -23,10 +26,12 @@ public:
     void accept(Visitor *visitor) const override;
     void add_clobber(std::string clobber) { m_clobbers.push_back(std::move(clobber)); }
     void add_input(std::string input, const Node *expr) { m_inputs.emplace_back(std::move(input), expr); }
+    void add_output(std::string output, const Node *expr) { m_outputs.emplace_back(std::move(output), expr); }
 
     const std::string &instruction() const { return m_instruction; }
     const std::vector<std::string> &clobbers() const { return m_clobbers; }
     const std::vector<std::pair<std::string, std::unique_ptr<const Node>>> &inputs() const { return m_inputs; }
+    const std::vector<std::pair<std::string, std::unique_ptr<const Node>>> &outputs() const { return m_outputs; }
 };
 
 class AssignExpr : public Node {

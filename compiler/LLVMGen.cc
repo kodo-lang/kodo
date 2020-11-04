@@ -189,6 +189,7 @@ llvm::Value *LLVMGen::gen_inline_asm(const ir::InlineAsmInst *inline_asm) {
         llvm_str += "~{" + clobber + '}';
     }
 
+    // Build inputs.
     std::vector<llvm::Value *> args;
     std::vector<llvm::Type *> arg_types;
     args.reserve(inline_asm->inputs().size());
@@ -203,10 +204,28 @@ llvm::Value *LLVMGen::gen_inline_asm(const ir::InlineAsmInst *inline_asm) {
         arg_types.push_back(llvm_type(value->type()));
     }
 
-    auto *type = llvm::FunctionType::get(llvm::Type::getVoidTy(*m_llvm_context), arg_types, false);
+    // Build outputs.
+    std::vector<llvm::Type *> ret_types;
+    ret_types.reserve(inline_asm->outputs().size());
+    for (const auto &[output, value] : inline_asm->outputs()) {
+        if (!first) {
+            llvm_str += ',';
+        }
+        first = false;
+        llvm_str += "={" + output + '}';
+        ret_types.push_back(llvm_type(value->as<ir::LocalVar>()->var_type()));
+    }
+    auto *type = llvm::FunctionType::get(llvm::StructType::get(*m_llvm_context, ret_types, false), arg_types, false);
     auto *llvm_asm =
         llvm::InlineAsm::get(type, inline_asm->instruction(), llvm_str, true, true, llvm::InlineAsm::AD_Intel);
-    return m_llvm_builder.CreateCall(llvm_asm, args);
+    auto *call = m_llvm_builder.CreateCall(llvm_asm, args);
+    for (int i = 0; const auto &[output, value] : inline_asm->outputs()) {
+        std::vector<unsigned int> indices;
+        indices.push_back(i);
+        auto *extract = m_llvm_builder.CreateExtractValue(call, indices);
+        m_llvm_builder.CreateStore(extract, llvm_value(value));
+    }
+    return call;
 }
 
 llvm::Value *LLVMGen::gen_lea(const ir::LeaInst *lea) {

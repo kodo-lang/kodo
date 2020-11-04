@@ -115,6 +115,10 @@ void ReachingDefAnalyser::run(ir::Function *function) {
                     ASSERT(copy->src()->type()->size_in_bytes() == len);
                 }
                 def_stacks[copy->dst()].push(copy->src());
+            } else if (auto *inline_asm = inst->as_or_null<ir::InlineAsmInst>()) {
+                for (auto &[output, output_val] : inline_asm->outputs()) {
+                    def_stacks[output_val].push(inline_asm);
+                }
             } else if (auto *load = inst->as_or_null<ir::LoadInst>()) {
                 // TODO: pop_or_null helper function.
                 auto &def_stack = def_stacks[load->ptr()];

@@ -256,11 +256,18 @@ ir::Value *IrGen::gen_asm_expr(const ast::AsmExpr *asm_expr) {
     // TODO: Avoid copying.
     auto clobbers = asm_expr->clobbers();
     std::vector<std::pair<std::string, ir::Value *>> inputs;
+    std::vector<std::pair<std::string, ir::Value *>> outputs;
     inputs.reserve(asm_expr->inputs().size());
+    outputs.reserve(asm_expr->outputs().size());
     for (const auto &[input, expr] : asm_expr->inputs()) {
         inputs.emplace_back(input, gen_expr(expr.get()));
     }
-    return m_block->append<ir::InlineAsmInst>(asm_expr->instruction(), std::move(clobbers), std::move(inputs));
+    for (const auto &[output, expr] : asm_expr->outputs()) {
+        StateChanger deref_state_changer(m_deref_state, DerefState::DontDeref);
+        outputs.emplace_back(output, gen_expr(expr.get()));
+    }
+    return m_block->append<ir::InlineAsmInst>(asm_expr->instruction(), std::move(clobbers), std::move(inputs),
+                                              std::move(outputs));
 }
 
 ir::Value *IrGen::gen_assign_expr(const ast::AssignExpr *assign_expr) {
