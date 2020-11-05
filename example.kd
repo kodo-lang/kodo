@@ -5,9 +5,9 @@ type File = struct {
 };
 
 fn File::open(let path: *u8): File {
-    // 101 = `O_WRONLY | O_CREAT`.
+    // 65 = `O_WRONLY | O_CREAT`.
     // 438 dec = 666 octal.
-    let fd = open(path, 101, 438);
+    let fd = open(path, 65, 438);
     var file: File;
     file.fd = fd;
     return file;
