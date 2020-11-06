@@ -9,11 +9,7 @@ type Bar = struct {
 };
 
 fn add_foo(let a: Foo, let b: Foo): Foo {
-    // TODO: Allow `return Foo{a.a + b.a, a.b + b.b};`.
-    var ret: Foo;
-    ret.a = a.a + b.a;
-    ret.b = a.b + b.b;
-    return ret;
+    return Foo{a.a + b.a, a.b + b.b};
 }
 
 fn main(): i32 {
