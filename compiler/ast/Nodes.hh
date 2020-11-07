@@ -188,6 +188,7 @@ public:
 class FunctionDecl : public Node {
     std::unique_ptr<const Symbol> m_name;
     const bool m_externed;
+    const bool m_instance;
     Type m_return_type;
     List<const FunctionArg> m_args;
     std::unique_ptr<const Block> m_block;
@@ -195,8 +196,8 @@ class FunctionDecl : public Node {
 public:
     static constexpr auto KIND = NodeKind::FunctionDecl;
 
-    FunctionDecl(int line, const Symbol *name, bool externed)
-        : Node(KIND, line), m_name(name), m_externed(externed) {}
+    FunctionDecl(int line, const Symbol *name, bool externed, bool instance)
+        : Node(KIND, line), m_name(name), m_externed(externed), m_instance(instance) {}
 
     void accept(Visitor *visitor) const override;
     void set_block(const Block *block) { m_block.reset(block); }
@@ -209,6 +210,7 @@ public:
 
     const Symbol *name() const { return m_name.get(); }
     bool externed() const { return m_externed; }
+    bool instance() const { return m_instance; }
     const Type &return_type() const { return m_return_type; }
     const List<const FunctionArg> &args() const { return m_args; }
     const Block *block() const { return m_block.get(); }

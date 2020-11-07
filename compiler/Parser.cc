@@ -287,6 +287,10 @@ ast::Node *Parser::parse_expr() {
             case TokenKind::StringLit:
                 operands.push(new ast::StringLit(m_lexer->line(), std::get<std::string>(m_lexer->next().data)));
                 break;
+            case TokenKind::This:
+                m_lexer->next();
+                operands.push(new ast::Symbol(m_lexer->line(), {"this"}));
+                break;
             default:
                 keep_parsing = false;
                 break;
@@ -414,8 +418,14 @@ std::unique_ptr<ast::Root> Parser::parse() {
         }
         bool externed = consume(TokenKind::Extern).has_value();
         expect(TokenKind::Fn);
-        auto *func = root->add<ast::FunctionDecl>(m_lexer->line(), parse_symbol(), externed);
+        auto *name = parse_symbol();
         expect(TokenKind::LParen);
+        bool instance = consume(TokenKind::Mul).has_value();
+        if (instance) {
+            expect(TokenKind::This);
+            consume(TokenKind::Comma);
+        }
+        auto *func = root->add<ast::FunctionDecl>(m_lexer->line(), name, externed, instance);
         while (m_lexer->peek().kind != TokenKind::RParen) {
             // TODO: `is_mutable = expect(TokenKind::Let, TokenKind::Var).kind == TokenKind::Var`.
             bool is_mutable = consume(TokenKind::Var).has_value();

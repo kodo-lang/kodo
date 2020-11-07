@@ -35,12 +35,14 @@ public:
 class Scope {
     const Scope *const m_parent;
     std::unordered_map<std::string, const ir::Type *> m_types;
+    std::unordered_map<const ir::Type *, const std::string *> m_types_reverse;
     std::unordered_map<std::string_view, ir::Value *> m_vars;
 
 public:
     explicit Scope(const Scope *parent) : m_parent(parent) {}
 
     const ir::Type *find_type(const std::string &name);
+    const std::string &find_type_reverse(const ir::Type *type);
     void put_type(std::string name, const ir::Type *type);
 
     ir::Value *find_var(std::string_view name);
@@ -67,10 +69,13 @@ class IrGen {
 public:
     IrGen();
 
+    ir::Value *create_call(const ast::CallExpr *, ir::Function *, ir::Value *);
     void create_store(const ast::Node *, ir::Value *, ir::Value *);
+    ir::Function *find_function(const std::string &);
     ir::Function *find_function(const ast::Symbol *);
     ir::Function *find_or_create_function(const ast::Symbol *, const ir::Type *);
     ir::Value *get_member_ptr(ir::Value *, int);
+    const ir::Type *get_type(const ast::Node *, const std::string &);
 
     const ir::Type *gen_base_type(const ast::Node *, const std::string &);
     const ir::Type *gen_pointer_type(const ast::Node *, const ast::Type &, bool is_mutable);
@@ -116,8 +121,18 @@ const ir::Type *Scope::find_type(const std::string &name) {
     return nullptr;
 }
 
+const std::string &Scope::find_type_reverse(const ir::Type *type) {
+    for (const auto *scope = this; scope != nullptr; scope = scope->m_parent) {
+        if (scope->m_types_reverse.contains(type)) {
+            return *scope->m_types_reverse.at(type);
+        }
+    }
+    ENSURE_NOT_REACHED();
+}
+
 void Scope::put_type(std::string name, const ir::Type *type) {
-    m_types.emplace(std::move(name), type);
+    const auto *moved_name = &m_types.emplace(std::move(name), type).first->first;
+    m_types_reverse.emplace(type, moved_name);
 }
 
 ir::Value *Scope::find_var(std::string_view name) {
@@ -138,6 +153,21 @@ IrGen::IrGen() {
     m_scope_stack.emplace(/* parent */ nullptr);
 }
 
+ir::Value *IrGen::create_call(const ast::CallExpr *call_expr, ir::Function *callee, ir::Value *this_arg) {
+    std::vector<ir::Value *> args;
+    if (this_arg != nullptr) {
+        args.push_back(this_arg);
+    }
+    for (const auto *ast_arg : call_expr->args()) {
+        args.push_back(gen_expr(ast_arg));
+    }
+    if (callee == nullptr) {
+        print_error(call_expr, "no function named '{}' in current context", call_expr->name()->parts()[0]);
+        return ir::ConstantNull::get();
+    }
+    return m_block->append<ir::CallInst>(callee, std::move(args));
+}
+
 void IrGen::create_store(const ast::Node *node, ir::Value *ptr, ir::Value *val) {
     // Generate memcpy for structs.
     // TODO: Re-enable this.
@@ -147,26 +177,26 @@ void IrGen::create_store(const ast::Node *node, ir::Value *ptr, ir::Value *val) 
         copy->set_line(node->line());
         return;
     }
-//    const auto *ptr_type = ptr->type()->as<ir::PointerType>();
-//    if (const auto *type = val->type()->as_or_null<ir::StructType>()) {
-//        const auto *constant_val = val->as_or_null<ir::Constant>();
-//        const auto *struct_val = constant_val != nullptr ? constant_val->as_or_null<ir::ConstantStruct>() : nullptr;
-//        if (struct_val != nullptr) {
-//            bool is_mutable = ptr_type->is_mutable();
-//            is_mutable |= ptr->is<ir::LocalVar>();
-//            for (int i = 0; i < type->fields().size(); i++) {
-//                auto *member_ptr = get_member_ptr(ptr, i);
-//                member_ptr->set_type(ir::PointerType::get(type->fields()[i], is_mutable));
-//                // Break up nested structs.
-//                if (type->fields()[i]->is<ir::StructType>()) {
-//                    create_store(node, member_ptr, struct_val->elems()[i]);
-//                    continue;
-//                }
-//                m_block->append<ir::StoreInst>(member_ptr, struct_val->elems()[i]);
-//            }
-//            return;
-//        }
-//    }
+    //    const auto *ptr_type = ptr->type()->as<ir::PointerType>();
+    //    if (const auto *type = val->type()->as_or_null<ir::StructType>()) {
+    //        const auto *constant_val = val->as_or_null<ir::Constant>();
+    //        const auto *struct_val = constant_val != nullptr ? constant_val->as_or_null<ir::ConstantStruct>() :
+    //        nullptr; if (struct_val != nullptr) {
+    //            bool is_mutable = ptr_type->is_mutable();
+    //            is_mutable |= ptr->is<ir::LocalVar>();
+    //            for (int i = 0; i < type->fields().size(); i++) {
+    //                auto *member_ptr = get_member_ptr(ptr, i);
+    //                member_ptr->set_type(ir::PointerType::get(type->fields()[i], is_mutable));
+    //                // Break up nested structs.
+    //                if (type->fields()[i]->is<ir::StructType>()) {
+    //                    create_store(node, member_ptr, struct_val->elems()[i]);
+    //                    continue;
+    //                }
+    //                m_block->append<ir::StoreInst>(member_ptr, struct_val->elems()[i]);
+    //            }
+    //            return;
+    //        }
+    //    }
     auto *store = m_block->append<ir::StoreInst>(ptr, val);
     store->set_line(node->line());
 }
@@ -183,14 +213,17 @@ std::string mangle(const ast::Symbol *name) {
     return std::move(mangled_name);
 }
 
-ir::Function *IrGen::find_function(const ast::Symbol *name) {
-    auto mangled_name = mangle(name);
+ir::Function *IrGen::find_function(const std::string &name) {
     for (auto *function : *m_program) {
-        if (function->name() == mangled_name) {
+        if (function->name() == name) {
             return function;
         }
     }
     return nullptr;
+}
+
+ir::Function *IrGen::find_function(const ast::Symbol *name) {
+    return find_function(mangle(name));
 }
 
 ir::Function *IrGen::find_or_create_function(const ast::Symbol *name, const ir::Type *return_type) {
@@ -209,6 +242,14 @@ ir::Value *IrGen::get_member_ptr(ir::Value *ptr, int index) {
     return m_block->append<ir::LeaInst>(ptr, std::move(indices));
 }
 
+const ir::Type *IrGen::get_type(const ast::Node *node, const std::string &name) {
+    if (const auto *type = m_scope_stack.peek().find_type(name)) {
+        return type;
+    }
+    print_error(node, "no type named '{}' in current context", name);
+    return ir::InvalidType::get();
+}
+
 const ir::Type *IrGen::gen_base_type(const ast::Node *node, const std::string &base) {
     if (base == "bool") {
         return ir::BoolType::get();
@@ -223,11 +264,7 @@ const ir::Type *IrGen::gen_base_type(const ast::Node *node, const std::string &b
             return ir::IntType::get(bit_width, base.starts_with('i'));
         }
     }
-    if (const auto *type = m_scope_stack.peek().find_type(base)) {
-        return type;
-    }
-    print_error(node, "invalid type '{}'", base);
-    return ir::InvalidType::get();
+    return get_type(node, base);
 }
 
 const ir::Type *IrGen::gen_pointer_type(const ast::Node *node, const ast::Type &ast_pointee, bool is_mutable) {
@@ -325,16 +362,8 @@ ir::Value *IrGen::gen_bin_expr(const ast::BinExpr *bin_expr) {
 }
 
 ir::Value *IrGen::gen_call_expr(const ast::CallExpr *call_expr) {
-    std::vector<ir::Value *> args;
-    for (const auto *ast_arg : call_expr->args()) {
-        args.push_back(gen_expr(ast_arg));
-    }
     auto *callee = find_function(call_expr->name());
-    if (callee == nullptr) {
-        print_error(call_expr, "no function named '{}' in current context", call_expr->name()->parts()[0]);
-        return ir::ConstantNull::get();
-    }
-    return m_block->append<ir::CallInst>(callee, std::move(args));
+    return create_call(call_expr, callee, nullptr);
 }
 
 ir::Value *IrGen::gen_cast_expr(const ast::CastExpr *cast_expr) {
@@ -366,9 +395,6 @@ ir::Value *IrGen::gen_member_expr(const ast::MemberExpr *member_expr) {
         StateChanger member_load_state_changer(m_member_load_state, MemberLoadState::DontLoad);
         lhs = gen_expr(member_expr->lhs());
     }
-    const auto *rhs = member_expr->rhs()->as<ast::Symbol>();
-    ASSERT(rhs->parts().size() == 1);
-    const auto &rhs_name = rhs->parts()[0];
     const auto *type = lhs->type();
     if (auto *var = lhs->as_or_null<ir::LocalVar>()) {
         type = var->var_type();
@@ -377,6 +403,14 @@ ir::Value *IrGen::gen_member_expr(const ast::MemberExpr *member_expr) {
         type = ptr_type->pointee_type();
     }
     const auto *struct_type = type->as<ir::StructType>();
+    if (const auto *call_expr = member_expr->rhs()->as_or_null<ast::CallExpr>()) {
+        auto *callee =
+            find_function(m_scope_stack.peek().find_type_reverse(struct_type) + '_' + call_expr->name()->parts()[0]);
+        return create_call(call_expr, callee, lhs);
+    }
+    const auto *rhs = member_expr->rhs()->as<ast::Symbol>();
+    ASSERT(rhs->parts().size() == 1);
+    const auto &rhs_name = rhs->parts()[0];
     const auto &ast_fields = m_struct_types.at(struct_type);
     auto it = std::find_if(ast_fields.begin(), ast_fields.end(), [&rhs_name](const auto &field) {
         return field.name == rhs_name;
@@ -534,6 +568,13 @@ void IrGen::gen_block(const ast::Block *block) {
 void IrGen::gen_function_decl(const ast::FunctionDecl *function_decl) {
     const auto *return_type = gen_type(function_decl, function_decl->return_type());
     m_function = find_or_create_function(function_decl->name(), return_type);
+    if (function_decl->instance()) {
+        ASSERT(function_decl->name()->parts().size() == 2);
+        const auto *container_type = get_type(function_decl, function_decl->name()->parts()[0])->as<ir::StructType>();
+        auto *this_arg = m_function->append_arg(false);
+        this_arg->set_name("this");
+        this_arg->set_type(ir::PointerType::get(container_type, false));
+    }
     for (const auto *ast_arg : function_decl->args()) {
         auto *arg = m_function->append_arg(ast_arg->is_mutable());
         arg->set_name(ast_arg->name());
@@ -541,13 +582,15 @@ void IrGen::gen_function_decl(const ast::FunctionDecl *function_decl) {
     }
 
     if (function_decl->externed()) {
+        ASSERT(!function_decl->instance());
         return;
     }
 
     m_block = m_function->append_block();
     m_scope_stack.emplace(m_scope_stack.peek());
     for (auto *arg : m_function->args()) {
-        // TODO: This is a very lazy (clang-inspired) approach to arguments.
+        // TODO: This is a very lazy (clang-inspired) approach to arguments. We can probably do some optimisation in
+        //       IrGen and get extra performance by not relying on stack slot promotion.
         auto *arg_var = m_function->append_var(arg->type(), arg->is_mutable());
         arg_var->set_name(arg->name());
         m_block->append<ir::StoreInst>(arg_var, arg);

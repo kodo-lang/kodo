@@ -135,6 +135,8 @@ Token Lexer::next_token() {
                 token.kind = TokenKind::Return;
             } else if (buf == "struct") {
                 token.kind = TokenKind::Struct;
+            } else if (buf == "this") {
+                token.kind = TokenKind::This;
             } else if (buf == "type") {
                 token.kind = TokenKind::Type;
             } else if (buf == "var") {

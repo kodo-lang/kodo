@@ -40,6 +40,7 @@ enum class TokenKind {
     StringLit,
     Struct,
     Sub,
+    This,
     Type,
     Var,
 };

@@ -74,6 +74,8 @@ std::string tok_str(TokenKind kind) {
         return "struct";
     case TokenKind::Sub:
         return "-";
+    case TokenKind::This:
+        return "this";
     case TokenKind::Type:
         return "type";
     case TokenKind::Var:

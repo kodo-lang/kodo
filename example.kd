@@ -11,12 +11,12 @@ fn File::open(let path: *u8): File {
     return File{fd};
 }
 
-fn File::write(let file: *File, let str: *u8) {
-    write(file->fd, str, 13);
+fn File::write(*this, let str: *u8) {
+    write(this->fd, str, 13);
 }
 
 fn main(): i32 {
     let file = File::open("Hello");
-    File::write(&file, "Hello, world!");
+    file.write("Hello, world!");
     return 0;
 }
