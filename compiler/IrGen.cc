@@ -386,6 +386,9 @@ ir::Value *IrGen::gen_member_expr(const ast::MemberExpr *member_expr) {
         print_error(member_expr, "struct has no member named '{}'", rhs_name);
         return ir::ConstantNull::get();
     }
+    if (member_expr->is_pointer()) {
+        lhs = m_block->append<ir::LoadInst>(lhs);
+    }
     int index = std::distance(ast_fields.begin(), it);
     auto *lea = get_member_ptr(lhs, index);
     lea->set_type(ir::PointerType::get(struct_type->fields()[index], true));

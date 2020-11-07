@@ -26,6 +26,7 @@ enum class Op {
     // Other operators.
     Assign,
     Member,
+    MemberPtr,
 };
 
 constexpr int precedence(Op op) {
@@ -45,6 +46,7 @@ constexpr int precedence(Op op) {
     case Op::Deref:
         return 4;
     case Op::Member:
+    case Op::MemberPtr:
         return 5;
     default:
         ENSURE_NOT_REACHED();
@@ -87,9 +89,20 @@ ast::Node *create_expr(Op op, Stack<ast::Node *> *operands) {
     case Op::Assign:
         return new ast::AssignExpr(rhs->line(), lhs, rhs);
     case Op::Member:
-        return new ast::MemberExpr(rhs->line(), lhs, rhs, false);
+    case Op::MemberPtr:
+        return new ast::MemberExpr(rhs->line(), lhs, rhs, op == Op::MemberPtr);
     default:
         ENSURE_NOT_REACHED();
+    }
+}
+
+bool is_right_asc(Op op) {
+    switch (op) {
+    case Op::Member:
+    case Op::MemberPtr:
+        return true;
+    default:
+        return false;
     }
 }
 
@@ -247,6 +260,8 @@ ast::Node *Parser::parse_expr() {
                 return Op::Assign;
             case TokenKind::Dot:
                 return Op::Member;
+            case TokenKind::Arrow:
+                return Op::MemberPtr;
             default:
                 return std::nullopt;
             }
@@ -283,7 +298,7 @@ ast::Node *Parser::parse_expr() {
         while (!operators.empty()) {
             auto op2 = operators.peek();
             int pred_cmp = compare_op(*op1, op2);
-            if (pred_cmp > 0 || (pred_cmp == 0 && *op1 != Op::Member)) {
+            if (pred_cmp > 0 || (pred_cmp == 0 && !is_right_asc(*op1))) {
                 break;
             }
             auto op = operators.pop();
