@@ -1,0 +1,12 @@
+type Foo = struct {
+    bar: i32;
+};
+
+fn Foo::baz(*this): i32 {
+    return this->bar;
+}
+
+fn main(): i32 {
+    let foo = Foo{10};
+    return foo->baz();
+}
