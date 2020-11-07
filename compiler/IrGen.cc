@@ -403,6 +403,9 @@ ir::Value *IrGen::gen_member_expr(const ast::MemberExpr *member_expr) {
         type = ptr_type->pointee_type();
     }
     const auto *struct_type = type->as<ir::StructType>();
+    if (member_expr->is_pointer()) {
+        lhs = m_block->append<ir::LoadInst>(lhs);
+    }
     if (const auto *call_expr = member_expr->rhs()->as_or_null<ast::CallExpr>()) {
         auto *callee =
             find_function(m_scope_stack.peek().find_type_reverse(struct_type) + '_' + call_expr->name()->parts()[0]);
@@ -419,9 +422,6 @@ ir::Value *IrGen::gen_member_expr(const ast::MemberExpr *member_expr) {
         // TODO: Print struct type name.
         print_error(member_expr, "struct has no member named '{}'", rhs_name);
         return ir::ConstantNull::get();
-    }
-    if (member_expr->is_pointer()) {
-        lhs = m_block->append<ir::LoadInst>(lhs);
     }
     int index = std::distance(ast_fields.begin(), it);
     auto *lea = get_member_ptr(lhs, index);

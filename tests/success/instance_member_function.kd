@@ -8,5 +8,6 @@ fn Foo::baz(*this): i32 {
 
 fn main(): i32 {
     let foo = Foo{10};
-    return foo->baz();
+    let foo_ptr = &foo;
+    return foo.baz() + foo_ptr->baz();
 }
