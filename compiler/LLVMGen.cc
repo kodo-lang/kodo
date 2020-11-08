@@ -181,13 +181,6 @@ llvm::Value *LLVMGen::gen_compare(const ir::CompareInst *compare) {
 llvm::Value *LLVMGen::gen_inline_asm(const ir::InlineAsmInst *inline_asm) {
     std::string llvm_str;
     bool first = true;
-    for (const auto &clobber : inline_asm->clobbers()) {
-        if (!first) {
-            llvm_str += ',';
-        }
-        first = false;
-        llvm_str += "~{" + clobber + '}';
-    }
 
     // Build inputs.
     std::vector<llvm::Value *> args;
@@ -215,7 +208,21 @@ llvm::Value *LLVMGen::gen_inline_asm(const ir::InlineAsmInst *inline_asm) {
         llvm_str += "={" + output + '}';
         ret_types.push_back(llvm_type(value->as<ir::LocalVar>()->var_type()));
     }
-    auto *type = llvm::FunctionType::get(llvm::StructType::get(*m_llvm_context, ret_types, false), arg_types, false);
+
+    // Build clobbers.
+    for (const auto &clobber : inline_asm->clobbers()) {
+        if (!first) {
+            llvm_str += ',';
+        }
+        first = false;
+        llvm_str += "~{" + clobber + '}';
+    }
+
+    auto *ret_type = llvm::Type::getVoidTy(*m_llvm_context);
+    if (!ret_types.empty()) {
+        ret_type = llvm::StructType::get(*m_llvm_context, ret_types, false);
+    }
+    auto *type = llvm::FunctionType::get(ret_type, arg_types, false);
     auto *llvm_asm =
         llvm::InlineAsm::get(type, inline_asm->instruction(), llvm_str, true, true, llvm::InlineAsm::AD_Intel);
     auto *call = m_llvm_builder.CreateCall(llvm_asm, args);
