@@ -434,7 +434,7 @@ ir::Value *IrGen::gen_member_expr(const ast::MemberExpr *member_expr) {
 
 ir::Value *IrGen::gen_num_lit(const ast::NumLit *num_lit) {
     // `+ 1` for signed bit.
-    int bit_width = static_cast<int>(std::ceil(std::log2(num_lit->value()))) + 1;
+    int bit_width = static_cast<int>(std::ceil(std::log2(std::max(1UL, num_lit->value())))) + 1;
     return ir::ConstantInt::get(ir::IntType::get_signed(bit_width), num_lit->value());
 }
 
