@@ -82,6 +82,7 @@ public:
     void replace_uses_of_with(Value *orig, Value *repl) override;
 
     Function *callee() const { return m_callee; }
+    std::vector<Value *> &args() { return m_args; }
     const std::vector<Value *> &args() const { return m_args; }
 };
 

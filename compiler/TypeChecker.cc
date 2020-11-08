@@ -143,8 +143,9 @@ void Checker::visit(ir::CallInst *call) {
         return;
     }
     for (int i = 0; auto *param : callee->args()) {
-        auto *arg = call->args().at(i++);
-        call->replace_uses_of_with(arg, coerce(arg, param->type()));
+        auto *&arg = call->args()[i++];
+        arg->remove_user(call);
+        arg = coerce(arg, param->type());
     }
 }
 
