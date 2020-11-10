@@ -1,6 +1,7 @@
 import "std/syscall.kd";
 
 extern fn main(): i32;
+
 fn _start() {
-    exit(main());
+    sys_exit(main());
 }

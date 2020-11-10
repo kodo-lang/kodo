@@ -12,35 +12,35 @@ type MemoryMap = struct {
 fn File::open_write(let path: *u8): File {
     // 65 = `O_WRONLY | O_CREAT`.
     // 438 dec = 666 octal.
-    let fd = open(path, 65, 438);
+    let fd = sys_open(path, 65, 438);
     return File{fd};
 }
 
 fn File::open_read(let path: *u8): File {
     // 0 = `O_RDONLY`.
-    let fd = open(path, 0, 0);
+    let fd = sys_open(path, 0, 0);
     return File{fd};
 }
 
 fn File::create_map(*this): MemoryMap {
     // 0 = `SEEK_SET`.
     // 2 = `SEEK_END`.
-    let len = lseek(this->fd, 0, 2);
-    lseek(this->fd, 0, 0);
+    let len = sys_lseek(this->fd, 0, 2);
+    sys_lseek(this->fd, 0, 0);
     // 1 = `PROT_READ`.
     // 2 = `MAP_PRIVATE`.
-    let addr = mmap(0, len, 1, 2, this->fd, 0);
+    let addr = sys_mmap(0, len, 1, 2, this->fd, 0);
     return MemoryMap{addr, len};
 }
 
 fn File::write(*this, let str: *u8, let len: u64) {
-    write(this->fd, str, len);
+    sys_write(this->fd, str, len);
 }
 
 fn File::close(*this) {
-    close(this->fd);
+    sys_close(this->fd);
 }
 
 fn MemoryMap::destroy(*this) {
-    munmap(this->ptr, this->len);
+    sys_munmap(this->ptr, this->len);
 }

@@ -1,6 +1,6 @@
 import "std/syscall.kd";
 
 fn main(): i32 {
-    write(1, "Hello, world!", 13);
+    sys_write(1, "Hello, world!", 13);
     return 0;
 }
