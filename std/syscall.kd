@@ -30,6 +30,64 @@ fn open(let filename: *u8, let flags: i32, let mode: i32): i32 {
     return ret;
 }
 
+fn close(let fd: i32) {
+    let num: u64 = 3;
+    asm(
+        "syscall",
+        clobber("rcx"),
+        clobber("r11"),
+        in("rax", num),
+        in("rdi", fd),
+    );
+}
+
+fn lseek(let fd: i32, let off: u64, let whence: i32): u64 {
+    let num: u64 = 8;
+    var ret: u64;
+    asm(
+        "syscall",
+        clobber("rcx"),
+        clobber("r11"),
+        in("rax", num),
+        in("rdi", fd),
+        in("rsi", off),
+        in("rdx", whence),
+        output("rax", ret),
+    );
+    return ret;
+}
+
+fn mmap(let addr: u64, let len: u64, let prot: u64, let flags: u64, let fd: i32, let off: u64): *mut u8 {
+    let num: u64 = 9;
+    var ret: *mut u8;
+    asm(
+        "syscall",
+        clobber("rcx"),
+        clobber("r11"),
+        in("rax", num),
+        in("rdi", addr),
+        in("rsi", len),
+        in("rdx", prot),
+        in("r10", flags),
+        in("r8", fd),
+        in("r9", off),
+        output("rax", ret),
+    );
+    return ret;
+}
+
+fn munmap(let addr: *u8, let len: u64) {
+    let num: u64 = 11;
+    asm(
+        "syscall",
+        clobber("rcx"),
+        clobber("r11"),
+        in("rax", num),
+        in("rdi", addr),
+        in("rsi", len),
+    );
+}
+
 fn exit(let code: u64) {
     let num: u64 = 60;
     asm(

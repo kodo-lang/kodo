@@ -1,22 +1,13 @@
-import "std/syscall.kd";
-
-type File = struct {
-    fd: i32;
-};
-
-fn File::open(let path: *u8): File {
-    // 65 = `O_WRONLY | O_CREAT`.
-    // 438 dec = 666 octal.
-    let fd = open(path, 65, 438);
-    return File{fd};
-}
-
-fn File::write(*this, let str: *u8) {
-    write(this->fd, str, 13);
-}
+import "std/io.kd";
 
 fn main(): i32 {
-    let file = File::open("Hello");
-    file.write("Hello, world!");
+    let out_file = File::open_write("file.txt");
+    out_file.write("Hello, world!", 13);
+    out_file.close();
+    let in_file = File::open_read("file.txt");
+    let map = in_file.create_map();
+    write(1, map.ptr, map.len);
+    map.destroy();
+    in_file.close();
     return 0;
 }
