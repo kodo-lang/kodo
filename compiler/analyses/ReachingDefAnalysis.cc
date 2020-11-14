@@ -92,7 +92,7 @@ void ReachingDefAnalyser::run(ir::Function *function) {
             auto *ptr = copy != nullptr ? copy->dst() : store->ptr();
             for (auto *df : cfa->frontiers(block)) {
                 if (visited_map[ptr].insert(df).second) {
-                    memory_phis[df].emplace_back(new MemoryPhi(ptr));
+                    memory_phis[df].emplace<MemoryPhi>(memory_phis[df].end(), ptr);
                 }
             }
         }
@@ -104,8 +104,8 @@ void ReachingDefAnalyser::run(ir::Function *function) {
     std::unordered_map<ir::Value *, Stack<ir::Value *>> def_stacks;
     while (!work_queue.empty()) {
         auto *block = work_queue.pop();
-        for (auto &phi : memory_phis[block]) {
-            def_stacks[phi->var()].push(phi.get());
+        for (auto *phi : memory_phis[block]) {
+            def_stacks[phi->var()].push(phi);
         }
 
         for (auto *inst : *block) {
@@ -116,7 +116,7 @@ void ReachingDefAnalyser::run(ir::Function *function) {
                 }
                 def_stacks[copy->dst()].push(copy->src());
             } else if (auto *inline_asm = inst->as_or_null<ir::InlineAsmInst>()) {
-                for (auto &[output, output_val] : inline_asm->outputs()) {
+                for (const auto &[output, output_val] : inline_asm->outputs()) {
                     def_stacks[output_val].push(inline_asm);
                 }
             } else if (auto *load = inst->as_or_null<ir::LoadInst>()) {
@@ -130,7 +130,7 @@ void ReachingDefAnalyser::run(ir::Function *function) {
         }
 
         for (auto *succ : cfa->succs(block)) {
-            for (auto &phi : memory_phis[succ]) {
+            for (auto *phi : memory_phis[succ]) {
                 // TODO: pop_or_null helper function.
                 auto &def_stack = def_stacks[phi->var()];
                 auto *incoming = !def_stack.empty() ? def_stack.peek() : nullptr;

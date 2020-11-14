@@ -3,6 +3,8 @@
 #include <ir/Value.hh>
 #include <pass/Pass.hh>
 #include <pass/PassResult.hh>
+#include <support/List.hh>
+#include <support/ListNode.hh>
 
 #include <memory>
 #include <unordered_map>
@@ -17,7 +19,7 @@ class LoadInst;
 
 struct ReachingDefAnalyser;
 
-class MemoryPhi : public ir::Value {
+class MemoryPhi : public ir::Value, public ListNode {
     ir::Value *const m_var;
     std::unordered_map<ir::BasicBlock *, ir::Value *> m_incoming;
 
@@ -38,7 +40,7 @@ class ReachingDefAnalysis : public PassResult {
     friend ReachingDefAnalyser;
 
 private:
-    std::unordered_map<ir::BasicBlock *, std::vector<std::unique_ptr<MemoryPhi>>> m_memory_phis;
+    std::unordered_map<ir::BasicBlock *, List<MemoryPhi>> m_memory_phis;
     std::unordered_map<ir::LoadInst *, std::vector<ir::Value *>> m_reaching_defs;
 
     void add_reaching_def(ir::LoadInst *, ir::Value *);
