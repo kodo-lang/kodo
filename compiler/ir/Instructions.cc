@@ -292,6 +292,61 @@ void LoadInst::replace_uses_of_with(Value *orig, Value *repl) {
     REPL_VALUE(m_ptr)
 } // clang-format on
 
+PhiInst::PhiInst() : Instruction(KIND) {}
+
+PhiInst::~PhiInst() {
+    for (auto [block, value] : m_incoming) {
+        ASSERT(block != nullptr);
+        block->remove_user(this);
+        if (value != nullptr) {
+            value->remove_user(this);
+        }
+    }
+}
+
+void PhiInst::accept(Visitor *visitor) {
+    visitor->visit(this);
+}
+
+void PhiInst::add_incoming(BasicBlock *block, Value *value) {
+    block->add_user(this);
+    // TODO: Proper undef value.
+    if (value != nullptr) {
+        value->add_user(this);
+    }
+    m_incoming[block] = value;
+}
+
+void PhiInst::remove_incoming(BasicBlock *) {
+    // TODO: Implement.
+    ENSURE_NOT_REACHED();
+}
+
+void PhiInst::replace_uses_of_with(Value *orig, Value *repl) {
+    // TODO: Can possibly be optimised, we can break early after replacing a block.
+    for (auto it = m_incoming.begin(); it != m_incoming.end();) {
+        auto *block = it->first;
+        auto *&value = m_incoming[block];
+        REPL_VALUE(value)
+        if (block != orig) {
+            ++it;
+            continue;
+        }
+        block->remove_user(this);
+        if (value != nullptr) {
+            value->remove_user(this);
+        }
+        it = m_incoming.erase(it);
+        if (repl != nullptr) {
+            repl->add_user(this);
+            if (value != nullptr) {
+                value->add_user(this);
+            }
+            m_incoming.emplace(repl->as<BasicBlock>(), value);
+        }
+    }
+}
+
 StoreInst::StoreInst(Value *ptr, Value *val)
     : Instruction(KIND), m_ptr(ptr), m_val(val) {
     m_ptr->add_user(this);

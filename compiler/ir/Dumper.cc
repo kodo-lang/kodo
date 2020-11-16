@@ -250,8 +250,18 @@ void FunctionDumper::visit(LoadInst *load) {
     std::cout << "load " << load->ptr()->type()->to_string() << ' ' << printable_value(load->ptr());
 }
 
-void FunctionDumper::visit(PhiInst *) {
-    ASSERT_NOT_REACHED();
+void FunctionDumper::visit(PhiInst *phi) {
+    std::cout << printable_value(phi) << " = ";
+    std::cout << "phi (";
+    for (bool first = true; auto [block, value] : phi->incoming()) {
+        if (!first) {
+            std::cout << ", ";
+        }
+        first = false;
+        std::cout << printable_block(block) << ": ";
+        std::cout << printable_value(value);
+    }
+    std::cout << ")";
 }
 
 void FunctionDumper::visit(StoreInst *store) {

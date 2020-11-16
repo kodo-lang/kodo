@@ -3,6 +3,7 @@
 #include <ir/Instruction.hh>
 #include <ir/Value.hh>
 
+#include <unordered_map>
 #include <vector>
 
 // TODO: Cleanup IR const-correctness.
@@ -262,6 +263,28 @@ public:
     void replace_uses_of_with(Value *orig, Value *repl) override;
 
     Value *ptr() const { return m_ptr; }
+};
+
+class PhiInst : public Instruction {
+    std::unordered_map<BasicBlock *, Value *> m_incoming;
+
+public:
+    static constexpr auto KIND = InstKind::Phi;
+
+    PhiInst();
+    PhiInst(const PhiInst &) = delete;
+    PhiInst(PhiInst &&) = delete;
+    ~PhiInst() override;
+
+    PhiInst &operator=(const PhiInst &) = delete;
+    PhiInst &operator=(PhiInst &&) = delete;
+
+    void accept(Visitor *visitor) override;
+    void add_incoming(BasicBlock *block, Value *value);
+    void remove_incoming(BasicBlock *block);
+    void replace_uses_of_with(Value *orig, Value *repl) override;
+
+    const std::unordered_map<BasicBlock *, Value *> &incoming() const { return m_incoming; }
 };
 
 class StoreInst : public Instruction {

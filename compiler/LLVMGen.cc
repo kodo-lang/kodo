@@ -46,6 +46,7 @@ public:
     llvm::Value *gen_inline_asm(const ir::InlineAsmInst *);
     llvm::Value *gen_lea(const ir::LeaInst *);
     llvm::Value *gen_load(const ir::LoadInst *);
+    llvm::Value *gen_phi(const ir::PhiInst *);
     void gen_branch(const ir::BranchInst *);
     void gen_cond_branch(const ir::CondBranchInst *);
     void gen_copy(const ir::CopyInst *);
@@ -249,6 +250,14 @@ llvm::Value *LLVMGen::gen_load(const ir::LoadInst *load) {
     return m_llvm_builder.CreateLoad(llvm_value(load->ptr()));
 }
 
+llvm::Value *LLVMGen::gen_phi(const ir::PhiInst *phi) {
+    auto *llvm_phi = m_llvm_builder.CreatePHI(llvm_type(phi->type()), phi->incoming().size());
+    for (auto [block, value] : phi->incoming()) {
+        llvm_phi->addIncoming(llvm_value(value), m_block_map.at(block));
+    }
+    return llvm_phi;
+}
+
 void LLVMGen::gen_branch(const ir::BranchInst *branch) {
     m_llvm_builder.CreateBr(m_block_map.at(branch->dst()));
 }
@@ -321,6 +330,8 @@ llvm::Value *LLVMGen::gen_instruction(const ir::Instruction *instruction) {
         return gen_lea(instruction->as<ir::LeaInst>());
     case ir::InstKind::Load:
         return gen_load(instruction->as<ir::LoadInst>());
+    case ir::InstKind::Phi:
+        return gen_phi(instruction->as<ir::PhiInst>());
     case ir::InstKind::Store:
         gen_store(instruction->as<ir::StoreInst>());
         return nullptr;
