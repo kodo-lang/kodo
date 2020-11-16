@@ -146,6 +146,7 @@ void Checker::visit(ir::CallInst *call) {
         auto *&arg = call->args()[i++];
         arg->remove_user(call);
         arg = coerce(arg, param->type());
+        arg->add_user(call);
     }
 }
 
