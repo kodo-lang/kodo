@@ -46,25 +46,28 @@ void MemoryPhi::replace_uses_of_with(Value *orig, Value *repl) {
     }
 }
 
-void ReachingDefAnalysis::add_reaching_def(ir::LoadInst *load, ir::Value *value) {
-    m_reaching_defs[load].push_back(value);
+void ReachingDefAnalysis::put_reaching_def(ir::LoadInst *load, ir::Value *value) {
+    ASSERT(!m_reaching_defs.contains(load));
+    m_reaching_defs.emplace(load, value);
 }
 
-const std::vector<ir::Value *> &ReachingDefAnalysis::reaching_defs(ir::LoadInst *load) const {
+const List<MemoryPhi> &ReachingDefAnalysis::memory_phis(ir::BasicBlock *block) const {
+    return m_memory_phis.at(block);
+}
+
+ir::Value *ReachingDefAnalysis::reaching_def(ir::LoadInst *load) const {
     return m_reaching_defs.at(load);
 }
 
 std::vector<ir::Value *> ReachingDefAnalysis::reaching_values(ir::LoadInst *load) const {
     std::vector<ir::Value *> values;
-    for (auto *reaching_def : reaching_defs(load)) {
-        auto *phi = reaching_def != nullptr ? reaching_def->as_or_null<MemoryPhi>() : nullptr;
-        if (phi == nullptr) {
-            values.push_back(reaching_def);
-            continue;
-        }
+    auto *reaching = reaching_def(load);
+    if (auto *phi = reaching != nullptr ? reaching->as_or_null<MemoryPhi>() : nullptr) {
         for (auto [block, value] : phi->incoming()) {
             values.push_back(value);
         }
+    } else {
+        values.push_back(reaching);
     }
     return std::move(values);
 }
@@ -123,7 +126,7 @@ void ReachingDefAnalyser::run(ir::Function *function) {
                 // TODO: pop_or_null helper function.
                 auto &def_stack = def_stacks[load->ptr()];
                 auto *reaching_def = !def_stack.empty() ? def_stack.peek() : nullptr;
-                rda->add_reaching_def(load, reaching_def);
+                rda->put_reaching_def(load, reaching_def);
             } else if (auto *store = inst->as_or_null<ir::StoreInst>()) {
                 def_stacks[store->ptr()].push(store->val());
             }

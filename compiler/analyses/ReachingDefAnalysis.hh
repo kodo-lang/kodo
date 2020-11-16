@@ -41,14 +41,15 @@ class ReachingDefAnalysis : public PassResult {
 
 private:
     std::unordered_map<ir::BasicBlock *, List<MemoryPhi>> m_memory_phis;
-    std::unordered_map<ir::LoadInst *, std::vector<ir::Value *>> m_reaching_defs;
+    std::unordered_map<ir::LoadInst *, ir::Value *> m_reaching_defs;
 
-    void add_reaching_def(ir::LoadInst *, ir::Value *);
+    void put_reaching_def(ir::LoadInst *, ir::Value *);
 
 public:
     using analyser = ReachingDefAnalyser;
 
-    const std::vector<ir::Value *> &reaching_defs(ir::LoadInst *load) const;
+    const List<MemoryPhi> &memory_phis(ir::BasicBlock *block) const;
+    ir::Value *reaching_def(ir::LoadInst *load) const;
     std::vector<ir::Value *> reaching_values(ir::LoadInst *load) const;
 };
 
