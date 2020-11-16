@@ -31,7 +31,8 @@ void Value::replace_all_uses_with(Value *repl) {
     if (repl == this) {
         return;
     }
-    for (auto *user : m_users) {
+    // TODO: Avoid copying, increment iterator properly.
+    for (auto *user : std::vector(m_users)) {
         user->replace_uses_of_with(this, repl);
     }
     // Make sure that all users have removed themselves as users of us.
