@@ -77,6 +77,10 @@ std::string FunctionDumper::printable_block(const BasicBlock *block) {
 }
 
 std::string FunctionDumper::printable_value(const Value *value) {
+    // TODO: Proper undefined value.
+    if (value == nullptr) {
+        return "undef";
+    }
     if (value->has_name() && value->kind() != ValueKind::LocalVar) {
         return '%' + value->name();
     }
