@@ -64,6 +64,7 @@ public:
     Argument *append_arg(bool is_mutable);
     BasicBlock *append_block();
     LocalVar *append_var(const Type *type, bool is_mutable);
+    void remove_var(LocalVar *var);
 
     const std::string &name() const { return m_name; }
     const Type *return_type() const { return m_return_type; }

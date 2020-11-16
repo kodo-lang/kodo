@@ -20,6 +20,11 @@ LocalVar *Function::append_var(const Type *type, bool is_mutable) {
     return m_vars.emplace<LocalVar>(m_vars.end(), type, is_mutable);
 }
 
+void Function::remove_var(LocalVar *var) {
+    ASSERT(var->users().empty());
+    m_vars.erase(ListIterator<LocalVar>(var));
+}
+
 BasicBlock *Function::entry() const {
     ASSERT(!m_blocks.empty());
     return *m_blocks.begin();
