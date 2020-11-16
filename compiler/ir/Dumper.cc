@@ -42,18 +42,6 @@ public:
 
 std::string printable_constant(const Constant *constant);
 
-std::string printable_constant_struct(const ConstantStruct *constant_struct) {
-    std::string ret = "{";
-    for (bool first = true; const auto *elem : constant_struct->elems()) {
-        if (!first) {
-            ret += ", ";
-        }
-        first = false;
-        ret += elem->type()->to_string() + ' ' + printable_constant(elem);
-    }
-    return ret + '}';
-}
-
 std::string printable_constant(const Constant *constant) {
     switch (constant->kind()) {
     case ConstantKind::Int:
@@ -62,8 +50,6 @@ std::string printable_constant(const Constant *constant) {
         return "null";
     case ConstantKind::String:
         return constant->as<ConstantString>()->value();
-    case ConstantKind::Struct:
-        return printable_constant_struct(constant->as<ConstantStruct>());
     default:
         ENSURE_NOT_REACHED();
     }

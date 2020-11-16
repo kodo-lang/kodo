@@ -37,11 +37,6 @@ ConstantString *ConstantString::get(std::string value) {
     return &s_constant_strings.at(value);
 }
 
-ConstantStruct *ConstantStruct::get(const StructType *type, std::vector<Constant *> &&elems) {
-    // TODO: Memory leak! Cache this.
-    return new ConstantStruct(type, std::move(elems));
-}
-
 Constant *ConstantInt::clone(const Type *type) const {
     return get(type, m_value);
 }
@@ -51,10 +46,6 @@ Constant *ConstantNull::clone(const Type *) const {
 }
 
 Constant *ConstantString::clone(const Type *) const {
-    ENSURE_NOT_REACHED();
-}
-
-Constant *ConstantStruct::clone(const Type *) const {
     ENSURE_NOT_REACHED();
 }
 

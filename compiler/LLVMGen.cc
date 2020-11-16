@@ -37,7 +37,6 @@ public:
 
     llvm::Value *gen_constant_int(const ir::ConstantInt *);
     llvm::Value *gen_constant_string(const ir::ConstantString *);
-    llvm::Value *gen_constant_struct(const ir::ConstantStruct *);
 
     llvm::Value *gen_binary(const ir::BinaryInst *);
     llvm::Value *gen_call(const ir::CallInst *);
@@ -112,19 +111,6 @@ llvm::Value *LLVMGen::gen_constant_int(const ir::ConstantInt *constant_int) {
 
 llvm::Value *LLVMGen::gen_constant_string(const ir::ConstantString *constant_string) {
     return m_llvm_builder.CreateGlobalStringPtr(constant_string->value());
-}
-
-llvm::Value *LLVMGen::gen_constant_struct(const ir::ConstantStruct *constant_struct) {
-    // TODO: Size is already known here.
-    std::vector<llvm::Constant *> elems;
-    for (const auto *elem : constant_struct->elems()) {
-        elems.push_back(llvm::dyn_cast<llvm::Constant>(llvm_value(elem)));
-    }
-    auto *type = llvm_struct_type(constant_struct->struct_type());
-    auto *value = llvm::ConstantStruct::get(type, elems);
-    auto *global = new llvm::GlobalVariable(*m_llvm_module, type, true, llvm::GlobalValue::PrivateLinkage, value);
-    global->setUnnamedAddr(llvm::GlobalValue::UnnamedAddr::Global);
-    return global;
 }
 
 llvm::Value *LLVMGen::gen_binary(const ir::BinaryInst *binary) {
@@ -298,8 +284,6 @@ llvm::Value *LLVMGen::gen_constant(const ir::Constant *constant) {
         return gen_constant_int(constant->as<ir::ConstantInt>());
     case ir::ConstantKind::String:
         return gen_constant_string(constant->as<ir::ConstantString>());
-    case ir::ConstantKind::Struct:
-        return gen_constant_struct(constant->as<ir::ConstantStruct>());
     default:
         ENSURE_NOT_REACHED();
     }
