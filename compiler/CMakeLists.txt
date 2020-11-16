@@ -24,6 +24,7 @@ add_executable(compiler
     LLVMGen.cc
     main.cc
     Parser.cc
+    StackPromoter.cc
     Token.cc
     TypeChecker.cc
     VarChecker.cc)

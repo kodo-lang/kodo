@@ -1,5 +1,6 @@
 #include <Compiler.hh>
 #include <LLVMGen.hh>
+#include <StackPromoter.hh>
 #include <TypeChecker.hh>
 #include <VarChecker.hh>
 #include <ir/Dumper.hh>
@@ -49,6 +50,7 @@ int main(int argc, char **argv) {
     PassManager pass_manager;
     pass_manager.add<TypeChecker>();
     pass_manager.add<VarChecker>();
+    pass_manager.add<StackPromoter>();
     if (dump_ir_opt.present_or_true()) {
         pass_manager.add<ir::Dumper>();
     }
