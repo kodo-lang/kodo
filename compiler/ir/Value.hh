@@ -26,7 +26,7 @@ class Value : public Castable<Value, ValueKind, true> {
     std::vector<Value *> m_users;
 
 protected:
-    explicit Value(ValueKind kind);
+    explicit Value(ValueKind kind) : m_kind(kind) {}
 
 public:
     Value(const Value &) = delete;

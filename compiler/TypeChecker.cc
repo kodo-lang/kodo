@@ -12,6 +12,7 @@
 namespace {
 
 class Checker : public ir::Visitor {
+    ir::Program *const m_program;
     ir::Function *m_function{nullptr};
     ir::BasicBlock *m_block{nullptr};
     ir::Instruction *m_instruction{nullptr};
@@ -21,6 +22,8 @@ class Checker : public ir::Visitor {
     ir::Value *coerce(ir::Value *value, const ir::Type *type);
 
 public:
+    explicit Checker(ir::Program *program) : m_program(program) {}
+
     void check(ir::Function *);
     void visit(ir::BinaryInst *) override;
     void visit(ir::BranchInst *) override;
@@ -104,7 +107,7 @@ ir::Value *Checker::coerce(ir::Value *value, const ir::Type *type) {
     }
     ENSURE(inst != nullptr);
     print_error(inst, "cannot implicitly cast from '{}' to '{}'", value->type()->to_string(), type->to_string());
-    return ir::ConstantNull::get();
+    return ir::ConstantNull::get(m_program);
 }
 
 void Checker::check(ir::Function *function) {
@@ -172,12 +175,12 @@ void Checker::visit(ir::CompareInst *compare) {
     const auto *type = resulting_type(lhs->type(), rhs->type());
     lhs->replace_all_uses_with(coerce(lhs, type));
     rhs->replace_all_uses_with(coerce(rhs, type));
-    compare->set_type(ir::BoolType::get());
+    compare->set_type(m_program->bool_type());
 }
 
 void Checker::visit(ir::CondBranchInst *cond_branch) {
     auto *cond = cond_branch->cond();
-    cond_branch->replace_uses_of_with(cond, coerce(cond, ir::BoolType::get()));
+    cond_branch->replace_uses_of_with(cond, coerce(cond, m_program->bool_type()));
 }
 
 void Checker::visit(ir::CopyInst *) {}
@@ -210,7 +213,7 @@ void Checker::visit(ir::RetInst *ret) {
 } // namespace
 
 void TypeChecker::run(ir::Program *program) {
-    Checker checker;
+    Checker checker(program);
     for (auto *function : *program) {
         checker.check(function);
     }

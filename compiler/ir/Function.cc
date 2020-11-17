@@ -1,10 +1,25 @@
 #include <ir/Function.hh>
 
+#include <ir/TypeCache.hh>
+#include <ir/Types.hh>
 #include <support/Assert.hh>
 
 // TODO: List<T>::append()?
 // TODO: Default List<T>::emplace() U param to T.
 namespace ir {
+
+LocalVar::LocalVar(const Type *var_type, bool is_mutable) : Value(KIND), m_var_type(var_type) {
+    set_type(m_var_type->cache()->pointer_type(m_var_type, is_mutable));
+}
+
+void LocalVar::set_var_type(const Type *var_type) {
+    m_var_type = var_type;
+    set_type(m_var_type->cache()->pointer_type(m_var_type, is_mutable()));
+}
+
+bool LocalVar::is_mutable() const {
+    return type()->as<PointerType>()->is_mutable();
+}
 
 Argument *Function::append_arg(bool is_mutable) {
     return m_args.emplace<Argument>(m_args.end(), is_mutable);

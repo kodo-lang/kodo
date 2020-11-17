@@ -1,18 +1,11 @@
 #include <VarChecker.hh>
 
 #include <analyses/ReachingDefAnalysis.hh>
-#include <graph/Graph.hh>
 #include <ir/Function.hh>
 #include <ir/Instructions.hh>
-#include <pass/PassManager.hh>
+#include <ir/Types.hh>
 #include <pass/PassUsage.hh>
-#include <support/Assert.hh>
 #include <support/Error.hh>
-#include <support/Stack.hh>
-
-#include <string>
-#include <unordered_map>
-#include <vector>
 
 void VarChecker::build_usage(PassUsage *usage) {
     usage->uses<ReachingDefAnalysis>();

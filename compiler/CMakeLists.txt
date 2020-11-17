@@ -11,7 +11,8 @@ add_executable(compiler
     ir/Instruction.cc
     ir/Instructions.cc
     ir/Program.cc
-    ir/Type.cc
+    ir/TypeCache.cc
+    ir/Types.cc
     ir/Value.cc
     pass/PassManager.cc
     support/ArgsParser.cc

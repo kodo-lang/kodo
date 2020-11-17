@@ -6,6 +6,7 @@
 #include <ir/Function.hh>
 #include <ir/Instructions.hh>
 #include <ir/Program.hh>
+#include <ir/Types.hh>
 #include <support/Assert.hh>
 #include <support/Error.hh>
 #include <support/Stack.hh>
@@ -54,7 +55,6 @@ class IrGen {
     ir::Function *m_function{nullptr};
     ir::BasicBlock *m_block{nullptr};
     Stack<Scope> m_scope_stack;
-    std::unordered_map<const ir::StructType *, const std::vector<ast::StructField> &> m_struct_types;
 
     enum class DerefState {
         Deref,
@@ -163,7 +163,7 @@ ir::Value *IrGen::create_call(const ast::CallExpr *call_expr, ir::Function *call
     }
     if (callee == nullptr) {
         print_error(call_expr, "no function named '{}' in current context", call_expr->name()->parts()[0]);
-        return ir::ConstantNull::get();
+        return ir::ConstantNull::get(m_program.get());
     }
     return m_block->append<ir::CallInst>(callee, std::move(args));
 }
@@ -209,8 +209,8 @@ ir::Function *IrGen::find_or_create_function(const ast::Symbol *name, const ir::
 ir::Value *IrGen::get_member_ptr(ir::Value *ptr, int index) {
     std::vector<ir::Value *> indices;
     indices.reserve(2);
-    indices.push_back(ir::ConstantInt::get(ir::IntType::get_unsigned(32), 0));
-    indices.push_back(ir::ConstantInt::get(ir::IntType::get_unsigned(32), index));
+    indices.push_back(ir::ConstantInt::get(m_program->int_type(32, false), 0));
+    indices.push_back(ir::ConstantInt::get(m_program->int_type(32, false), index));
     return m_block->append<ir::LeaInst>(ptr, std::move(indices));
 }
 
@@ -219,21 +219,21 @@ const ir::Type *IrGen::get_type(const ast::Node *node, const std::string &name) 
         return type;
     }
     print_error(node, "no type named '{}' in current context", name);
-    return ir::InvalidType::get();
+    return m_program->invalid_type();
 }
 
 const ir::Type *IrGen::gen_base_type(const ast::Node *node, const std::string &base) {
     if (base == "bool") {
-        return ir::BoolType::get();
+        return m_program->bool_type();
     }
     if (base == "void") {
-        return ir::VoidType::get();
+        return m_program->void_type();
     }
     if (base.starts_with('i') || base.starts_with('u')) {
         auto bit_width_str = base.substr(1);
         if (bit_width_str.find_first_not_of("0123456789") == std::string::npos) {
             int bit_width = std::stoi(bit_width_str);
-            return ir::IntType::get(bit_width, base.starts_with('i'));
+            return m_program->int_type(bit_width, base.starts_with('i'));
         }
     }
     return get_type(node, base);
@@ -241,29 +241,26 @@ const ir::Type *IrGen::gen_base_type(const ast::Node *node, const std::string &b
 
 const ir::Type *IrGen::gen_pointer_type(const ast::Node *node, const ast::Type &ast_pointee, bool is_mutable) {
     const auto *pointee = gen_type(node, ast_pointee);
-    return ir::PointerType::get(pointee, is_mutable);
+    return m_program->pointer_type(pointee, is_mutable);
 }
 
 const ir::Type *IrGen::gen_struct_type(const ast::Node *node, const std::vector<ast::StructField> &ast_fields) {
-    // TODO: Size is already known here.
-    std::vector<const ir::Type *> fields;
+    std::vector<ir::StructField> fields;
     for (const auto &ast_field : ast_fields) {
-        // TODO: StructField needs to be its own ast node for the line number to be correct.
-        fields.push_back(gen_type(node, ast_field.type));
+        // TODO: ast::StructField needs to be its own ast node for the line number to be correct.
+        fields.emplace_back(ast_field.name, gen_type(node, ast_field.type));
     }
-    const auto *type = ir::StructType::get(std::move(fields));
-    m_struct_types.emplace(type, ast_fields);
-    return type;
+    return m_program->struct_type(std::move(fields));
 }
 
 const ir::Type *IrGen::gen_type(const ast::Node *node, const ast::Type &ast_type) {
     switch (ast_type.kind()) {
     case ast::TypeKind::Invalid:
-        return ir::InvalidType::get();
+        return m_program->invalid_type();
     case ast::TypeKind::Base:
         return gen_base_type(node, ast_type.base());
     case ast::TypeKind::Inferred:
-        return ir::InferredType::get();
+        return m_program->inferred_type();
     case ast::TypeKind::Pointer:
         return gen_pointer_type(node, ast_type.pointee(), ast_type.is_mutable());
     case ast::TypeKind::Struct:
@@ -296,8 +293,10 @@ ir::Value *IrGen::gen_asm_expr(const ast::AsmExpr *asm_expr) {
         StateChanger deref_state_changer(m_deref_state, DerefState::DontDeref);
         outputs.emplace_back(output, gen_expr(expr.get()));
     }
-    return m_block->append<ir::InlineAsmInst>(asm_expr->instruction(), std::move(clobbers), std::move(inputs),
-                                              std::move(outputs));
+    auto *inline_asm = m_block->append<ir::InlineAsmInst>(asm_expr->instruction(), std::move(clobbers),
+                                                          std::move(inputs), std::move(outputs));
+    inline_asm->set_type(m_program->void_type());
+    return inline_asm;
 }
 
 ir::Value *IrGen::gen_assign_expr(const ast::AssignExpr *assign_expr) {
@@ -351,7 +350,7 @@ ir::Value *IrGen::gen_construct_expr(const ast::ConstructExpr *construct_expr) {
     auto *tmp_var = m_function->append_var(type, true);
     for (int i = 0; const auto *arg : construct_expr->args()) {
         auto *lea = get_member_ptr(tmp_var, i);
-        lea->set_type(ir::PointerType::get(type->fields()[i++], true));
+        lea->set_type(m_program->pointer_type(type->fields()[i++].type(), true));
         create_store(construct_expr, lea, gen_expr(arg));
     }
     if (m_deref_state == DerefState::DontDeref) {
@@ -386,18 +385,18 @@ ir::Value *IrGen::gen_member_expr(const ast::MemberExpr *member_expr) {
     const auto *rhs = member_expr->rhs()->as<ast::Symbol>();
     ASSERT(rhs->parts().size() == 1);
     const auto &rhs_name = rhs->parts()[0];
-    const auto &ast_fields = m_struct_types.at(struct_type);
-    auto it = std::find_if(ast_fields.begin(), ast_fields.end(), [&rhs_name](const auto &field) {
-        return field.name == rhs_name;
-    });
-    if (it == ast_fields.end()) {
-        // TODO: Print struct type name.
-        print_error(member_expr, "struct has no member named '{}'", rhs_name);
-        return ir::ConstantNull::get();
+    auto it = std::find_if(struct_type->fields().begin(), struct_type->fields().end(),
+                           [&rhs_name](const ir::StructField &field) {
+                               return field.name() == rhs_name;
+                           });
+    if (it == struct_type->fields().end()) {
+        const auto &struct_type_name = m_scope_stack.peek().find_type_reverse(struct_type);
+        print_error(member_expr, "struct '{}' has no member named '{}'", struct_type_name, rhs_name);
+        return ir::ConstantNull::get(m_program.get());
     }
-    int index = std::distance(ast_fields.begin(), it);
+    int index = std::distance(struct_type->fields().begin(), it);
     auto *lea = get_member_ptr(lhs, index);
-    lea->set_type(ir::PointerType::get(struct_type->fields()[index], true));
+    lea->set_type(m_program->pointer_type(it->type(), true));
     if (m_member_load_state == MemberLoadState::Load) {
         return m_block->append<ir::LoadInst>(lea);
     }
@@ -407,12 +406,12 @@ ir::Value *IrGen::gen_member_expr(const ast::MemberExpr *member_expr) {
 ir::Value *IrGen::gen_num_lit(const ast::NumLit *num_lit) {
     // `+ 1` for signed bit.
     int bit_width = static_cast<int>(std::ceil(std::log2(std::max(1UL, num_lit->value())))) + 1;
-    return ir::ConstantInt::get(ir::IntType::get_signed(bit_width), num_lit->value());
+    return ir::ConstantInt::get(m_program->int_type(bit_width, true), num_lit->value());
 }
 
 ir::Value *IrGen::gen_string_lit(const ast::StringLit *string_lit) {
     // TODO: Avoid copying string here?
-    return ir::ConstantString::get(string_lit->value());
+    return ir::ConstantString::get(m_program.get(), string_lit->value());
 }
 
 ir::Value *IrGen::gen_symbol(const ast::Symbol *symbol) {
@@ -421,7 +420,7 @@ ir::Value *IrGen::gen_symbol(const ast::Symbol *symbol) {
     auto *var = m_scope_stack.peek().find_var(name);
     if (var == nullptr) {
         print_error(symbol, "no symbol named '{}' in current context", name);
-        return ir::ConstantNull::get();
+        return ir::ConstantNull::get(m_program.get());
     }
     if (m_deref_state == DerefState::DontDeref) {
         return var;
@@ -545,7 +544,7 @@ void IrGen::gen_function_decl(const ast::FunctionDecl *function_decl) {
         const auto *container_type = get_type(function_decl, function_decl->name()->parts()[0])->as<ir::StructType>();
         auto *this_arg = m_function->append_arg(false);
         this_arg->set_name("this");
-        this_arg->set_type(ir::PointerType::get(container_type, false));
+        this_arg->set_type(m_program->pointer_type(container_type, false));
     }
     for (const auto *ast_arg : function_decl->args()) {
         auto *arg = m_function->append_arg(ast_arg->is_mutable());

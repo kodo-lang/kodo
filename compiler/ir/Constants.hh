@@ -8,6 +8,8 @@
 
 namespace ir {
 
+class Program;
+
 // TODO: Hide constructors?
 class ConstantInt : public Constant {
     const std::size_t m_value;
@@ -25,7 +27,7 @@ public:
 
 struct ConstantNull : public Constant {
     static constexpr auto KIND = ConstantKind::Null;
-    static ConstantNull *get();
+    static ConstantNull *get(const Program *program);
 
     ConstantNull() noexcept : Constant(KIND, nullptr) {}
 
@@ -37,7 +39,7 @@ class ConstantString : public Constant {
 
 public:
     static constexpr auto KIND = ConstantKind::String;
-    static ConstantString *get(std::string value);
+    static ConstantString *get(const Program *program, std::string value);
 
     ConstantString(const Type *type, std::string value) : Constant(KIND, type), m_value(std::move(value)) {}
 

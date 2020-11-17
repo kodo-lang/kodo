@@ -1,6 +1,7 @@
 #pragma once
 
 #include <ir/BasicBlock.hh>
+#include <ir/Type.hh>
 #include <support/List.hh>
 #include <support/ListNode.hh>
 
@@ -26,17 +27,12 @@ class LocalVar : public Value, public ListNode {
 public:
     static constexpr auto KIND = ValueKind::LocalVar;
 
-    LocalVar(const Type *var_type, bool is_mutable) : Value(KIND), m_var_type(var_type) {
-        set_type(PointerType::get(var_type, is_mutable));
-    }
+    LocalVar(const Type *var_type, bool is_mutable);
 
-    void set_var_type(const Type *var_type) {
-        m_var_type = var_type;
-        set_type(PointerType::get(m_var_type, is_mutable()));
-    }
+    void set_var_type(const Type *var_type);
 
     const Type *var_type() const { return m_var_type; }
-    bool is_mutable() const { return type()->as<PointerType>()->is_mutable(); }
+    bool is_mutable() const;
 };
 
 class Function : public ListNode {

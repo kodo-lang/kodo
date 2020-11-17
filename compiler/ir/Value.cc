@@ -1,15 +1,12 @@
 #include <ir/Value.hh>
 
+#include <ir/Types.hh>
 #include <support/Assert.hh>
 
 #include <algorithm>
 #include <utility>
 
 namespace ir {
-
-Value::Value(ValueKind kind) : m_kind(kind) {
-    set_type(InvalidType::get());
-}
 
 Value::~Value() {
     replace_all_uses_with(nullptr);

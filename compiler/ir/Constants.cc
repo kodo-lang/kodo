@@ -1,5 +1,6 @@
 #include <ir/Constants.hh>
 
+#include <ir/Program.hh>
 #include <support/Assert.hh>
 #include <support/PairHash.hh>
 
@@ -24,15 +25,16 @@ ConstantInt *ConstantInt::get(const Type *type, std::size_t value) {
     return &s_constant_ints.at(pair);
 }
 
-ConstantNull *ConstantNull::get() {
-    s_constant_null.set_type(InvalidType::get());
+ConstantNull *ConstantNull::get(const Program *program) {
+    s_constant_null.set_type(program->invalid_type());
     return &s_constant_null;
 }
 
-ConstantString *ConstantString::get(std::string value) {
+ConstantString *ConstantString::get(const Program *program, std::string value) {
     if (!s_constant_strings.contains(value)) {
-        s_constant_strings.emplace(std::piecewise_construct, std::forward_as_tuple(value),
-                                   std::forward_as_tuple(PointerType::get(IntType::get_unsigned(8), false), value));
+        s_constant_strings.emplace(
+            std::piecewise_construct, std::forward_as_tuple(value),
+            std::forward_as_tuple(program->pointer_type(program->int_type(8, false), false), value));
     }
     return &s_constant_strings.at(value);
 }

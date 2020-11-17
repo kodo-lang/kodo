@@ -71,8 +71,8 @@ LLVMGen::LLVMGen(llvm::LLVMContext *llvm_context) : m_llvm_context(llvm_context)
 llvm::StructType *LLVMGen::llvm_struct_type(const ir::StructType *struct_type) {
     // TODO: Size is already known here.
     std::vector<llvm::Type *> fields;
-    for (const auto *field : struct_type->fields()) {
-        fields.push_back(llvm_type(field));
+    for (const auto &field : struct_type->fields()) {
+        fields.push_back(llvm_type(field.type()));
     }
     return llvm::StructType::get(*m_llvm_context, fields);
 }

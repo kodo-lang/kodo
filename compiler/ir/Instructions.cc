@@ -2,6 +2,7 @@
 
 #include <ir/BasicBlock.hh>
 #include <ir/Function.hh>
+#include <ir/Types.hh>
 #include <ir/Visitor.hh>
 #include <support/Assert.hh>
 
@@ -212,7 +213,6 @@ InlineAsmInst::InlineAsmInst(std::string instruction, std::vector<std::string> &
     for (auto &[output, value] : m_outputs) {
         value->add_user(this);
     }
-    set_type(VoidType::get());
 }
 
 InlineAsmInst::~InlineAsmInst() {
