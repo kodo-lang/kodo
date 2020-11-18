@@ -44,7 +44,7 @@ Constant *ConstantInt::clone(const Type *type) const {
 }
 
 Constant *ConstantNull::clone(const Type *) const {
-    ENSURE_NOT_REACHED();
+    return const_cast<ConstantNull *>(this);
 }
 
 Constant *ConstantString::clone(const Type *) const {
