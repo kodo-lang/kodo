@@ -21,7 +21,7 @@ class Parser {
     ast::Symbol *parse_symbol();
     ast::Node *parse_expr();
     void parse_stmt(ast::Block *);
-    ast::Type parse_type();
+    ast::Node *parse_type();
     ast::Block *parse_block();
 
 public:

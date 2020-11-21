@@ -27,44 +27,18 @@ public:
     void visit(const ImportStmt *) override;
     void visit(const MemberExpr *) override;
     void visit(const NumLit *) override;
+    void visit(const PointerType *) override;
     void visit(const RetStmt *) override;
     void visit(const Root *) override;
     void visit(const StringLit *) override;
+    void visit(const StructField *) override;
+    void visit(const StructType *) override;
     void visit(const Symbol *) override;
     void visit(const TypeDecl *) override;
     void visit(const UnaryExpr *) override;
 };
 
-void print_type(const Type &type) {
-    switch (type.kind()) {
-    case TypeKind::Invalid:
-        std::cout << "INVALID";
-        break;
-    case TypeKind::Base:
-        std::cout << type.base();
-        break;
-    case TypeKind::Pointer:
-        std::cout << '*';
-        print_type(type.pointee());
-        break;
-    case TypeKind::Struct:
-        std::cout << "struct {";
-        for (bool first = true; const auto &field : type.struct_fields()) {
-            if (!first) {
-                std::cout << ", ";
-            }
-            first = false;
-            std::cout << field.name << ": ";
-            print_type(field.type);
-        }
-        std::cout << '}';
-        break;
-    default:
-        ASSERT_NOT_REACHED();
-    }
-}
-
-void Dumper::visit(const AsmExpr *asm_expr) {
+void Dumper::visit(const AsmExpr *) {
     // TODO
     std::cout << "AsmExpr()";
 }
@@ -132,7 +106,7 @@ void Dumper::visit(const CallExpr *call_expr) {
 
 void Dumper::visit(const CastExpr *cast_expr) {
     std::cout << "CastExpr(";
-    print_type(cast_expr->type());
+    cast_expr->type()->accept(this);
     std::cout << ", ";
     cast_expr->val()->accept(this);
     std::cout << ')';
@@ -205,6 +179,8 @@ void Dumper::visit(const NumLit *num_lit) {
     std::cout << ')';
 }
 
+void Dumper::visit(const PointerType *) {}
+
 void Dumper::visit(const RetStmt *ret_stmt) {
     std::cout << "RetStmt(";
     ret_stmt->val()->accept(this);
@@ -224,6 +200,10 @@ void Dumper::visit(const StringLit *string_lit) {
     std::cout << ')';
 }
 
+void Dumper::visit(const StructField *) {}
+
+void Dumper::visit(const StructType *) {}
+
 void Dumper::visit(const Symbol *symbol) {
     std::cout << "Symbol(";
     for (bool first = true; const auto &part : symbol->parts()) {
@@ -240,7 +220,7 @@ void Dumper::visit(const TypeDecl *type_decl) {
     std::cout << "TypeDecl(";
     std::cout << type_decl->name();
     std::cout << ", ";
-    print_type(type_decl->type());
+    type_decl->type()->accept(this);
     std::cout << ')';
 }
 

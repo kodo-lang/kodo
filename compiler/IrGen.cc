@@ -77,10 +77,10 @@ public:
     ir::Value *get_member_ptr(ir::Value *, int);
     const ir::Type *get_type(const ast::Node *, const std::string &);
 
-    const ir::Type *gen_base_type(const ast::Node *, const std::string &);
-    const ir::Type *gen_pointer_type(const ast::Node *, const ast::Type &, bool is_mutable);
-    const ir::Type *gen_struct_type(const ast::Node *, const std::vector<ast::StructField> &);
-    const ir::Type *gen_type(const ast::Node *, const ast::Type &);
+    const ir::Type *gen_base_type(const ast::Symbol *);
+    const ir::Type *gen_pointer_type(const ast::PointerType *);
+    const ir::Type *gen_struct_type(const ast::StructType *);
+    const ir::Type *gen_type(const ast::Node *);
 
     ir::Value *gen_address_of(const ast::Node *);
     ir::Value *gen_deref(const ast::Node *);
@@ -222,7 +222,9 @@ const ir::Type *IrGen::get_type(const ast::Node *node, const std::string &name) 
     return m_program->invalid_type();
 }
 
-const ir::Type *IrGen::gen_base_type(const ast::Node *node, const std::string &base) {
+const ir::Type *IrGen::gen_base_type(const ast::Symbol *symbol) {
+    ASSERT(symbol->parts().size() == 1);
+    const auto &base = symbol->parts()[0];
     if (base == "bool") {
         return m_program->bool_type();
     }
@@ -236,35 +238,34 @@ const ir::Type *IrGen::gen_base_type(const ast::Node *node, const std::string &b
             return m_program->int_type(bit_width, base.starts_with('i'));
         }
     }
-    return get_type(node, base);
+    return get_type(symbol, base);
 }
 
-const ir::Type *IrGen::gen_pointer_type(const ast::Node *node, const ast::Type &ast_pointee, bool is_mutable) {
-    const auto *pointee = gen_type(node, ast_pointee);
-    return m_program->pointer_type(pointee, is_mutable);
+const ir::Type *IrGen::gen_pointer_type(const ast::PointerType *pointer_type) {
+    const auto *pointee_type = gen_type(pointer_type->pointee_type());
+    return m_program->pointer_type(pointee_type, pointer_type->is_mutable());
 }
 
-const ir::Type *IrGen::gen_struct_type(const ast::Node *node, const std::vector<ast::StructField> &ast_fields) {
+const ir::Type *IrGen::gen_struct_type(const ast::StructType *struct_type) {
     std::vector<ir::StructField> fields;
-    for (const auto &ast_field : ast_fields) {
-        // TODO: ast::StructField needs to be its own ast node for the line number to be correct.
-        fields.emplace_back(ast_field.name, gen_type(node, ast_field.type));
+    for (const auto *struct_field : struct_type->fields()) {
+        fields.emplace_back(struct_field->name(), gen_type(struct_field->type()));
     }
     return m_program->struct_type(std::move(fields));
 }
 
-const ir::Type *IrGen::gen_type(const ast::Node *node, const ast::Type &ast_type) {
-    switch (ast_type.kind()) {
-    case ast::TypeKind::Invalid:
-        return m_program->invalid_type();
-    case ast::TypeKind::Base:
-        return gen_base_type(node, ast_type.base());
-    case ast::TypeKind::Inferred:
+const ir::Type *IrGen::gen_type(const ast::Node *node) {
+    if (node == nullptr) {
+        // TODO: Remove inferred type from IR.
         return m_program->inferred_type();
-    case ast::TypeKind::Pointer:
-        return gen_pointer_type(node, ast_type.pointee(), ast_type.is_mutable());
-    case ast::TypeKind::Struct:
-        return gen_struct_type(node, ast_type.struct_fields());
+    }
+    switch (node->kind()) {
+    case ast::NodeKind::Symbol:
+        return gen_base_type(node->as<ast::Symbol>());
+    case ast::NodeKind::PointerType:
+        return gen_pointer_type(node->as<ast::PointerType>());
+    case ast::NodeKind::StructType:
+        return gen_struct_type(node->as<ast::StructType>());
     default:
         ENSURE_NOT_REACHED();
     }
@@ -340,12 +341,12 @@ ir::Value *IrGen::gen_call_expr(const ast::CallExpr *call_expr) {
 ir::Value *IrGen::gen_cast_expr(const ast::CastExpr *cast_expr) {
     // TODO: Always setting this to SignExtend is a bit misleading.
     auto *expr = gen_expr(cast_expr->val());
-    const auto *type = gen_type(cast_expr, cast_expr->type());
+    const auto *type = gen_type(cast_expr->type());
     return m_block->append<ir::CastInst>(ir::CastOp::SignExtend, type, expr);
 }
 
 ir::Value *IrGen::gen_construct_expr(const ast::ConstructExpr *construct_expr) {
-    const auto *type = gen_base_type(construct_expr, construct_expr->name())->as<ir::StructType>();
+    const auto *type = get_type(construct_expr, construct_expr->name())->as<ir::StructType>();
     ASSERT(construct_expr->args().size() == type->fields().size());
     auto *tmp_var = m_function->append_var(type, true);
     for (int i = 0; const auto *arg : construct_expr->args()) {
@@ -481,7 +482,7 @@ void IrGen::gen_decl_stmt(const ast::DeclStmt *decl_stmt) {
         print_error(decl_stmt, "redeclaration of variable '{}'", decl_stmt->name());
         return;
     }
-    const auto *type = gen_type(decl_stmt, decl_stmt->type());
+    const auto *type = gen_type(decl_stmt->type());
     auto *var = m_function->append_var(type, decl_stmt->is_mutable());
     var->set_name(decl_stmt->name());
     if (decl_stmt->init_val() != nullptr) {
@@ -537,7 +538,7 @@ void IrGen::gen_block(const ast::Block *block) {
 }
 
 void IrGen::gen_function_decl(const ast::FunctionDecl *function_decl) {
-    const auto *return_type = gen_type(function_decl, function_decl->return_type());
+    const auto *return_type = gen_type(function_decl->return_type());
     m_function = find_or_create_function(function_decl->name(), return_type);
     if (function_decl->instance()) {
         ASSERT(function_decl->name()->parts().size() == 2);
@@ -549,7 +550,7 @@ void IrGen::gen_function_decl(const ast::FunctionDecl *function_decl) {
     for (const auto *ast_arg : function_decl->args()) {
         auto *arg = m_function->append_arg(ast_arg->is_mutable());
         arg->set_name(ast_arg->name());
-        arg->set_type(gen_type(ast_arg, ast_arg->type()));
+        arg->set_type(gen_type(ast_arg->type()));
     }
 
     if (function_decl->externed()) {
@@ -581,7 +582,7 @@ void IrGen::gen_function_decl(const ast::FunctionDecl *function_decl) {
 }
 
 void IrGen::gen_type_decl(const ast::TypeDecl *type_decl) {
-    const auto *type = gen_type(type_decl, type_decl->type());
+    const auto *type = gen_type(type_decl->type());
     m_scope_stack.peek().put_type(type_decl->name(), type);
 }
 

@@ -192,12 +192,12 @@ ast::CallExpr *Parser::parse_call_expr(const ast::Symbol *name) {
 ast::CastExpr *Parser::parse_cast_expr() {
     expect(TokenKind::Cast);
     expect(TokenKind::LessThan);
-    auto type = parse_type();
+    auto *type = parse_type();
     expect(TokenKind::GreaterThan);
     expect(TokenKind::LParen);
     auto *expr = parse_expr();
     expect(TokenKind::RParen);
-    return new ast::CastExpr(m_lexer->line(), std::move(type), expr);
+    return new ast::CastExpr(m_lexer->line(), type, expr);
 }
 
 ast::ConstructExpr *Parser::parse_construct_expr(const ast::Symbol *name) {
@@ -339,12 +339,9 @@ void Parser::parse_stmt(ast::Block *block) {
             expect(TokenKind::Let);
         }
         auto name = std::move(std::get<std::string>(expect(TokenKind::Identifier).data));
-        auto type = ast::Type::get_inferred();
-        if (consume(TokenKind::Colon)) {
-            type = parse_type();
-        }
+        auto *type = consume(TokenKind::Colon) ? parse_type() : nullptr;
         const auto *init_val = consume(TokenKind::Eq) ? parse_expr() : nullptr;
-        block->add_stmt<ast::DeclStmt>(m_lexer->line(), std::move(name), std::move(type), init_val, is_mutable);
+        block->add_stmt<ast::DeclStmt>(m_lexer->line(), std::move(name), type, init_val, is_mutable);
         expect(TokenKind::Semi);
         break;
     }
@@ -360,14 +357,15 @@ void Parser::parse_stmt(ast::Block *block) {
     }
 }
 
-ast::Type Parser::parse_type() {
+ast::Node *Parser::parse_type() {
     // TODO: TokenKind::Mul misleading.
+    const int line = m_lexer->line();
     if (consume(TokenKind::Mul)) {
-        bool is_mutable = consume(TokenKind::Mut).has_value();
-        return ast::Type::get_pointer(parse_type(), is_mutable);
+        const bool is_mutable = consume(TokenKind::Mut).has_value();
+        return new ast::PointerType(line, parse_type(), is_mutable);
     }
     if (consume(TokenKind::Struct)) {
-        std::vector<ast::StructField> fields;
+        auto *type = new ast::StructType(line);
         expect(TokenKind::LBrace);
         while (m_lexer->has_next()) {
             if (m_lexer->peek().kind == TokenKind::RBrace) {
@@ -375,15 +373,13 @@ ast::Type Parser::parse_type() {
             }
             auto name = expect(TokenKind::Identifier);
             expect(TokenKind::Colon);
-            // TODO: Why doesn't this build with clang?
-            // fields.emplace_back(std::move(std::get<std::string>(name.data)), parse_type());
-            fields.push_back(ast::StructField{std::move(std::get<std::string>(name.data)), parse_type()});
+            type->add_field(m_lexer->line(), std::move(std::get<std::string>(name.data)), parse_type());
             expect(TokenKind::Semi);
         }
         expect(TokenKind::RBrace);
-        return ast::Type::get_struct(std::move(fields));
+        return type;
     }
-    return ast::Type::get_base(std::move(std::get<std::string>(expect(TokenKind::Identifier).data)));
+    return new ast::Symbol(line, {std::move(std::get<std::string>(expect(TokenKind::Identifier).data))});
 }
 
 ast::Block *Parser::parse_block() {
@@ -411,9 +407,9 @@ std::unique_ptr<ast::Root> Parser::parse() {
         if (consume(TokenKind::Type)) {
             auto name = expect(TokenKind::Identifier);
             expect(TokenKind::Eq);
-            auto type = parse_type();
+            auto *type = parse_type();
             expect(TokenKind::Semi);
-            root->add<ast::TypeDecl>(m_lexer->line(), std::move(std::get<std::string>(name.data)), std::move(type));
+            root->add<ast::TypeDecl>(m_lexer->line(), std::move(std::get<std::string>(name.data)), type);
             continue;
         }
         bool externed = consume(TokenKind::Extern).has_value();
@@ -441,7 +437,7 @@ std::unique_ptr<ast::Root> Parser::parse() {
         if (consume(TokenKind::Colon)) {
             func->set_return_type(parse_type());
         } else {
-            func->set_return_type(ast::Type::get_base("void"));
+            func->set_return_type(new ast::Symbol(m_lexer->line(), {"void"}));
         }
         if (externed) {
             expect(TokenKind::Semi);

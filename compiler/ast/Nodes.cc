@@ -60,6 +60,10 @@ void NumLit::accept(Visitor *visitor) const {
     visitor->visit(this);
 }
 
+void PointerType::accept(Visitor *visitor) const {
+    visitor->visit(this);
+}
+
 void RetStmt::accept(Visitor *visitor) const {
     visitor->visit(this);
 }
@@ -69,6 +73,14 @@ void Root::accept(Visitor *visitor) const {
 }
 
 void StringLit::accept(Visitor *visitor) const {
+    visitor->visit(this);
+}
+
+void StructField::accept(Visitor *visitor) const {
+    visitor->visit(this);
+}
+
+void StructType::accept(Visitor *visitor) const {
     visitor->visit(this);
 }
 

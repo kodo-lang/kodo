@@ -1,7 +1,6 @@
 #pragma once
 
 #include <ast/Node.hh>
-#include <ast/Type.hh>
 #include <support/List.hh>
 
 #include <memory>
@@ -116,17 +115,17 @@ public:
 };
 
 class CastExpr : public Node {
-    const Type m_type;
+    const std::unique_ptr<const Node> m_type;
     const std::unique_ptr<const Node> m_val;
 
 public:
     static constexpr auto KIND = NodeKind::CastExpr;
 
-    CastExpr(int line, Type type, const Node *val) : Node(KIND, line), m_type(std::move(type)), m_val(val) {}
+    CastExpr(int line, const Node *type, const Node *val) : Node(KIND, line), m_type(type), m_val(val) {}
 
     void accept(Visitor *visitor) const override;
 
-    const Type &type() const { return m_type; }
+    const Node *type() const { return m_type.get(); }
     const Node *val() const { return m_val.get(); }
 };
 
@@ -148,50 +147,49 @@ public:
 
 class DeclStmt : public Node {
     const std::string m_name;
-    const Type m_type;
+    const std::unique_ptr<const Node> m_type;
     const std::unique_ptr<const Node> m_init_val;
     const bool m_is_mutable;
 
 public:
     static constexpr auto KIND = NodeKind::DeclStmt;
 
-    DeclStmt(int line, std::string name, Type type, const Node *init_val, bool is_mutable)
-        : Node(KIND, line), m_name(std::move(name)), m_type(std::move(type)), m_init_val(init_val),
-          m_is_mutable(is_mutable) {}
+    DeclStmt(int line, std::string name, const Node *type, const Node *init_val, bool is_mutable)
+        : Node(KIND, line), m_name(std::move(name)), m_type(type), m_init_val(init_val), m_is_mutable(is_mutable) {}
 
     void accept(Visitor *visitor) const override;
 
     const std::string &name() const { return m_name; }
-    const Type &type() const { return m_type; }
+    const Node *type() const { return m_type.get(); }
     const Node *init_val() const { return m_init_val.get(); }
     bool is_mutable() const { return m_is_mutable; }
 };
 
 class FunctionArg : public Node {
     const std::string m_name;
-    const Type m_type;
+    const std::unique_ptr<const Node> m_type;
     const bool m_is_mutable;
 
 public:
     static constexpr auto KIND = NodeKind::FunctionArg;
 
-    FunctionArg(int line, std::string name, Type type, bool is_mutable)
-        : Node(KIND, line), m_name(std::move(name)), m_type(std::move(type)), m_is_mutable(is_mutable) {}
+    FunctionArg(int line, std::string name, const Node *type, bool is_mutable)
+        : Node(KIND, line), m_name(std::move(name)), m_type(type), m_is_mutable(is_mutable) {}
 
     void accept(Visitor *visitor) const override;
 
     const std::string &name() const { return m_name; }
-    const Type &type() const { return m_type; }
+    const Node *type() const { return m_type.get(); }
     bool is_mutable() const { return m_is_mutable; }
 };
 
 class FunctionDecl : public Node {
-    std::unique_ptr<const Symbol> m_name;
+    const std::unique_ptr<const Symbol> m_name;
     const bool m_externed;
     const bool m_instance;
-    Type m_return_type;
     List<const FunctionArg> m_args;
     std::unique_ptr<const Block> m_block;
+    std::unique_ptr<const Node> m_return_type;
 
 public:
     static constexpr auto KIND = NodeKind::FunctionDecl;
@@ -201,7 +199,7 @@ public:
 
     void accept(Visitor *visitor) const override;
     void set_block(const Block *block) { m_block.reset(block); }
-    void set_return_type(Type return_type) { m_return_type = std::move(return_type); }
+    void set_return_type(const Node *return_type) { m_return_type.reset(return_type); }
 
     template <typename... Args>
     FunctionArg *add_arg(Args &&... args) {
@@ -211,9 +209,9 @@ public:
     const Symbol *name() const { return m_name.get(); }
     bool externed() const { return m_externed; }
     bool instance() const { return m_instance; }
-    const Type &return_type() const { return m_return_type; }
     const List<const FunctionArg> &args() const { return m_args; }
     const Block *block() const { return m_block.get(); }
+    const Node *return_type() const { return m_return_type.get(); }
 };
 
 class IfStmt : public Node {
@@ -275,6 +273,22 @@ public:
     std::uint64_t value() const { return m_value; }
 };
 
+class PointerType : public Node {
+    const std::unique_ptr<const Node> m_pointee_type;
+    const bool m_is_mutable;
+
+public:
+    static constexpr auto KIND = NodeKind::PointerType;
+
+    PointerType(int line, const Node *pointee_type, bool is_mutable)
+        : Node(KIND, line), m_pointee_type(pointee_type), m_is_mutable(is_mutable) {}
+
+    void accept(Visitor *visitor) const override;
+
+    const Node *pointee_type() const { return m_pointee_type.get(); }
+    bool is_mutable() const { return m_is_mutable; }
+};
+
 class RetStmt : public Node {
     const std::unique_ptr<const Node> m_val;
 
@@ -319,6 +333,40 @@ public:
     const std::string &value() const { return m_value; }
 };
 
+class StructField : public Node {
+    const std::string m_name;
+    const std::unique_ptr<const Node> m_type;
+
+public:
+    static constexpr auto KIND = NodeKind::StructField;
+
+    StructField(int line, std::string name, const Node *type)
+        : Node(KIND, line), m_name(std::move(name)), m_type(type) {}
+
+    void accept(Visitor *visitor) const override;
+
+    const std::string &name() const { return m_name; }
+    const Node *type() const { return m_type.get(); }
+};
+
+class StructType : public Node {
+    List<const StructField> m_fields;
+
+public:
+    static constexpr auto KIND = NodeKind::StructType;
+
+    explicit StructType(int line) : Node(KIND, line) {}
+
+    void accept(Visitor *visitor) const override;
+
+    template <typename... Args>
+    void add_field(Args &&... args) {
+        m_fields.emplace<StructField>(m_fields.end(), std::forward<Args>(args)...);
+    }
+
+    const List<const StructField> &fields() const { return m_fields; }
+};
+
 class Symbol : public Node {
     const std::vector<std::string> m_parts;
 
@@ -334,18 +382,17 @@ public:
 
 class TypeDecl : public Node {
     const std::string m_name;
-    const Type m_type;
+    const std::unique_ptr<const Node> m_type;
 
 public:
     static constexpr auto KIND = NodeKind::TypeDecl;
 
-    TypeDecl(int line, std::string name, Type type)
-        : Node(KIND, line), m_name(std::move(name)), m_type(std::move(type)) {}
+    TypeDecl(int line, std::string name, const Node *type) : Node(KIND, line), m_name(std::move(name)), m_type(type) {}
 
     void accept(Visitor *visitor) const override;
 
     const std::string &name() const { return m_name; }
-    const Type &type() const { return m_type; }
+    const Node *type() const { return m_type.get(); }
 };
 
 enum class UnaryOp {
