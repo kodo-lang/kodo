@@ -11,7 +11,6 @@ class TypeCache;
 enum class TypeKind {
     Invalid,
     Bool,
-    Inferred,
     Int,
     Pointer,
     Struct,

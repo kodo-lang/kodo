@@ -256,8 +256,7 @@ const ir::Type *IrGen::gen_struct_type(const ast::StructType *struct_type) {
 
 const ir::Type *IrGen::gen_type(const ast::Node *node) {
     if (node == nullptr) {
-        // TODO: Remove inferred type from IR.
-        return m_program->inferred_type();
+        return m_program->invalid_type();
     }
     switch (node->kind()) {
     case ast::NodeKind::Symbol:
@@ -488,7 +487,7 @@ void IrGen::gen_decl_stmt(const ast::DeclStmt *decl_stmt) {
     if (decl_stmt->init_val() != nullptr) {
         auto *init_val = gen_expr(decl_stmt->init_val());
         create_store(decl_stmt, var, init_val);
-        if (type->is<ir::InferredType>()) {
+        if (type->is<ir::InvalidType>()) {
             var->set_var_type(init_val->type());
         }
     }

@@ -23,14 +23,6 @@ struct BoolType : public Type {
     std::string to_string() const override;
 };
 
-struct InferredType : public Type {
-    static constexpr auto KIND = TypeKind::Inferred;
-
-    explicit InferredType(const TypeCache *cache) : Type(cache, KIND) {}
-
-    std::string to_string() const override;
-};
-
 class IntType : public Type {
     const int m_bit_width;
     const bool m_is_signed;

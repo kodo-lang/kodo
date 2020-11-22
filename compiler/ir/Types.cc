@@ -14,10 +14,6 @@ std::string BoolType::to_string() const {
     return "bool";
 }
 
-std::string InferredType::to_string() const {
-    return "inferred";
-}
-
 int IntType::size_in_bytes() const {
     ASSERT(m_bit_width % 8 == 0);
     return m_bit_width / 8;

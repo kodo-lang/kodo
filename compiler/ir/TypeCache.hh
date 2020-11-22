@@ -13,7 +13,6 @@ class TypeCache {
     // Primitive types.
     InvalidType m_invalid_type;
     BoolType m_bool_type;
-    InferredType m_inferred_type;
     VoidType m_void_type;
 
     // Derived types.
@@ -22,11 +21,10 @@ class TypeCache {
     mutable std::vector<std::unique_ptr<StructType>> m_struct_types;
 
 public:
-    TypeCache() : m_invalid_type(this), m_bool_type(this), m_inferred_type(this), m_void_type(this) {}
+    TypeCache() : m_invalid_type(this), m_bool_type(this), m_void_type(this) {}
 
     const InvalidType *invalid_type() const { return &m_invalid_type; }
     const BoolType *bool_type() const { return &m_bool_type; }
-    const InferredType *inferred_type() const { return &m_inferred_type; }
     const VoidType *void_type() const { return &m_void_type; }
 
     const IntType *int_type(int bit_width, bool is_signed) const;
