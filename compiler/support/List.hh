@@ -60,6 +60,9 @@ public:
     void insert(iterator it, T *elem);
     iterator erase(iterator it);
 
+    T *operator[](std::size_t n);
+    const T *operator[](std::size_t n) const;
+
     bool empty() const;
     int size() const;
 
@@ -120,6 +123,24 @@ typename List<T>::iterator List<T>::erase(iterator it) {
     auto ret = it++;
     delete *it;
     return ret;
+}
+
+// clang-format off
+template <typename T> requires std::derived_from<T, ListNode>
+T *List<T>::operator[](std::size_t n) {
+    // clang-format on
+    auto it = begin();
+    std::advance(it, n);
+    return *it;
+}
+
+// clang-format off
+template <typename T> requires std::derived_from<T, ListNode>
+const T *List<T>::operator[](std::size_t n) const {
+    // clang-format on
+    auto it = begin();
+    std::advance(it, n);
+    return *it;
 }
 
 // clang-format off
