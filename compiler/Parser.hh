@@ -2,8 +2,8 @@
 
 #include <Token.hh>
 #include <ast/Nodes.hh>
+#include <support/Box.hh>
 
-#include <memory>
 #include <optional>
 
 class Lexer;
@@ -27,5 +27,5 @@ class Parser {
 public:
     explicit Parser(Lexer *lexer) : m_lexer(lexer) {}
 
-    std::unique_ptr<ast::Root> parse();
+    Box<ast::Root> parse();
 };

@@ -395,8 +395,8 @@ ast::Block *Parser::parse_block() {
     return block;
 }
 
-std::unique_ptr<ast::Root> Parser::parse() {
-    auto root = std::make_unique<ast::Root>();
+Box<ast::Root> Parser::parse() {
+    auto root = Box<ast::Root>::create();
     while (m_lexer->has_next() && m_lexer->peek().kind != TokenKind::Eof) {
         if (consume(TokenKind::Import)) {
             auto path = expect(TokenKind::StringLit);

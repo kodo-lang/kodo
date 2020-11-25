@@ -34,7 +34,7 @@ void Compiler::add_code(const std::string &path) {
     m_roots.push_back(std::move(root));
 }
 
-std::unique_ptr<ir::Program> Compiler::compile(const std::string &main_path) {
+Box<ir::Program> Compiler::compile(const std::string &main_path) {
     add_code("std/start.kd");
     add_code(main_path);
     return gen_ir(std::move(m_roots));

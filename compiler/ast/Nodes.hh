@@ -1,9 +1,9 @@
 #pragma once
 
 #include <ast/Node.hh>
+#include <support/Box.hh>
 #include <support/List.hh>
 
-#include <memory>
 #include <string>
 #include <utility>
 
@@ -14,8 +14,8 @@ class Symbol;
 class AsmExpr : public Node {
     const std::string m_instruction;
     std::vector<std::string> m_clobbers;
-    std::vector<std::pair<std::string, std::unique_ptr<const Node>>> m_inputs;
-    std::vector<std::pair<std::string, std::unique_ptr<const Node>>> m_outputs;
+    std::vector<std::pair<std::string, Box<const Node>>> m_inputs;
+    std::vector<std::pair<std::string, Box<const Node>>> m_outputs;
 
 public:
     static constexpr auto KIND = NodeKind::AsmExpr;
@@ -29,13 +29,13 @@ public:
 
     const std::string &instruction() const { return m_instruction; }
     const std::vector<std::string> &clobbers() const { return m_clobbers; }
-    const std::vector<std::pair<std::string, std::unique_ptr<const Node>>> &inputs() const { return m_inputs; }
-    const std::vector<std::pair<std::string, std::unique_ptr<const Node>>> &outputs() const { return m_outputs; }
+    const std::vector<std::pair<std::string, Box<const Node>>> &inputs() const { return m_inputs; }
+    const std::vector<std::pair<std::string, Box<const Node>>> &outputs() const { return m_outputs; }
 };
 
 class AssignExpr : public Node {
-    const std::unique_ptr<const Node> m_lhs;
-    const std::unique_ptr<const Node> m_rhs;
+    const Box<const Node> m_lhs;
+    const Box<const Node> m_rhs;
 
 public:
     static constexpr auto KIND = NodeKind::AssignExpr;
@@ -44,8 +44,8 @@ public:
 
     void accept(Visitor *visitor) const override;
 
-    const Node *lhs() const { return m_lhs.get(); }
-    const Node *rhs() const { return m_rhs.get(); }
+    const Node *lhs() const { return *m_lhs; }
+    const Node *rhs() const { return *m_rhs; }
 };
 
 enum class BinOp {
@@ -62,8 +62,8 @@ enum class BinOp {
 
 class BinExpr : public Node {
     const BinOp m_op;
-    const std::unique_ptr<const Node> m_lhs;
-    const std::unique_ptr<const Node> m_rhs;
+    const Box<const Node> m_lhs;
+    const Box<const Node> m_rhs;
 
 public:
     static constexpr auto KIND = NodeKind::BinExpr;
@@ -74,8 +74,8 @@ public:
     void accept(Visitor *visitor) const override;
 
     BinOp op() const { return m_op; }
-    const Node *lhs() const { return m_lhs.get(); }
-    const Node *rhs() const { return m_rhs.get(); }
+    const Node *lhs() const { return *m_lhs; }
+    const Node *rhs() const { return *m_rhs; }
 };
 
 class Block : public Node {
@@ -99,7 +99,7 @@ public:
 };
 
 class CallExpr : public Node {
-    std::unique_ptr<const Symbol> m_name;
+    Box<const Symbol> m_name;
     List<const Node> m_args;
 
 public:
@@ -110,13 +110,13 @@ public:
     void accept(Visitor *visitor) const override;
     void add_arg(const Node *arg) { m_args.insert(m_args.end(), arg); }
 
-    const Symbol *name() const { return m_name.get(); }
+    const Symbol *name() const { return *m_name; }
     const List<const Node> &args() const { return m_args; }
 };
 
 class CastExpr : public Node {
-    const std::unique_ptr<const Node> m_type;
-    const std::unique_ptr<const Node> m_val;
+    const Box<const Node> m_type;
+    const Box<const Node> m_val;
 
 public:
     static constexpr auto KIND = NodeKind::CastExpr;
@@ -125,8 +125,8 @@ public:
 
     void accept(Visitor *visitor) const override;
 
-    const Node *type() const { return m_type.get(); }
-    const Node *val() const { return m_val.get(); }
+    const Node *type() const { return *m_type; }
+    const Node *val() const { return *m_val; }
 };
 
 class ConstructExpr : public Node {
@@ -147,8 +147,8 @@ public:
 
 class DeclStmt : public Node {
     const std::string m_name;
-    const std::unique_ptr<const Node> m_type;
-    const std::unique_ptr<const Node> m_init_val;
+    const Box<const Node> m_type;
+    const Box<const Node> m_init_val;
     const bool m_is_mutable;
 
 public:
@@ -160,14 +160,14 @@ public:
     void accept(Visitor *visitor) const override;
 
     const std::string &name() const { return m_name; }
-    const Node *type() const { return m_type.get(); }
-    const Node *init_val() const { return m_init_val.get(); }
+    const Node *type() const { return *m_type; }
+    const Node *init_val() const { return *m_init_val; }
     bool is_mutable() const { return m_is_mutable; }
 };
 
 class FunctionArg : public Node {
     const std::string m_name;
-    const std::unique_ptr<const Node> m_type;
+    const Box<const Node> m_type;
     const bool m_is_mutable;
 
 public:
@@ -179,17 +179,17 @@ public:
     void accept(Visitor *visitor) const override;
 
     const std::string &name() const { return m_name; }
-    const Node *type() const { return m_type.get(); }
+    const Node *type() const { return *m_type; }
     bool is_mutable() const { return m_is_mutable; }
 };
 
 class FunctionDecl : public Node {
-    const std::unique_ptr<const Symbol> m_name;
+    const Box<const Symbol> m_name;
     const bool m_externed;
     const bool m_instance;
     List<const FunctionArg> m_args;
-    std::unique_ptr<const Block> m_block;
-    std::unique_ptr<const Node> m_return_type;
+    Box<const Block> m_block;
+    Box<const Node> m_return_type;
 
 public:
     static constexpr auto KIND = NodeKind::FunctionDecl;
@@ -198,25 +198,25 @@ public:
         : Node(KIND, line), m_name(name), m_externed(externed), m_instance(instance) {}
 
     void accept(Visitor *visitor) const override;
-    void set_block(const Block *block) { m_block.reset(block); }
-    void set_return_type(const Node *return_type) { m_return_type.reset(return_type); }
+    void set_block(const Block *block) { m_block = block; }
+    void set_return_type(const Node *return_type) { m_return_type = return_type; }
 
     template <typename... Args>
     FunctionArg *add_arg(Args &&... args) {
         return m_args.emplace<FunctionArg>(m_args.end(), std::forward<Args>(args)...);
     }
 
-    const Symbol *name() const { return m_name.get(); }
+    const Symbol *name() const { return *m_name; }
     bool externed() const { return m_externed; }
     bool instance() const { return m_instance; }
     const List<const FunctionArg> &args() const { return m_args; }
-    const Block *block() const { return m_block.get(); }
-    const Node *return_type() const { return m_return_type.get(); }
+    const Block *block() const { return *m_block; }
+    const Node *return_type() const { return *m_return_type; }
 };
 
 class IfStmt : public Node {
-    const std::unique_ptr<const Node> m_expr;
-    std::unique_ptr<const Block> m_block;
+    const Box<const Node> m_expr;
+    Box<const Block> m_block;
 
 public:
     static constexpr auto KIND = NodeKind::IfStmt;
@@ -225,8 +225,8 @@ public:
 
     void accept(Visitor *visitor) const override;
 
-    const Node *expr() const { return m_expr.get(); }
-    const Block *block() const { return m_block.get(); }
+    const Node *expr() const { return *m_expr; }
+    const Block *block() const { return *m_block; }
 };
 
 class ImportStmt : public Node {
@@ -243,8 +243,8 @@ public:
 };
 
 class MemberExpr : public Node {
-    const std::unique_ptr<const Node> m_lhs;
-    const std::unique_ptr<const Node> m_rhs;
+    const Box<const Node> m_lhs;
+    const Box<const Node> m_rhs;
     const bool m_is_pointer;
 
 public:
@@ -255,8 +255,8 @@ public:
 
     void accept(Visitor *visitor) const override;
 
-    const Node *lhs() const { return m_lhs.get(); }
-    const Node *rhs() const { return m_rhs.get(); }
+    const Node *lhs() const { return *m_lhs; }
+    const Node *rhs() const { return *m_rhs; }
     bool is_pointer() const { return m_is_pointer; }
 };
 
@@ -274,7 +274,7 @@ public:
 };
 
 class PointerType : public Node {
-    const std::unique_ptr<const Node> m_pointee_type;
+    const Box<const Node> m_pointee_type;
     const bool m_is_mutable;
 
 public:
@@ -285,12 +285,12 @@ public:
 
     void accept(Visitor *visitor) const override;
 
-    const Node *pointee_type() const { return m_pointee_type.get(); }
+    const Node *pointee_type() const { return *m_pointee_type; }
     bool is_mutable() const { return m_is_mutable; }
 };
 
 class RetStmt : public Node {
-    const std::unique_ptr<const Node> m_val;
+    const Box<const Node> m_val;
 
 public:
     static constexpr auto KIND = NodeKind::RetStmt;
@@ -299,7 +299,7 @@ public:
 
     void accept(Visitor *visitor) const override;
 
-    const Node *val() const { return m_val.get(); }
+    const Node *val() const { return *m_val; }
 };
 
 class Root : public Node {
@@ -335,7 +335,7 @@ public:
 
 class StructField : public Node {
     const std::string m_name;
-    const std::unique_ptr<const Node> m_type;
+    const Box<const Node> m_type;
 
 public:
     static constexpr auto KIND = NodeKind::StructField;
@@ -346,7 +346,7 @@ public:
     void accept(Visitor *visitor) const override;
 
     const std::string &name() const { return m_name; }
-    const Node *type() const { return m_type.get(); }
+    const Node *type() const { return *m_type; }
 };
 
 class StructType : public Node {
@@ -382,7 +382,7 @@ public:
 
 class TypeDecl : public Node {
     const std::string m_name;
-    const std::unique_ptr<const Node> m_type;
+    const Box<const Node> m_type;
 
 public:
     static constexpr auto KIND = NodeKind::TypeDecl;
@@ -392,7 +392,7 @@ public:
     void accept(Visitor *visitor) const override;
 
     const std::string &name() const { return m_name; }
-    const Node *type() const { return m_type.get(); }
+    const Node *type() const { return *m_type; }
 };
 
 enum class UnaryOp {
@@ -402,7 +402,7 @@ enum class UnaryOp {
 
 class UnaryExpr : public Node {
     const UnaryOp m_op;
-    const std::unique_ptr<const Node> m_val;
+    const Box<const Node> m_val;
 
 public:
     static constexpr auto KIND = NodeKind::UnaryExpr;
@@ -412,7 +412,7 @@ public:
     void accept(Visitor *visitor) const override;
 
     UnaryOp op() const { return m_op; }
-    const Node *val() const { return m_val.get(); }
+    const Node *val() const { return *m_val; }
 };
 
 } // namespace ast

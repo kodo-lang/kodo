@@ -51,7 +51,7 @@ public:
 };
 
 class IrGen {
-    std::unique_ptr<ir::Program> m_program;
+    Box<ir::Program> m_program;
     ir::Function *m_function{nullptr};
     ir::BasicBlock *m_block{nullptr};
     Stack<Scope> m_scope_stack;
@@ -109,7 +109,7 @@ public:
     void gen_type_decl(const ast::TypeDecl *);
     void gen_decl(const ast::Node *);
 
-    std::unique_ptr<ir::Program> program() { return std::move(m_program); }
+    Box<ir::Program> program() { return std::move(m_program); }
 };
 
 const ir::Type *Scope::find_type(const std::string &name) {
@@ -149,7 +149,7 @@ void Scope::put_var(std::string_view name, ir::Value *value) {
 }
 
 IrGen::IrGen() {
-    m_program = std::make_unique<ir::Program>();
+    m_program = Box<ir::Program>::create();
     m_scope_stack.emplace(/* parent */ nullptr);
 }
 
@@ -163,7 +163,7 @@ ir::Value *IrGen::create_call(const ast::CallExpr *call_expr, ir::Value *callee,
     }
     if (callee == nullptr) {
         print_error(call_expr, "no function named '{}' in current context", call_expr->name()->parts()[0]);
-        return ir::ConstantNull::get(m_program.get());
+        return ir::ConstantNull::get(*m_program);
     }
     return m_block->append<ir::CallInst>(callee, std::move(args));
 }
@@ -186,7 +186,7 @@ std::string mangle(const ast::Symbol *name) {
 }
 
 ir::Function *IrGen::find_function(const std::string &name) {
-    for (auto *function : *m_program) {
+    for (auto *function : **m_program) {
         if (function->name() == name) {
             return function;
         }
@@ -288,11 +288,11 @@ ir::Value *IrGen::gen_asm_expr(const ast::AsmExpr *asm_expr) {
     inputs.reserve(asm_expr->inputs().size());
     outputs.reserve(asm_expr->outputs().size());
     for (const auto &[input, expr] : asm_expr->inputs()) {
-        inputs.emplace_back(input, gen_expr(expr.get()));
+        inputs.emplace_back(input, gen_expr(*expr));
     }
     for (const auto &[output, expr] : asm_expr->outputs()) {
         StateChanger deref_state_changer(m_deref_state, DerefState::DontDeref);
-        outputs.emplace_back(output, gen_expr(expr.get()));
+        outputs.emplace_back(output, gen_expr(*expr));
     }
     auto *inline_asm = m_block->append<ir::InlineAsmInst>(asm_expr->instruction(), std::move(clobbers),
                                                           std::move(inputs), std::move(outputs));
@@ -393,7 +393,7 @@ ir::Value *IrGen::gen_member_expr(const ast::MemberExpr *member_expr) {
     if (it == struct_type->fields().end()) {
         const auto &struct_type_name = m_scope_stack.peek().find_type_reverse(struct_type);
         print_error(member_expr, "struct '{}' has no member named '{}'", struct_type_name, rhs_name);
-        return ir::ConstantNull::get(m_program.get());
+        return ir::ConstantNull::get(*m_program);
     }
     int index = std::distance(struct_type->fields().begin(), it);
     auto *lea = get_member_ptr(lhs, index);
@@ -412,7 +412,7 @@ ir::Value *IrGen::gen_num_lit(const ast::NumLit *num_lit) {
 
 ir::Value *IrGen::gen_string_lit(const ast::StringLit *string_lit) {
     // TODO: Avoid copying string here?
-    return ir::ConstantString::get(m_program.get(), string_lit->value());
+    return ir::ConstantString::get(*m_program, string_lit->value());
 }
 
 ir::Value *IrGen::gen_symbol(const ast::Symbol *symbol) {
@@ -421,7 +421,7 @@ ir::Value *IrGen::gen_symbol(const ast::Symbol *symbol) {
     auto *var = m_scope_stack.peek().find_var(name);
     if (var == nullptr) {
         print_error(symbol, "no symbol named '{}' in current context", name);
-        return ir::ConstantNull::get(m_program.get());
+        return ir::ConstantNull::get(*m_program);
     }
     if (m_deref_state == DerefState::DontDeref) {
         return var;
@@ -625,7 +625,7 @@ void IrGen::gen_decl(const ast::Node *decl) {
 
 } // namespace
 
-std::unique_ptr<ir::Program> gen_ir(std::vector<std::unique_ptr<ast::Root>> &&roots) {
+Box<ir::Program> gen_ir(std::vector<Box<ast::Root>> &&roots) {
     IrGen gen;
     for (auto &root : roots) {
         for (const auto *decl : root->decls()) {

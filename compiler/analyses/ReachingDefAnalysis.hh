@@ -6,7 +6,6 @@
 #include <support/List.hh>
 #include <support/ListNode.hh>
 
-#include <memory>
 #include <unordered_map>
 #include <vector>
 

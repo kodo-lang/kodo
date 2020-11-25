@@ -5,10 +5,10 @@ namespace ir {
 const FunctionType *TypeCache::function_type(const Type *return_type, std::vector<const Type *> &&params) const {
     for (const auto &type : m_function_types) {
         if (type->return_type() == return_type && type->params() == params) {
-            return type.get();
+            return *type;
         }
     }
-    return m_function_types.emplace_back(std::make_unique<FunctionType>(this, return_type, std::move(params))).get();
+    return *m_function_types.emplace_back(new FunctionType(this, return_type, std::move(params)));
 }
 
 const IntType *TypeCache::int_type(int bit_width, bool is_signed) const {
@@ -32,11 +32,10 @@ const PointerType *TypeCache::pointer_type(const Type *pointee, bool is_mutable)
 const StructType *TypeCache::struct_type(std::vector<StructField> &&fields) const {
     for (const auto &type : m_struct_types) {
         if (type->fields() == fields) {
-            return type.get();
+            return *type;
         }
     }
-    // TODO: Remove unique_ptr.
-    return m_struct_types.emplace_back(std::make_unique<StructType>(this, std::move(fields))).get();
+    return *m_struct_types.emplace_back(new StructType(this, std::move(fields)));
 }
 
 } // namespace ir

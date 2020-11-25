@@ -6,6 +6,7 @@
 #include <ir/Dumper.hh>
 #include <pass/PassManager.hh>
 #include <support/ArgsParser.hh>
+#include <support/Box.hh>
 #include <support/Error.hh>
 
 #include <llvm/ExecutionEngine/MCJIT.h>
@@ -19,7 +20,6 @@
 #include <llvm/Support/raw_ostream.h>
 
 #include <iostream>
-#include <memory>
 #include <stdexcept>
 #include <string>
 
@@ -58,7 +58,7 @@ int main(int argc, char **argv) {
     abort_if_error();
 
     llvm::LLVMContext context;
-    auto module = gen_llvm(program.get(), &context);
+    auto module = gen_llvm(*program, &context);
     if (dump_llvm_opt.present_or_true()) {
         module->print(llvm::errs(), nullptr);
     }
@@ -78,13 +78,13 @@ int main(int argc, char **argv) {
         ENSURE(function != nullptr);
         llvm::EngineBuilder engine_builder(std::move(module));
         engine_builder.setEngineKind(llvm::EngineKind::Either);
-        std::unique_ptr<llvm::ExecutionEngine> engine(engine_builder.create());
-        return engine->runFunctionAsMain(function, {"hello"}, nullptr);
+        Box<llvm::ExecutionEngine> engine(engine_builder.create());
+        return engine->runFunctionAsMain(function, {}, nullptr);
     }
     llvm::TargetOptions options;
     const auto *target = &*llvm::TargetRegistry::targets().begin();
-    auto *machine = target->createTargetMachine(llvm::sys::getDefaultTargetTriple(), llvm::sys::getHostCPUName(), "",
-                                                options, llvm::Reloc::DynamicNoPIC);
+    Box<llvm::TargetMachine> machine(target->createTargetMachine(
+        llvm::sys::getDefaultTargetTriple(), llvm::sys::getHostCPUName(), "", options, llvm::Reloc::DynamicNoPIC));
     std::error_code ec;
     llvm::raw_fd_ostream output("out.o", ec, llvm::sys::fs::OF_None);
     llvm::legacy::PassManager pm;

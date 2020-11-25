@@ -1,9 +1,9 @@
 #pragma once
 
 #include <ir/Types.hh>
+#include <support/Box.hh>
 #include <support/PairHash.hh>
 
-#include <memory>
 #include <unordered_map>
 #include <utility>
 
@@ -16,10 +16,10 @@ class TypeCache {
     VoidType m_void_type;
 
     // Derived types.
-    mutable std::vector<std::unique_ptr<FunctionType>> m_function_types;
+    mutable std::vector<Box<FunctionType>> m_function_types;
     mutable std::unordered_map<std::pair<int, bool>, IntType, PairHash> m_int_types;
     mutable std::unordered_map<std::pair<const Type *, bool>, PointerType, PairHash> m_pointer_types;
-    mutable std::vector<std::unique_ptr<StructType>> m_struct_types;
+    mutable std::vector<Box<StructType>> m_struct_types;
 
 public:
     TypeCache() : m_invalid_type(this), m_bool_type(this), m_void_type(this) {}

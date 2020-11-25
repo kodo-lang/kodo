@@ -1,9 +1,9 @@
 #pragma once
 
+#include <support/Box.hh>
 #include <support/ListNode.hh>
 
 #include <concepts>
-#include <memory>
 #include <type_traits>
 #include <utility>
 #include <vector>
@@ -41,8 +41,7 @@ template <typename T> requires std::derived_from<T, ListNode>
 class List {
     // clang-format on
     // Store ListNode here to allow for abstract Ts.
-    // TODO: Use unique_ptr here?
-    ListNode *m_end{nullptr};
+    Box<ListNode> m_end;
 
 public:
     using iterator = ListIterator<T>;
@@ -66,28 +65,28 @@ public:
     bool empty() const;
     int size() const;
 
-    iterator begin() const { return ++iterator(m_end); }
-    iterator end() const { return iterator(m_end); }
+    // TODO: RIP const-correctness. Need proper iterators (const and non-const variants).
+    iterator begin() const { return ++end(); }
+    iterator end() const { return iterator(*const_cast<List *>(this)->m_end); }
 };
 
 // clang-format off
 template <typename T> requires std::derived_from<T, ListNode>
 List<T>::List() {
     // clang-format on
-    m_end = new ListNode;
-    m_end->set_prev(m_end);
-    m_end->set_next(m_end);
+    m_end = Box<ListNode>::create();
+    m_end->set_prev(*m_end);
+    m_end->set_next(*m_end);
 }
 
 // clang-format off
 template <typename T> requires std::derived_from<T, ListNode>
 List<T>::~List() {
     // clang-format on
-    std::vector<std::unique_ptr<T>> to_delete;
+    std::vector<Box<T>> to_delete;
     for (auto *elem : *this) {
         to_delete.emplace_back(elem);
     }
-    delete m_end;
 }
 
 // clang-format off

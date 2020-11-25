@@ -3,9 +3,9 @@
 #include <pass/Pass.hh>
 #include <pass/PassResult.hh>
 #include <support/Assert.hh>
+#include <support/Box.hh>
 
 #include <concepts>
-#include <memory>
 #include <typeindex>
 #include <unordered_map>
 #include <utility>
@@ -17,8 +17,8 @@ class PassManager {
     friend PassUsage;
 
 private:
-    std::unordered_map<std::type_index, std::unique_ptr<Pass>> m_pass_map;
-    std::unordered_map<const void *, std::unordered_map<std::type_index, std::unique_ptr<PassResult>>> m_results;
+    std::unordered_map<std::type_index, Box<Pass>> m_pass_map;
+    std::unordered_map<const void *, std::unordered_map<std::type_index, Box<PassResult>>> m_results;
     std::vector<Pass *> m_transforms;
 
     template <typename T, typename... Args>
@@ -36,7 +36,7 @@ public:
     template <typename T>
     T *get(const void *obj);
 
-    void run(ir::Program &program);
+    void run(ir::Program *program);
 };
 
 template <typename T, typename... Args>
@@ -45,7 +45,7 @@ Pass *PassManager::ensure_pass(Args &&... args) {
     if (!m_pass_map.contains(type)) {
         m_pass_map.emplace(type, new T(this, std::forward<Args>(args)...));
     }
-    return m_pass_map.at(type).get();
+    return *m_pass_map.at(type);
 }
 
 template <typename T, typename... Args>
@@ -55,15 +55,15 @@ void PassManager::add(Args &&... args) requires std::derived_from<T, Pass> {
 
 template <typename T, typename... Args>
 T *PassManager::make(const void *obj, Args &&... args) {
-    auto ptr = std::make_unique<T>(std::forward<Args>(args)...);
-    auto *ret = ptr.get();
+    auto ptr = Box<T>::create(std::forward<Args>(args)...);
+    auto *ret = *ptr;
     m_results[obj][std::type_index(typeid(T))] = std::move(ptr);
     return ret;
 }
 
 template <typename T>
 T *PassManager::get(const void *obj) {
-    auto *ptr = m_results.at(obj).at(std::type_index(typeid(T))).get();
+    auto *ptr = *m_results.at(obj).at(std::type_index(typeid(T)));
     ASSERT_PEDANTIC(dynamic_cast<T *>(ptr) != nullptr);
     return static_cast<T *>(ptr);
 }

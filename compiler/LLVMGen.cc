@@ -10,6 +10,7 @@
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/InlineAsm.h>
 
+#include <memory>
 #include <unordered_map>
 #include <utility>
 #include <vector>

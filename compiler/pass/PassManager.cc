@@ -20,9 +20,9 @@ void PassManager::run_pass(ir::Program *program, Pass *pass, std::unordered_map<
     ready_map[pass] = true;
 }
 
-void PassManager::run(ir::Program &program) {
+void PassManager::run(ir::Program *program) {
     std::unordered_map<Pass *, bool> ready_map;
     for (auto *transform : m_transforms) {
-        run_pass(&program, transform, ready_map);
+        run_pass(program, transform, ready_map);
     }
 }
