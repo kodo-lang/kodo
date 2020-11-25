@@ -16,7 +16,10 @@ public:
     iterator begin() const { return m_functions.begin(); }
     iterator end() const { return m_functions.end(); }
 
-    Function *append_function(std::string name, const Type *return_type);
+    template <typename... Args>
+    Function *append_function(Args &&... args) {
+        return m_functions.emplace<Function>(m_functions.end(), std::forward<Args>(args)...);
+    }
 };
 
 } // namespace ir

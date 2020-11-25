@@ -65,13 +65,13 @@ public:
 };
 
 class CallInst : public Instruction {
-    Function *m_callee;
+    Value *m_callee;
     std::vector<Value *> m_args;
 
 public:
     static constexpr auto KIND = InstKind::Call;
 
-    CallInst(Function *callee, std::vector<Value *> args);
+    CallInst(Value *callee, std::vector<Value *> args);
     CallInst(const CallInst &) = delete;
     CallInst(CallInst &&) = delete;
     ~CallInst() override;
@@ -82,7 +82,7 @@ public:
     void accept(Visitor *visitor) override;
     void replace_uses_of_with(Value *orig, Value *repl) override;
 
-    Function *callee() const { return m_callee; }
+    Value *callee() const { return m_callee; }
     std::vector<Value *> &args() { return m_args; }
     const std::vector<Value *> &args() const { return m_args; }
 };

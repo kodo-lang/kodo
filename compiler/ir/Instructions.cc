@@ -63,12 +63,13 @@ void BranchInst::replace_uses_of_with(Value *orig, Value *repl) {
     REPL_VALUE(m_dst)
 }
 
-CallInst::CallInst(Function *callee, std::vector<Value *> args)
+CallInst::CallInst(Value *callee, std::vector<Value *> args)
     : Instruction(KIND), m_callee(callee), m_args(std::move(args)) {
     for (auto *arg : m_args) {
         arg->add_user(this);
     }
-    set_type(callee->return_type());
+    m_callee->add_user(this);
+    set_type(callee->type()->as<FunctionType>()->return_type());
 }
 
 CallInst::~CallInst() {
@@ -76,6 +77,9 @@ CallInst::~CallInst() {
         if (arg != nullptr) {
             arg->remove_user(this);
         }
+    }
+    if (m_callee != nullptr) {
+        m_callee->remove_user(this);
     }
 }
 
@@ -87,6 +91,7 @@ void CallInst::replace_uses_of_with(Value *orig, Value *repl) {
     for (auto *&arg : m_args) {
         REPL_VALUE(arg)
     }
+    REPL_VALUE(m_callee)
 }
 
 CastInst::CastInst(CastOp op, const Type *type, Value *val) : Instruction(KIND), m_op(op), m_val(val) {
@@ -292,7 +297,8 @@ void LoadInst::replace_uses_of_with(Value *orig, Value *repl) {
     REPL_VALUE(m_ptr)
 } // clang-format on
 
-PhiInst::PhiInst() : Instruction(KIND) {}
+PhiInst::PhiInst()
+    : Instruction(KIND) {}
 
 PhiInst::~PhiInst() {
     for (auto [block, value] : m_incoming) {
@@ -347,8 +353,7 @@ void PhiInst::replace_uses_of_with(Value *orig, Value *repl) {
     }
 }
 
-StoreInst::StoreInst(Value *ptr, Value *val)
-    : Instruction(KIND), m_ptr(ptr), m_val(val) {
+StoreInst::StoreInst(Value *ptr, Value *val) : Instruction(KIND), m_ptr(ptr), m_val(val) {
     m_ptr->add_user(this);
     m_val->add_user(this);
 }

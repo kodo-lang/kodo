@@ -31,6 +31,7 @@ class LLVMGen {
 public:
     explicit LLVMGen(llvm::LLVMContext *llvm_context);
 
+    llvm::FunctionType *llvm_function_type(const ir::FunctionType *);
     llvm::StructType *llvm_struct_type(const ir::StructType *);
     llvm::Type *llvm_type(const ir::Type *);
     llvm::Value *llvm_value(const ir::Value *);
@@ -68,9 +69,18 @@ LLVMGen::LLVMGen(llvm::LLVMContext *llvm_context) : m_llvm_context(llvm_context)
     m_llvm_module = std::make_unique<llvm::Module>("main", *m_llvm_context);
 }
 
+llvm::FunctionType *LLVMGen::llvm_function_type(const ir::FunctionType *function_type) {
+    std::vector<llvm::Type *> params;
+    params.reserve(function_type->params().size());
+    for (const auto *param : function_type->params()) {
+        params.push_back(llvm_type(param));
+    }
+    return llvm::FunctionType::get(llvm_type(function_type->return_type()), params, false);
+}
+
 llvm::StructType *LLVMGen::llvm_struct_type(const ir::StructType *struct_type) {
-    // TODO: Size is already known here.
     std::vector<llvm::Type *> fields;
+    fields.reserve(struct_type->fields().size());
     for (const auto &field : struct_type->fields()) {
         fields.push_back(llvm_type(field.type()));
     }
@@ -81,6 +91,8 @@ llvm::Type *LLVMGen::llvm_type(const ir::Type *type) {
     switch (type->kind()) {
     case ir::TypeKind::Bool:
         return llvm::Type::getInt1Ty(*m_llvm_context);
+    case ir::TypeKind::Function:
+        return llvm_function_type(type->as<ir::FunctionType>());
     case ir::TypeKind::Int:
         return llvm::Type::getIntNTy(*m_llvm_context, type->as<ir::IntType>()->bit_width());
     case ir::TypeKind::Pointer:
@@ -353,8 +365,7 @@ void LLVMGen::gen_block(const ir::BasicBlock *block) {
 
 void LLVMGen::gen_function(const ir::Function *function) {
     // If the function has no blocks, return early.
-    if (function->begin() == function->end()) {
-        ASSERT(function->vars().empty());
+    if (function->externed()) {
         return;
     }
 
@@ -388,8 +399,10 @@ void LLVMGen::gen_program(const ir::Program *program) {
             arg_types.push_back(llvm_type(arg->type()));
         }
 
-        ASSERT(m_llvm_module->getFunction(function->name()) == nullptr);
-        auto *function_type = llvm::FunctionType::get(llvm_type(function->return_type()), arg_types, false);
+        if (auto *existing = m_llvm_module->getFunction(function->name())) {
+            ASSERT(existing->empty());
+        }
+        auto *function_type = llvm_function_type(function->type()->as<ir::FunctionType>());
         llvm::Function::Create(function_type, llvm::Function::ExternalLinkage, function->name(), *m_llvm_module);
     }
     for (auto *function : *program) {

@@ -112,10 +112,6 @@ ir::Value *Checker::coerce(ir::Value *value, const ir::Type *type) {
 
 void Checker::check(ir::Function *function) {
     m_function = function;
-    ASSERT(function->return_type() != nullptr);
-    for (auto *arg : function->args()) {
-        ASSERT(arg->has_type());
-    }
     for (auto *block : *function) {
         m_block = block;
         m_insert_pos = m_block->begin();
@@ -140,15 +136,17 @@ void Checker::visit(ir::BranchInst *) {}
 
 void Checker::visit(ir::CallInst *call) {
     auto *callee = call->callee();
-    if (call->args().size() != callee->args().size()) {
-        print_error(call, "'{}' requires {} arguments, but {} were passed", callee->name(), callee->args().size(),
-                    call->args().size());
+    const auto *function_type = callee->type()->as<ir::FunctionType>();
+    const auto &args = call->args();
+    const auto &params = function_type->params();
+    if (args.size() != params.size()) {
+        print_error(call, "'{}' requires {} arguments, but {} were passed", callee->name(), params.size(), args.size());
         return;
     }
-    for (int i = 0; auto *param : callee->args()) {
+    for (int i = 0; const auto *param : params) {
         auto *&arg = call->args()[i++];
         arg->remove_user(call);
-        arg = coerce(arg, param->type());
+        arg = coerce(arg, param);
         arg->add_user(call);
     }
 }

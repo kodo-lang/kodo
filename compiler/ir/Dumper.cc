@@ -145,7 +145,7 @@ void FunctionDumper::visit(CallInst *call) {
     if (!call->type()->is<VoidType>()) {
         std::cout << printable_value(call) << " = ";
     }
-    std::cout << "call " << call->callee()->return_type()->to_string() << ' ';
+    std::cout << "call " << call->callee()->type()->to_string() << ' ';
     std::cout << '@' << call->callee()->name() << '(';
     for (bool first = true; auto *arg : call->args()) {
         if (!first) {

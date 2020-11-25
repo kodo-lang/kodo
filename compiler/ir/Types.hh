@@ -23,6 +23,22 @@ struct BoolType : public Type {
     std::string to_string() const override;
 };
 
+class FunctionType : public Type {
+    const Type *const m_return_type;
+    const std::vector<const Type *> m_params;
+
+public:
+    static constexpr auto KIND = TypeKind::Function;
+
+    FunctionType(const TypeCache *cache, const Type *return_type, std::vector<const Type *> &&params)
+        : Type(cache, KIND), m_return_type(return_type), m_params(std::move(params)) {}
+
+    std::string to_string() const override;
+
+    const Type *return_type() const { return m_return_type; }
+    const std::vector<const Type *> &params() const { return m_params; }
+};
+
 class IntType : public Type {
     const int m_bit_width;
     const bool m_is_signed;
@@ -63,9 +79,7 @@ class StructField {
 public:
     StructField(std::string name, const Type *type) : m_name(std::move(name)), m_type(type) {}
 
-    bool operator==(const StructField &rhs) const {
-        return m_type == rhs.m_type && m_name == rhs.m_name;
-    }
+    bool operator==(const StructField &rhs) const { return m_type == rhs.m_type && m_name == rhs.m_name; }
 
     const std::string &name() const { return m_name; }
     const Type *type() const { return m_type; }

@@ -14,6 +14,20 @@ std::string BoolType::to_string() const {
     return "bool";
 }
 
+std::string FunctionType::to_string() const {
+    // (i32, u64): i64
+    std::string ret = "(";
+    for (bool first = true; const auto *param : m_params) {
+        if (!first) {
+            ret += ", ";
+        }
+        first = false;
+        ret += param->to_string();
+    }
+    ret += "): " + m_return_type->to_string();
+    return std::move(ret);
+}
+
 int IntType::size_in_bytes() const {
     ASSERT(m_bit_width % 8 == 0);
     return m_bit_width / 8;

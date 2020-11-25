@@ -21,6 +21,12 @@ bool LocalVar::is_mutable() const {
     return type()->as<PointerType>()->is_mutable();
 }
 
+Function::Function(bool externed, std::string mangled_name, const FunctionType *type)
+    : Value(KIND), m_externed(externed) {
+    set_name(std::move(mangled_name));
+    set_type(type);
+}
+
 Argument *Function::append_arg(bool is_mutable) {
     return m_args.emplace<Argument>(m_args.end(), is_mutable);
 }
@@ -43,6 +49,10 @@ void Function::remove_var(LocalVar *var) {
 BasicBlock *Function::entry() const {
     ASSERT(!m_blocks.empty());
     return *m_blocks.begin();
+}
+
+const Type *Function::return_type() const {
+    return type()->as<FunctionType>()->return_type();
 }
 
 } // namespace ir

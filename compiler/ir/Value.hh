@@ -13,6 +13,7 @@ enum class ValueKind {
     Argument,
     BasicBlock,
     Constant,
+    Function,
     Instruction,
     LocalVar,
     MemoryPhi,

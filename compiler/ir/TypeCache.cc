@@ -2,6 +2,15 @@
 
 namespace ir {
 
+const FunctionType *TypeCache::function_type(const Type *return_type, std::vector<const Type *> &&params) const {
+    for (const auto &type : m_function_types) {
+        if (type->return_type() == return_type && type->params() == params) {
+            return type.get();
+        }
+    }
+    return m_function_types.emplace_back(std::make_unique<FunctionType>(this, return_type, std::move(params))).get();
+}
+
 const IntType *TypeCache::int_type(int bit_width, bool is_signed) const {
     std::pair<int, bool> pair(bit_width, is_signed);
     if (!m_int_types.contains(pair)) {

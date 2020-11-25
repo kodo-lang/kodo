@@ -69,11 +69,11 @@ class IrGen {
 public:
     IrGen();
 
-    ir::Value *create_call(const ast::CallExpr *, ir::Function *, ir::Value *);
+    ir::Value *create_call(const ast::CallExpr *, ir::Value *, ir::Value *);
     void create_store(const ast::Node *, ir::Value *, ir::Value *);
     ir::Function *find_function(const std::string &);
     ir::Function *find_function(const ast::Symbol *);
-    ir::Function *find_or_create_function(const ast::Symbol *, const ir::Type *);
+    ir::Function *find_or_create_function(bool externed, const ast::Symbol *, const ir::FunctionType *);
     ir::Value *get_member_ptr(ir::Value *, int);
     const ir::Type *get_type(const ast::Node *, const std::string &);
 
@@ -153,7 +153,7 @@ IrGen::IrGen() {
     m_scope_stack.emplace(/* parent */ nullptr);
 }
 
-ir::Value *IrGen::create_call(const ast::CallExpr *call_expr, ir::Function *callee, ir::Value *this_arg) {
+ir::Value *IrGen::create_call(const ast::CallExpr *call_expr, ir::Value *callee, ir::Value *this_arg) {
     std::vector<ir::Value *> args;
     if (this_arg != nullptr) {
         args.push_back(this_arg);
@@ -198,12 +198,13 @@ ir::Function *IrGen::find_function(const ast::Symbol *name) {
     return find_function(mangle(name));
 }
 
-ir::Function *IrGen::find_or_create_function(const ast::Symbol *name, const ir::Type *return_type) {
-    if (auto *function = find_function(name)) {
-        ASSERT(function->return_type() == return_type);
+ir::Function *IrGen::find_or_create_function(bool externed, const ast::Symbol *name, const ir::FunctionType *type) {
+    auto mangled_name = mangle(name);
+    if (auto *function = find_function(mangled_name)) {
+        ASSERT(function->type() == type);
         return function;
     }
-    return m_program->append_function(mangle(name), return_type);
+    return m_program->append_function(externed, std::move(mangled_name), type);
 }
 
 ir::Value *IrGen::get_member_ptr(ir::Value *ptr, int index) {
@@ -537,24 +538,45 @@ void IrGen::gen_block(const ast::Block *block) {
 }
 
 void IrGen::gen_function_decl(const ast::FunctionDecl *function_decl) {
+    // Create function type by first converting return type, then adding `*this` param if needed and finally, converting
+    // the rest of the params.
     const auto *return_type = gen_type(function_decl->return_type());
-    m_function = find_or_create_function(function_decl->name(), return_type);
+    std::vector<const ir::Type *> params;
     if (function_decl->instance()) {
         ASSERT(function_decl->name()->parts().size() == 2);
         const auto *container_type = get_type(function_decl, function_decl->name()->parts()[0])->as<ir::StructType>();
-        auto *this_arg = m_function->append_arg(false);
-        this_arg->set_name("this");
-        this_arg->set_type(m_program->pointer_type(container_type, false));
+        params.push_back(m_program->pointer_type(container_type, false));
     }
-    for (const auto *ast_arg : function_decl->args()) {
-        auto *arg = m_function->append_arg(ast_arg->is_mutable());
-        arg->set_name(ast_arg->name());
-        arg->set_type(gen_type(ast_arg->type()));
+    for (const auto *ast_param : function_decl->args()) {
+        params.push_back(gen_type(ast_param->type()));
     }
 
-    if (function_decl->externed()) {
-        ASSERT(!function_decl->instance());
+    // Create new function.
+    const auto *function_type = m_program->function_type(return_type, std::move(params));
+//    m_function = find_or_create_function(function_decl->externed(), function_decl->name(), function_type);
+    m_function = m_program->append_function(function_decl->externed(), mangle(function_decl->name()), function_type);
+
+    // TODO: Make some kind of Prototype class that doesn't contain the three lists in Function. This will also prevent
+    //       bad access to these lists on externed functions.
+    if (m_function->externed()) {
         return;
+    }
+
+    // Create `*this` arg if needed.
+    if (function_decl->instance()) {
+        const auto *this_param = function_type->params()[0];
+        auto *this_arg = m_function->append_arg(this_param->as<ir::PointerType>()->is_mutable());
+        this_arg->set_name("this");
+        this_arg->set_type(this_param);
+    }
+
+    // Create tangible arguments.
+    for (int i = 0; i < function_decl->args().size(); i++) {
+        const auto *ast_param = function_decl->args()[i];
+        const auto *param = function_type->params()[function_decl->instance() ? i + 1 : i];
+        auto *arg = m_function->append_arg(ast_param->is_mutable());
+        arg->set_name(ast_param->name());
+        arg->set_type(param);
     }
 
     m_block = m_function->append_block();
@@ -574,7 +596,7 @@ void IrGen::gen_function_decl(const ast::FunctionDecl *function_decl) {
 
     // Insert implicit return if needed.
     auto *return_block = *(--m_function->end());
-    if (m_function->return_type()->is<ir::VoidType>() && return_block->terminator()->kind() != ir::InstKind::Ret) {
+    if (return_type->is<ir::VoidType>() && return_block->terminator()->kind() != ir::InstKind::Ret) {
         // TODO: Special return void instruction?
         return_block->append<ir::RetInst>(nullptr);
     }
