@@ -8,8 +8,9 @@
 #include <ir/Visitor.hh>
 #include <support/Assert.hh>
 
+#include <fmt/core.h>
+
 #include <cstdint>
-#include <iostream>
 #include <string>
 #include <unordered_map>
 
@@ -18,10 +19,11 @@ namespace {
 
 class FunctionDumper : public Visitor {
     std::unordered_map<const BasicBlock *, std::size_t> m_block_map;
+    std::unordered_map<const Value *, std::size_t> m_stack_map;
     std::unordered_map<const Value *, std::size_t> m_value_map;
 
     std::string printable_block(const BasicBlock *block);
-    std::string printable_value(const Value *value);
+    std::string printable_value(const Value *value, bool no_type = false);
 
 public:
     void dump(const Function *function);
@@ -39,8 +41,6 @@ public:
     void visit(StoreInst *) override;
     void visit(RetInst *) override;
 };
-
-std::string printable_constant(const Constant *constant);
 
 std::string printable_constant(const Constant *constant) {
     switch (constant->kind()) {
@@ -62,100 +62,116 @@ std::string FunctionDumper::printable_block(const BasicBlock *block) {
     return 'L' + std::to_string(m_block_map.at(block));
 }
 
-std::string FunctionDumper::printable_value(const Value *value) {
+std::string FunctionDumper::printable_value(const Value *value, bool no_type) {
     // TODO: Proper undefined value.
     if (value == nullptr) {
         return "undef";
     }
-    if (value->has_name() && value->kind() != ValueKind::LocalVar) {
-        return '%' + value->name();
+    if (const auto *function = value->as_or_null<Function>()) {
+        return '@' + function->name();
+    }
+    std::string ret;
+    if (!no_type) {
+        ret += value->type()->to_string() + ' ';
     }
     if (const auto *constant = value->as_or_null<Constant>()) {
-        return printable_constant(constant);
+        ret += printable_constant(constant);
+        return std::move(ret);
     }
-    if (!m_value_map.contains(value)) {
-        m_value_map.emplace(value, m_value_map.size());
+    ret += '%';
+    // TODO: Remove LocalVar check when debug info is split (since local vars won't have names anymore).
+    if (value->has_name() && !value->is<LocalVar>()) {
+        ret += value->name();
+        return std::move(ret);
     }
-    return '%' + std::to_string(m_value_map.at(value));
+    auto &map = value->is<LocalVar>() ? m_stack_map : m_value_map;
+    ret += value->is<LocalVar>() ? 's' : 'v';
+    if (!map.contains(value)) {
+        map.emplace(value, map.size());
+    }
+    ret += std::to_string(map.at(value));
+    return std::move(ret);
 }
 
 void FunctionDumper::dump(const Function *function) {
-    std::cout << function->return_type()->to_string() << ' ';
-    std::cout << function->name() << '(';
+    fmt::print("fn {}(", printable_value(function));
     for (bool first = true; const auto *arg : function->args()) {
         if (!first) {
-            std::cout << ", ";
+            fmt::print(", ");
         }
         first = false;
-        std::cout << (arg->is_mutable() ? "var" : "let") << ' ';
-        std::cout << printable_value(arg) << ": ";
-        std::cout << arg->type()->to_string();
+        fmt::print("{} {}: {}", arg->is_mutable() ? "var" : "let", printable_value(arg, true),
+                   arg->type()->to_string());
     }
-    std::cout << ')';
+    fmt::print(")");
 
-    if (function->vars().empty() && (function->begin() == function->end())) {
-        std::cout << ";\n";
+    if (!function->return_type()->is<VoidType>()) {
+        fmt::print(": {}", function->return_type()->to_string());
+    }
+
+    if (function->externed()) {
+        fmt::print(";\n");
         return;
     }
 
-    std::cout << ":\n";
+    fmt::print(" {{\n");
     for (const auto *var : function->vars()) {
-        std::cout << "  " << (var->is_mutable() ? "var" : "let") << ' ';
-        std::cout << printable_value(var) << ": ";
-        std::cout << var->var_type()->to_string();
-        std::cout << '\n';
+        fmt::print("  {} {}: {}\n", var->is_mutable() ? "var" : "let", printable_value(var, true),
+                   var->var_type()->to_string());
     }
 
     for (const auto *block : *function) {
-        std::cout << "  " << printable_block(block) << ":\n";
+        fmt::print("  {} {{\n", printable_block(block));
         for (const auto *inst : *block) {
             // TODO: Add const visitor and remove const_cast here.
-            std::cout << "    ";
+            fmt::print("    ");
+            if (inst->type() != nullptr && !inst->type()->is<InvalidType>()) {
+                // TODO: Bit hacky.
+                if (!inst->as_or_null<CallInst>() || !inst->type()->is<VoidType>()) {
+                    fmt::print("{} = ", printable_value(inst, true));
+                }
+            }
             const_cast<Instruction *>(inst)->accept(this);
-            std::cout << '\n';
+            fmt::print("\n");
         }
+        fmt::print("  }}\n");
     }
+    fmt::print("}}\n");
 }
 
 void FunctionDumper::visit(BinaryInst *binary) {
-    std::cout << printable_value(binary) << " = ";
+    //    fmt::print("{} = ");
     switch (binary->op()) {
     case BinaryOp::Add:
-        std::cout << "add ";
+        fmt::print("add ");
         break;
     case BinaryOp::Sub:
-        std::cout << "sub ";
+        fmt::print("sub ");
         break;
     case BinaryOp::Mul:
-        std::cout << "mul ";
+        fmt::print("mul ");
         break;
     case BinaryOp::Div:
-        std::cout << "div ";
+        fmt::print("div ");
         break;
     }
-    std::cout << binary->lhs()->type()->to_string() << ' ' << printable_value(binary->lhs());
-    std::cout << ", " << binary->rhs()->type()->to_string() << ' ' << printable_value(binary->rhs());
+    fmt::print("{}, {}", printable_value(binary->lhs()), printable_value(binary->rhs()));
 }
 
 void FunctionDumper::visit(BranchInst *branch) {
-    std::cout << "br " << printable_block(branch->dst());
+    fmt::print("br {}", printable_block(branch->dst()));
 }
 
 void FunctionDumper::visit(CallInst *call) {
-    if (!call->type()->is<VoidType>()) {
-        std::cout << printable_value(call) << " = ";
-    }
-    std::cout << "call " << call->callee()->type()->to_string() << ' ';
-    std::cout << '@' << call->callee()->name() << '(';
+    fmt::print("call {} {}(", call->type()->to_string(), printable_value(call->callee()));
     for (bool first = true; auto *arg : call->args()) {
         if (!first) {
-            std::cout << ", ";
+            fmt::print(", ");
         }
         first = false;
-        std::cout << arg->type()->to_string() << ' ';
-        std::cout << printable_value(arg);
+        fmt::print("{}", printable_value(arg));
     }
-    std::cout << ')';
+    fmt::print(")");
 }
 
 void FunctionDumper::visit(CastInst *cast) {
@@ -166,105 +182,88 @@ void FunctionDumper::visit(CastInst *cast) {
         case CastOp::PtrToInt:
             return "ptr_to_int";
         case CastOp::SignExtend:
-            return "sign_extend";
+            return "sext";
         case CastOp::Truncate:
-            return "truncate";
+            return "trunc";
         case CastOp::ZeroExtend:
-            return "zero_extend";
+            return "zext";
         default:
             ENSURE_NOT_REACHED();
         }
     };
-    std::cout << printable_value(cast) << " = ";
-    std::cout << "cast " << cast->val()->type()->to_string() << ' ';
-    std::cout << printable_value(cast->val()) << " -> ";
-    std::cout << cast->type()->to_string() << " (";
-    std::cout << cast_op_string(cast->op()) << ')';
+    fmt::print("cast {} -> {} ({})", printable_value(cast->val()), cast->type()->to_string(),
+               cast_op_string(cast->op()));
 }
 
 void FunctionDumper::visit(CompareInst *compare) {
-    std::cout << printable_value(compare) << " = ";
+    fmt::print("cmp_");
     switch (compare->op()) {
     case CompareOp::LessThan:
-        std::cout << "cmp_lt ";
+        fmt::print("lt ");
         break;
     case CompareOp::GreaterThan:
-        std::cout << "cmp_gt ";
+        fmt::print("gt ");
         break;
     }
-    std::cout << compare->lhs()->type()->to_string() << ' ' << printable_value(compare->lhs());
-    std::cout << ", " << compare->rhs()->type()->to_string() << ' ' << printable_value(compare->rhs());
+    fmt::print("{}, {}", printable_value(compare->lhs()), printable_value(compare->rhs()));
 }
 
 void FunctionDumper::visit(CondBranchInst *cond_branch) {
-    std::cout << "br " << cond_branch->cond()->type()->to_string();
-    std::cout << ' ' << printable_value(cond_branch->cond());
-    std::cout << ", " << printable_block(cond_branch->true_dst());
-    std::cout << ", " << printable_block(cond_branch->false_dst());
+    fmt::print("br {}, {}, {}", printable_value(cond_branch->cond()), printable_block(cond_branch->true_dst()),
+               printable_block(cond_branch->false_dst()));
 }
 
 void FunctionDumper::visit(CopyInst *copy) {
-    std::cout << "copy " << printable_value(copy->src()) << " -> ";
-    std::cout << printable_value(copy->dst()) << " * ";
-    std::cout << copy->len()->type()->to_string() << ' ' << printable_value(copy->len());
+    fmt::print("copy {} -> {} * {}", printable_value(copy->src()), printable_value(copy->dst()),
+               printable_value(copy->len()));
 }
 
 void FunctionDumper::visit(InlineAsmInst *inline_asm) {
-    std::cout << printable_value(inline_asm) << " = ";
-    std::cout << "asm " << inline_asm->type()->to_string() << ' ';
-    std::cout << '"' << inline_asm->instruction() << '"';
+    fmt::print("asm {} \"{}\"", inline_asm->type()->to_string(), inline_asm->instruction());
     for (const auto &clobber : inline_asm->clobbers()) {
-        std::cout << ", clob(" << clobber << ')';
+        fmt::print(", clobber({})", clobber);
     }
     for (const auto &[input, value] : inline_asm->inputs()) {
-        std::cout << ", in(" << input << ", ";
-        std::cout << printable_value(value) << ')';
+        fmt::print(", input({}, {})", input, printable_value(value));
     }
     for (const auto &[output, value] : inline_asm->outputs()) {
-        std::cout << ", output(" << output << ", ";
-        std::cout << printable_value(value) << ')';
+        fmt::print(", output({}, {})", output, printable_value(value));
     }
 }
 
 void FunctionDumper::visit(LeaInst *lea) {
-    std::cout << printable_value(lea) << " = ";
-    std::cout << "lea " << lea->type()->to_string() << ", ";
-    std::cout << lea->ptr()->type()->to_string() << ' ' << printable_value(lea->ptr());
+    fmt::print("lea {}, {}", lea->type()->to_string(), printable_value(lea->ptr()));
     for (auto *index : lea->indices()) {
-        std::cout << ", " << index->type()->to_string() << ' ' << printable_value(index);
+        fmt::print(", {}", printable_value(index));
     }
 }
 
 void FunctionDumper::visit(LoadInst *load) {
-    std::cout << printable_value(load) << " = ";
-    std::cout << "load " << load->ptr()->type()->to_string() << ' ' << printable_value(load->ptr());
+    fmt::print("load {}", printable_value(load->ptr()));
 }
 
 void FunctionDumper::visit(PhiInst *phi) {
-    std::cout << printable_value(phi) << " = ";
-    std::cout << "phi (";
+    fmt::print("phi (");
     for (bool first = true; auto [block, value] : phi->incoming()) {
         if (!first) {
-            std::cout << ", ";
+            fmt::print(", ");
         }
         first = false;
-        std::cout << printable_block(block) << ": ";
-        std::cout << printable_value(value);
+        fmt::print("{}: {}", printable_block(block), printable_value(value));
     }
-    std::cout << ")";
+    fmt::print(")");
 }
 
 void FunctionDumper::visit(StoreInst *store) {
-    std::cout << "store " << store->ptr()->type()->to_string() << ' ' << printable_value(store->ptr());
-    std::cout << ", " << store->val()->type()->to_string() << ' ' << printable_value(store->val());
+    fmt::print("store {}, {}", printable_value(store->ptr()), printable_value(store->val()));
 }
 
 void FunctionDumper::visit(RetInst *ret) {
     if (ret->val() == nullptr) {
-        std::cout << "ret";
+        fmt::print("ret void");
         return;
     }
-    std::cout << "ret " << ret->val()->type()->to_string() << ' ' << printable_value(ret->val());
+    fmt::print("ret {}", printable_value(ret->val()));
 }
 
 } // namespace
