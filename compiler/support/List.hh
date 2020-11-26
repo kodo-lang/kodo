@@ -83,9 +83,10 @@ List<T>::List() {
 template <typename T> requires std::derived_from<T, ListNode>
 List<T>::~List() {
     // clang-format on
-    std::vector<Box<T>> to_delete;
-    for (auto *elem : *this) {
-        to_delete.emplace_back(elem);
+    for (auto it = begin(); *it != *m_end;) {
+        auto *elem = *it;
+        ++it;
+        delete elem;
     }
 }
 
