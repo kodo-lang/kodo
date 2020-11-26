@@ -17,11 +17,9 @@ void Value::add_user(Value *user) {
 }
 
 void Value::remove_user(Value *user) {
-    // TODO: Is remove_user() ever called when the user isn't present? Is the check necessary?
     auto it = std::find(m_users.begin(), m_users.end(), user);
-    if (it != m_users.end()) {
-        m_users.erase(it);
-    }
+    ASSERT(it != m_users.end());
+    m_users.erase(it);
 }
 
 void Value::replace_all_uses_with(Value *repl) {
