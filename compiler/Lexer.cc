@@ -115,6 +115,8 @@ Token Lexer::next_token() {
                 token.kind = TokenKind::Cast;
             } else if (buf == "clobber") {
                 token.kind = TokenKind::Clobber;
+            } else if (buf == "const") {
+                token.kind = TokenKind::Const;
             } else if (buf == "extern") {
                 token.kind = TokenKind::Extern;
             } else if (buf == "fn") {

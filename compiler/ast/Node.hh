@@ -15,6 +15,7 @@ enum class NodeKind {
     Block,
     CallExpr,
     CastExpr,
+    ConstDecl,
     ConstructExpr,
     DeclStmt,
     FunctionArg,

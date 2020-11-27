@@ -103,8 +103,9 @@ public:
     void gen_if_stmt(const ast::IfStmt *);
     void gen_ret_stmt(const ast::RetStmt *);
     void gen_stmt(const ast::Node *);
-
     void gen_block(const ast::Block *);
+
+    void gen_const_decl(const ast::ConstDecl *);
     void gen_function_decl(const ast::FunctionDecl *);
     void gen_type_decl(const ast::TypeDecl *);
     void gen_decl(const ast::Node *);
@@ -423,7 +424,7 @@ ir::Value *IrGen::gen_symbol(const ast::Symbol *symbol) {
         print_error(symbol, "no symbol named '{}' in current context", name);
         return ir::ConstantNull::get(*m_program);
     }
-    if (m_deref_state == DerefState::DontDeref) {
+    if (m_deref_state == DerefState::DontDeref || var->is<ir::Constant>()) {
         return var;
     }
     return m_block->append<ir::LoadInst>(var);
@@ -479,7 +480,7 @@ ir::Value *IrGen::gen_expr(const ast::Node *expr) {
 
 void IrGen::gen_decl_stmt(const ast::DeclStmt *decl_stmt) {
     if (m_scope_stack.peek().find_var(decl_stmt->name()) != nullptr) {
-        print_error(decl_stmt, "redeclaration of variable '{}'", decl_stmt->name());
+        print_error(decl_stmt, "redeclaration of symbol '{}'", decl_stmt->name());
         return;
     }
     const auto *type = gen_type(decl_stmt->type());
@@ -535,6 +536,19 @@ void IrGen::gen_block(const ast::Block *block) {
         gen_stmt(stmt);
     }
     m_scope_stack.pop();
+}
+
+void IrGen::gen_const_decl(const ast::ConstDecl *const_decl) {
+    if (m_scope_stack.peek().find_var(const_decl->name()) != nullptr) {
+        print_error(const_decl, "redeclaration of symbol '{}'", const_decl->name());
+        return;
+    }
+    auto *init_val = gen_expr(const_decl->init_val());
+    if (!init_val->is<ir::Constant>()) {
+        print_error(const_decl, "non-constant on right hand side of const declaration");
+        return;
+    }
+    m_scope_stack.peek().put_var(const_decl->name(), init_val);
 }
 
 void IrGen::gen_function_decl(const ast::FunctionDecl *function_decl) {
@@ -609,6 +623,9 @@ void IrGen::gen_type_decl(const ast::TypeDecl *type_decl) {
 
 void IrGen::gen_decl(const ast::Node *decl) {
     switch (decl->kind()) {
+    case ast::NodeKind::ConstDecl:
+        gen_const_decl(decl->as<ast::ConstDecl>());
+        break;
     case ast::NodeKind::FunctionDecl:
         gen_function_decl(decl->as<ast::FunctionDecl>());
         break;

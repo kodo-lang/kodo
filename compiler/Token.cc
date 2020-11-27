@@ -20,6 +20,8 @@ std::string tok_str(TokenKind kind) {
         return ":";
     case TokenKind::Comma:
         return ",";
+    case TokenKind::Const:
+        return "const";
     case TokenKind::Div:
         return "/";
     case TokenKind::Dot:

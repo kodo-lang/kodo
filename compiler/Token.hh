@@ -13,6 +13,7 @@ enum class TokenKind {
     Clobber,
     Colon,
     Comma,
+    Const,
     Div,
     Dot,
     DoubleColon,

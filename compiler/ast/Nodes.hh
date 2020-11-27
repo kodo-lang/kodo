@@ -129,6 +129,24 @@ public:
     const Node *val() const { return *m_val; }
 };
 
+class ConstDecl : public Node {
+    const std::string m_name;
+    const Box<const Node> m_type;
+    const Box<const Node> m_init_val;
+
+public:
+    static constexpr auto KIND = NodeKind::ConstDecl;
+
+    ConstDecl(int line, std::string name, const Node *type, const Node *init_val)
+        : Node(KIND, line), m_name(std::move(name)), m_type(type), m_init_val(init_val) {}
+
+    void accept(Visitor *visitor) const override;
+
+    const std::string &name() const { return m_name; }
+    const Node *type() const { return *m_type; }
+    const Node *init_val() const { return *m_init_val; }
+};
+
 class ConstructExpr : public Node {
     const std::string m_name;
     List<const Node> m_args;

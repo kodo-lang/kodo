@@ -19,6 +19,7 @@ public:
     void visit(const Block *) override;
     void visit(const CallExpr *) override;
     void visit(const CastExpr *) override;
+    void visit(const ConstDecl *) override {}
     void visit(const ConstructExpr *) override;
     void visit(const DeclStmt *) override;
     void visit(const FunctionArg *) override;

@@ -398,6 +398,15 @@ ast::Block *Parser::parse_block() {
 Box<ast::Root> Parser::parse() {
     auto root = Box<ast::Root>::create();
     while (m_lexer->has_next() && m_lexer->peek().kind != TokenKind::Eof) {
+        if (consume(TokenKind::Const)) {
+            auto name = std::move(std::get<std::string>(expect(TokenKind::Identifier).data));
+            auto *type = consume(TokenKind::Colon) ? parse_type() : nullptr;
+            expect(TokenKind::Eq);
+            const auto *init_val = parse_expr();
+            expect(TokenKind::Semi);
+            root->add<ast::ConstDecl>(m_lexer->line(), std::move(name), type, init_val);
+            continue;
+        }
         if (consume(TokenKind::Import)) {
             auto path = expect(TokenKind::StringLit);
             expect(TokenKind::Semi);
