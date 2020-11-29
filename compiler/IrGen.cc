@@ -407,8 +407,8 @@ ir::Value *IrGen::gen_member_expr(const ast::MemberExpr *member_expr) {
 
 ir::Value *IrGen::gen_num_lit(const ast::NumLit *num_lit) {
     // `+ 1` for signed bit.
-    int bit_width = static_cast<int>(std::ceil(std::log2(std::max(1UL, num_lit->value())))) + 1;
-    return ir::ConstantInt::get(m_program->int_type(bit_width, true), num_lit->value());
+//    int bit_width = static_cast<int>(std::ceil(std::log2(std::max(1UL, num_lit->value())))) + 1;
+    return ir::ConstantInt::get(m_program->invalid_type(), num_lit->value());
 }
 
 ir::Value *IrGen::gen_string_lit(const ast::StringLit *string_lit) {

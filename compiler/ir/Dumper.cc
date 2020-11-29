@@ -123,14 +123,11 @@ void FunctionDumper::dump(const Function *function) {
     for (const auto *block : *function) {
         fmt::print("  {} {{\n", printable_block(block));
         for (const auto *inst : *block) {
-            // TODO: Add const visitor and remove const_cast here.
             fmt::print("    ");
-            if (inst->type() != nullptr && !inst->type()->is<InvalidType>()) {
-                // TODO: Bit hacky.
-                if (!inst->as_or_null<CallInst>() || !inst->type()->is<VoidType>()) {
-                    fmt::print("{} = ", printable_value(inst, true));
-                }
+            if (inst->type() != nullptr && !inst->as_or_null<RetInst>() && !inst->type()->is<VoidType>()) {
+                fmt::print("{} = ", printable_value(inst, true));
             }
+            // TODO: Add const visitor and remove const_cast here.
             const_cast<Instruction *>(inst)->accept(this);
             fmt::print("\n");
         }

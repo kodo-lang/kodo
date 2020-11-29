@@ -59,6 +59,9 @@ const ir::Type *resulting_type(const ir::IntType *lhs, const ir::Type *rhs) {
 
 const ir::Type *resulting_type(const ir::Type *lhs, const ir::Type *rhs) {
     if (lhs == rhs) {
+        if (lhs->is<ir::InvalidType>()) {
+            return lhs->cache()->int_type(32, true);
+        }
         return lhs;
     }
     switch (lhs->kind()) {
