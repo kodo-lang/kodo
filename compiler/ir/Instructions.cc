@@ -18,7 +18,8 @@ namespace ir {
         }                                                                                                              \
     }
 
-BinaryInst::BinaryInst(BinaryOp op, Value *lhs, Value *rhs) : Instruction(KIND), m_op(op), m_lhs(lhs), m_rhs(rhs) {
+BinaryInst::BinaryInst(BasicBlock *parent, BinaryOp op, Value *lhs, Value *rhs)
+    : Instruction(KIND, parent), m_op(op), m_lhs(lhs), m_rhs(rhs) {
     m_lhs->add_user(this);
     m_rhs->add_user(this);
 }
@@ -43,8 +44,8 @@ void BinaryInst::replace_uses_of_with(Value *orig, Value *repl) {
     REPL_VALUE(m_rhs)
 } // clang-format on
 
-BranchInst::BranchInst(BasicBlock *dst)
-    : Instruction(KIND), m_dst(dst) {
+BranchInst::BranchInst(BasicBlock *parent, BasicBlock *dst)
+    : Instruction(KIND, parent), m_dst(dst) {
     m_dst->add_user(this);
 }
 
@@ -63,8 +64,8 @@ void BranchInst::replace_uses_of_with(Value *orig, Value *repl) {
     REPL_VALUE(m_dst)
 }
 
-CallInst::CallInst(Value *callee, std::vector<Value *> args)
-    : Instruction(KIND), m_callee(callee), m_args(std::move(args)) {
+CallInst::CallInst(BasicBlock *parent, Value *callee, std::vector<Value *> args)
+    : Instruction(KIND, parent), m_callee(callee), m_args(std::move(args)) {
     for (auto *arg : m_args) {
         arg->add_user(this);
     }
@@ -94,7 +95,8 @@ void CallInst::replace_uses_of_with(Value *orig, Value *repl) {
     REPL_VALUE(m_callee)
 }
 
-CastInst::CastInst(CastOp op, const Type *type, Value *val) : Instruction(KIND), m_op(op), m_val(val) {
+CastInst::CastInst(BasicBlock *parent, CastOp op, const Type *type, Value *val)
+    : Instruction(KIND, parent), m_op(op), m_val(val) {
     m_val->add_user(this);
     set_type(type);
 }
@@ -119,7 +121,8 @@ void CastInst::set_op(CastOp op) {
     m_op = op;
 }
 
-CompareInst::CompareInst(CompareOp op, Value *lhs, Value *rhs) : Instruction(KIND), m_op(op), m_lhs(lhs), m_rhs(rhs) {
+CompareInst::CompareInst(BasicBlock *parent, CompareOp op, Value *lhs, Value *rhs)
+    : Instruction(KIND, parent), m_op(op), m_lhs(lhs), m_rhs(rhs) {
     m_lhs->add_user(this);
     m_rhs->add_user(this);
 }
@@ -144,8 +147,8 @@ void CompareInst::replace_uses_of_with(Value *orig, Value *repl) {
     REPL_VALUE(m_rhs)
 } // clang-format on
 
-CondBranchInst::CondBranchInst(Value *cond, BasicBlock *true_dst, BasicBlock *false_dst)
-    : Instruction(KIND), m_cond(cond), m_true_dst(true_dst), m_false_dst(false_dst) {
+CondBranchInst::CondBranchInst(BasicBlock *parent, Value *cond, BasicBlock *true_dst, BasicBlock *false_dst)
+    : Instruction(KIND, parent), m_cond(cond), m_true_dst(true_dst), m_false_dst(false_dst) {
     m_cond->add_user(this);
     m_true_dst->add_user(this);
     m_false_dst->add_user(this);
@@ -175,8 +178,8 @@ void CondBranchInst::replace_uses_of_with(Value *orig, Value *repl) {
     REPL_VALUE(m_false_dst)
 } // clang-format on
 
-CopyInst::CopyInst(Value *dst, Value *src, Value *len)
-    : Instruction(KIND), m_dst(dst), m_src(src), m_len(len) {
+CopyInst::CopyInst(BasicBlock *parent, Value *dst, Value *src, Value *len)
+    : Instruction(KIND, parent), m_dst(dst), m_src(src), m_len(len) {
     m_dst->add_user(this);
     m_src->add_user(this);
     m_len->add_user(this);
@@ -207,10 +210,10 @@ void CopyInst::replace_uses_of_with(Value *orig, Value *repl) {
 }
 // clang-format on
 
-InlineAsmInst::InlineAsmInst(std::string instruction, std::vector<std::string> &&clobbers,
+InlineAsmInst::InlineAsmInst(BasicBlock *parent, std::string instruction, std::vector<std::string> &&clobbers,
                              std::vector<std::pair<std::string, Value *>> &&inputs,
                              std::vector<std::pair<std::string, Value *>> &&outputs)
-    : Instruction(KIND), m_instruction(std::move(instruction)), m_clobbers(std::move(clobbers)),
+    : Instruction(KIND, parent), m_instruction(std::move(instruction)), m_clobbers(std::move(clobbers)),
       m_inputs(std::move(inputs)), m_outputs(std::move(outputs)) {
     for (auto &[input, value] : m_inputs) {
         value->add_user(this);
@@ -246,8 +249,8 @@ void InlineAsmInst::replace_uses_of_with(Value *orig, Value *repl) {
     }
 }
 
-LeaInst::LeaInst(Value *ptr, std::vector<Value *> &&indices)
-    : Instruction(KIND), m_ptr(ptr), m_indices(std::move(indices)) {
+LeaInst::LeaInst(BasicBlock *parent, Value *ptr, std::vector<Value *> &&indices)
+    : Instruction(KIND, parent), m_ptr(ptr), m_indices(std::move(indices)) {
     m_ptr->add_user(this);
     for (auto *index : m_indices) {
         index->add_user(this);
@@ -276,7 +279,7 @@ void LeaInst::replace_uses_of_with(Value *orig, Value *repl) {
     }
 }
 
-LoadInst::LoadInst(Value *ptr) : Instruction(KIND), m_ptr(ptr) {
+LoadInst::LoadInst(BasicBlock *parent, Value *ptr) : Instruction(KIND, parent), m_ptr(ptr) {
     m_ptr->add_user(this);
     set_type(m_ptr->type()->as<PointerType>()->pointee_type());
 }
@@ -297,8 +300,8 @@ void LoadInst::replace_uses_of_with(Value *orig, Value *repl) {
     REPL_VALUE(m_ptr)
 } // clang-format on
 
-PhiInst::PhiInst()
-    : Instruction(KIND) {}
+PhiInst::PhiInst(BasicBlock *parent)
+    : Instruction(KIND, parent) {}
 
 PhiInst::~PhiInst() {
     for (auto [block, value] : m_incoming) {
@@ -353,7 +356,7 @@ void PhiInst::replace_uses_of_with(Value *orig, Value *repl) {
     }
 }
 
-StoreInst::StoreInst(Value *ptr, Value *val) : Instruction(KIND), m_ptr(ptr), m_val(val) {
+StoreInst::StoreInst(BasicBlock *parent, Value *ptr, Value *val) : Instruction(KIND, parent), m_ptr(ptr), m_val(val) {
     m_ptr->add_user(this);
     m_val->add_user(this);
 }
@@ -378,8 +381,8 @@ void StoreInst::replace_uses_of_with(Value *orig, Value *repl) {
     REPL_VALUE(m_val)
 } // clang-format on
 
-RetInst::RetInst(Value *val)
-    : Instruction(KIND), m_val(val) {
+RetInst::RetInst(BasicBlock *parent, Value *val)
+    : Instruction(KIND, parent), m_val(val) {
     if (m_val != nullptr) {
         m_val->add_user(this);
     }

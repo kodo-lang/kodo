@@ -35,11 +35,11 @@ enum class InstKind {
 
 class Instruction : public Value, public ListNode {
     const InstKind m_kind;
+    BasicBlock *const m_parent;
     int m_line{-1};
-    BasicBlock *m_parent{nullptr};
 
 protected:
-    explicit Instruction(InstKind kind) : Value(KIND), m_kind(kind) {}
+    Instruction(InstKind kind, BasicBlock *parent) : Value(KIND), m_kind(kind), m_parent(parent) {}
 
 public:
     static constexpr auto KIND = ValueKind::Instruction;
@@ -58,13 +58,11 @@ public:
     virtual void accept(Visitor *visitor) = 0;
     ListIterator<Instruction> remove_from_parent();
 
-    bool has_parent() const;
     void set_line(int line);
-    void set_parent(BasicBlock *parent);
 
     InstKind kind() const { return m_kind; }
-    int line() const { return m_line; }
     BasicBlock *parent() const { return m_parent; }
+    int line() const { return m_line; }
 };
 
 template <typename T>

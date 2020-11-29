@@ -69,9 +69,7 @@ public:
 
 template <typename Inst, typename... Args>
 Inst *BasicBlock::insert(iterator position, Args &&... args) requires std::derived_from<Inst, Instruction> {
-    auto *inst = m_instructions.emplace<Inst>(position, std::forward<Args>(args)...);
-    inst->set_parent(this);
-    return inst;
+    return m_instructions.emplace<Inst>(position, this, std::forward<Args>(args)...);
 }
 
 template <typename Inst, typename... Args>

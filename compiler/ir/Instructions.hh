@@ -28,7 +28,7 @@ class BinaryInst : public Instruction {
 public:
     static constexpr auto KIND = InstKind::Binary;
 
-    BinaryInst(BinaryOp op, Value *lhs, Value *rhs);
+    BinaryInst(BasicBlock *parent, BinaryOp op, Value *lhs, Value *rhs);
     BinaryInst(const BinaryInst &) = delete;
     BinaryInst(BinaryInst &&) = delete;
     ~BinaryInst() override;
@@ -50,7 +50,7 @@ class BranchInst : public Instruction {
 public:
     static constexpr auto KIND = InstKind::Branch;
 
-    explicit BranchInst(BasicBlock *dst);
+    BranchInst(BasicBlock *parent, BasicBlock *dst);
     BranchInst(const BranchInst &) = delete;
     BranchInst(BranchInst &&) = delete;
     ~BranchInst() override;
@@ -71,7 +71,7 @@ class CallInst : public Instruction {
 public:
     static constexpr auto KIND = InstKind::Call;
 
-    CallInst(Value *callee, std::vector<Value *> args);
+    CallInst(BasicBlock *parent, Value *callee, std::vector<Value *> args);
     CallInst(const CallInst &) = delete;
     CallInst(CallInst &&) = delete;
     ~CallInst() override;
@@ -102,7 +102,7 @@ class CastInst : public Instruction {
 public:
     static constexpr auto KIND = InstKind::Cast;
 
-    CastInst(CastOp op, const Type *type, Value *val);
+    CastInst(BasicBlock *parent, CastOp op, const Type *type, Value *val);
     CastInst(const CastInst &) = delete;
     CastInst(CastInst &&) = delete;
     ~CastInst() override;
@@ -131,7 +131,7 @@ class CompareInst : public Instruction {
 public:
     static constexpr auto KIND = InstKind::Compare;
 
-    CompareInst(CompareOp op, Value *lhs, Value *rhs);
+    CompareInst(BasicBlock *parent, CompareOp op, Value *lhs, Value *rhs);
     CompareInst(const CompareInst &) = delete;
     CompareInst(CompareInst &&) = delete;
     ~CompareInst() override;
@@ -155,7 +155,7 @@ class CondBranchInst : public Instruction {
 public:
     static constexpr auto KIND = InstKind::CondBranch;
 
-    CondBranchInst(Value *cond, BasicBlock *true_dst, BasicBlock *false_dst);
+    CondBranchInst(BasicBlock *parent, Value *cond, BasicBlock *true_dst, BasicBlock *false_dst);
     CondBranchInst(const CondBranchInst &) = delete;
     CondBranchInst(CondBranchInst &&) = delete;
     ~CondBranchInst() override;
@@ -179,7 +179,7 @@ class CopyInst : public Instruction {
 public:
     static constexpr auto KIND = InstKind::Copy;
 
-    CopyInst(Value *dst, Value *src, Value *len);
+    CopyInst(BasicBlock *parent, Value *dst, Value *src, Value *len);
     CopyInst(const CopyInst &) = delete;
     CopyInst(CopyInst &&) = delete;
     ~CopyInst() override;
@@ -204,7 +204,7 @@ class InlineAsmInst : public Instruction {
 public:
     static constexpr auto KIND = InstKind::InlineAsm;
 
-    InlineAsmInst(std::string instruction, std::vector<std::string> &&clobbers,
+    InlineAsmInst(BasicBlock *parent, std::string instruction, std::vector<std::string> &&clobbers,
                   std::vector<std::pair<std::string, Value *>> &&inputs,
                   std::vector<std::pair<std::string, Value *>> &&outputs);
     InlineAsmInst(const InlineAsmInst &) = delete;
@@ -230,7 +230,7 @@ class LeaInst : public Instruction {
 public:
     static constexpr auto KIND = InstKind::Lea;
 
-    LeaInst(Value *ptr, std::vector<Value *> &&indices);
+    LeaInst(BasicBlock *parent, Value *ptr, std::vector<Value *> &&indices);
     LeaInst(const LeaInst &) = delete;
     LeaInst(LeaInst &&) = delete;
     ~LeaInst() override;
@@ -251,7 +251,7 @@ class LoadInst : public Instruction {
 public:
     static constexpr auto KIND = InstKind::Load;
 
-    explicit LoadInst(Value *ptr);
+    LoadInst(BasicBlock *parent, Value *ptr);
     LoadInst(const LoadInst &) = delete;
     LoadInst(LoadInst &&) = delete;
     ~LoadInst() override;
@@ -271,7 +271,7 @@ class PhiInst : public Instruction {
 public:
     static constexpr auto KIND = InstKind::Phi;
 
-    PhiInst();
+    explicit PhiInst(BasicBlock *parent);
     PhiInst(const PhiInst &) = delete;
     PhiInst(PhiInst &&) = delete;
     ~PhiInst() override;
@@ -294,7 +294,7 @@ class StoreInst : public Instruction {
 public:
     static constexpr auto KIND = InstKind::Store;
 
-    StoreInst(Value *ptr, Value *val);
+    StoreInst(BasicBlock *parent, Value *ptr, Value *val);
     StoreInst(const StoreInst &) = delete;
     StoreInst(StoreInst &&) = delete;
     ~StoreInst() override;
@@ -315,7 +315,7 @@ class RetInst : public Instruction {
 public:
     static constexpr auto KIND = InstKind::Ret;
 
-    explicit RetInst(Value *val);
+    RetInst(BasicBlock *parent, Value *val);
     RetInst(const RetInst &) = delete;
     RetInst(RetInst &&) = delete;
     ~RetInst() override;
