@@ -1,0 +1,5 @@
+const CONST_NUM = 5;
+
+fn main(): i32 {
+    return CONST_NUM + 15;
+}
