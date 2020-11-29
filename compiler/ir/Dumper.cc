@@ -137,7 +137,6 @@ void FunctionDumper::dump(const Function *function) {
 }
 
 void FunctionDumper::visit(BinaryInst *binary) {
-    //    fmt::print("{} = ");
     switch (binary->op()) {
     case BinaryOp::Add:
         fmt::print("add ");
