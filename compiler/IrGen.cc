@@ -610,7 +610,8 @@ void IrGen::gen_function_decl(const ast::FunctionDecl *function_decl) {
 
     // Insert implicit return if needed.
     auto *return_block = *(--m_function->end());
-    if (return_type->is<ir::VoidType>() && return_block->terminator()->kind() != ir::InstKind::Ret) {
+    if (return_type->is<ir::VoidType>() &&
+        (return_block->empty() || return_block->terminator()->kind() != ir::InstKind::Ret)) {
         // TODO: Special return void instruction?
         return_block->append<ir::RetInst>(nullptr);
     }

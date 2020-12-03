@@ -64,6 +64,7 @@ public:
     void set_parent(Function *parent);
 
     Function *parent() const { return m_parent; }
+    bool empty() const;
     Instruction *terminator() const;
 };
 

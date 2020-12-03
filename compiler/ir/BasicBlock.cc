@@ -26,11 +26,12 @@ void BasicBlock::set_parent(Function *parent) {
     m_parent = parent;
 }
 
+bool BasicBlock::empty() const {
+    return m_instructions.empty();
+}
+
 Instruction *BasicBlock::terminator() const {
-    // TODO: Do we even need to check here?
-    if (m_instructions.empty()) {
-        return nullptr;
-    }
+    ASSERT(!m_instructions.empty());
     return *(--m_instructions.end());
 }
 
