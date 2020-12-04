@@ -48,11 +48,11 @@ public:
 
     List();
     List(const List &) = delete;
-    List(List &&) = delete;
+    List(List &&) noexcept = default;
     ~List();
 
     List &operator=(const List &) = delete;
-    List &operator=(List &&) = delete;
+    List &operator=(List &&) noexcept = default;
 
     template <typename U, typename... Args>
     U *emplace(iterator it, Args &&... args) requires std::derived_from<U, T>;
@@ -61,6 +61,7 @@ public:
 
     T *operator[](std::size_t n);
     const T *operator[](std::size_t n) const;
+    bool operator==(const List &other) const;
 
     bool empty() const;
     int size() const;
@@ -83,6 +84,9 @@ List<T>::List() {
 template <typename T> requires std::derived_from<T, ListNode>
 List<T>::~List() {
     // clang-format on
+    if (*m_end == nullptr) {
+        return;
+    }
     for (auto it = begin(); *it != *m_end;) {
         auto *elem = *it;
         ++it;
@@ -141,6 +145,21 @@ const T *List<T>::operator[](std::size_t n) const {
     auto it = begin();
     std::advance(it, n);
     return *it;
+}
+
+// clang-format off
+template <typename T> requires std::derived_from<T, ListNode>
+bool List<T>::operator==(const List &other) const {
+    // clang-format on
+    if (size() != other.size()) {
+        return false;
+    }
+    for (int i = 0; i < size(); i++) {
+        if ((*this)[i] != other[i]) {
+            return false;
+        }
+    }
+    return true;
 }
 
 // clang-format off
