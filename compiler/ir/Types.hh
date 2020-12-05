@@ -3,9 +3,12 @@
 #include <ir/Type.hh>
 
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace ir {
+
+// TODO: Cleanup const-correctness.
 
 struct InvalidType : public Type {
     static constexpr auto KIND = TypeKind::Invalid;
@@ -13,6 +16,23 @@ struct InvalidType : public Type {
     explicit InvalidType(const TypeCache *cache) : Type(cache, KIND) {}
 
     std::string to_string() const override;
+};
+
+class AliasType : public Type {
+    const Type *const m_aliased;
+    const std::string m_name;
+
+public:
+    static constexpr auto KIND = TypeKind::Alias;
+
+    AliasType(const TypeCache *cache, const Type *aliased, std::string name)
+        : Type(cache, KIND), m_aliased(aliased), m_name(std::move(name)) {}
+
+    bool equals_weak(const Type *other) const override;
+    std::string to_string() const override { return m_name; }
+
+    const Type *aliased() const { return m_aliased; }
+    const std::string &name() const { return m_name; }
 };
 
 struct BoolType : public Type {
@@ -79,7 +99,7 @@ class StructField {
 public:
     StructField(std::string name, const Type *type) : m_name(std::move(name)), m_type(type) {}
 
-    bool operator==(const StructField &rhs) const { return m_type == rhs.m_type && m_name == rhs.m_name; }
+    bool operator==(const StructField &rhs) const { return m_name == rhs.m_name && m_type == rhs.m_type; }
 
     const std::string &name() const { return m_name; }
     const Type *type() const { return m_type; }
@@ -107,5 +127,15 @@ struct VoidType : public Type {
 
     std::string to_string() const override;
 };
+
+template <typename Aliased>
+const Aliased *Type::base_as(const Type *type) {
+    return base(type)->as_or_null<Aliased>();
+}
+
+template <typename Aliased>
+std::pair<std::string, const Aliased *> Type::expand_alias(const Type *type) {
+    return std::make_pair(Type::name(type), base_as<Aliased>(type));
+}
 
 } // namespace ir

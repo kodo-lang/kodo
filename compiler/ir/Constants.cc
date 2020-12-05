@@ -1,6 +1,7 @@
 #include <ir/Constants.hh>
 
 #include <ir/Program.hh>
+#include <ir/Types.hh>
 #include <support/Assert.hh>
 #include <support/PairHash.hh>
 

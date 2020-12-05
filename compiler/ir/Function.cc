@@ -4,6 +4,8 @@
 #include <ir/Types.hh>
 #include <support/Assert.hh>
 
+#include <utility>
+
 // TODO: List<T>::append()?
 // TODO: Default List<T>::emplace() U param to T.
 namespace ir {
@@ -21,8 +23,8 @@ bool LocalVar::is_mutable() const {
     return type()->as<PointerType>()->is_mutable();
 }
 
-Function::Function(bool externed, std::string mangled_name, const FunctionType *type)
-    : Value(KIND), m_externed(externed) {
+Function::Function(const Prototype *prototype, std::string mangled_name, const FunctionType *type)
+    : Value(KIND), m_prototype(prototype) {
     set_name(std::move(mangled_name));
     set_type(type);
 }

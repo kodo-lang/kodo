@@ -5,6 +5,7 @@
 #include <ir/Function.hh>
 #include <ir/Instructions.hh>
 #include <ir/Program.hh>
+#include <ir/Types.hh>
 #include <ir/Visitor.hh>
 #include <support/Assert.hh>
 #include <support/Error.hh>
@@ -58,7 +59,13 @@ const ir::Type *resulting_type(const ir::IntType *lhs, const ir::Type *rhs) {
 }
 
 const ir::Type *resulting_type(const ir::Type *lhs, const ir::Type *rhs) {
-    if (lhs == rhs) {
+    while (const auto *alias = lhs->as_or_null<ir::AliasType>()) {
+        lhs = alias->aliased();
+    }
+    while (const auto *alias = rhs->as_or_null<ir::AliasType>()) {
+        rhs = alias->aliased();
+    }
+    if (lhs->equals_weak(rhs)) {
         if (lhs->is<ir::InvalidType>()) {
             return lhs->cache()->int_type(32, true);
         }
@@ -83,7 +90,7 @@ ir::Value *Checker::build_coerce_cast(ir::Value *value, const ir::Type *type, ir
 
 ir::Value *Checker::coerce(ir::Value *value, const ir::Type *type) {
     ASSERT(!type->is<ir::InvalidType>());
-    if (value->type() == type) {
+    if (value->type()->equals_weak(type)) {
         return value;
     }
     if (value->type()->is<ir::InvalidType>()) {
@@ -98,7 +105,7 @@ ir::Value *Checker::coerce(ir::Value *value, const ir::Type *type) {
     }
     if (const auto *from = value->type()->as_or_null<ir::PointerType>()) {
         if (const auto *to = type->as_or_null<ir::PointerType>()) {
-            if (from->pointee_type() == to->pointee_type() && from->is_mutable()) {
+            if (from->pointee_type()->equals_weak(to->pointee_type()) && from->is_mutable()) {
                 ASSERT(!to->is_mutable());
                 return value;
             }

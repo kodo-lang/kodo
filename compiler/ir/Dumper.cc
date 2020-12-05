@@ -5,6 +5,7 @@
 #include <ir/Function.hh>
 #include <ir/Instructions.hh>
 #include <ir/Program.hh>
+#include <ir/Types.hh>
 #include <ir/Visitor.hh>
 #include <support/Assert.hh>
 
@@ -109,7 +110,7 @@ void FunctionDumper::dump(const Function *function) {
         fmt::print(": {}", function->return_type()->to_string());
     }
 
-    if (function->externed()) {
+    if (function->prototype()->externed()) {
         fmt::print(";\n");
         return;
     }
@@ -263,6 +264,12 @@ void FunctionDumper::visit(RetInst *ret) {
 }
 
 } // namespace
+
+void Dumper::run(Program *program) {
+    for (const auto &alias : program->alias_types()) {
+        fmt::print("type {} = {};\n", alias->name(), alias->aliased()->to_string());
+    }
+}
 
 void Dumper::run(Function *function) {
     FunctionDumper().dump(function);

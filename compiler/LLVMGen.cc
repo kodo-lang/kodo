@@ -5,6 +5,7 @@
 #include <ir/Function.hh>
 #include <ir/Instructions.hh>
 #include <ir/Program.hh>
+#include <ir/Types.hh>
 #include <support/Assert.hh>
 
 #include <llvm/IR/IRBuilder.h>
@@ -90,6 +91,8 @@ llvm::StructType *LLVMGen::llvm_struct_type(const ir::StructType *struct_type) {
 
 llvm::Type *LLVMGen::llvm_type(const ir::Type *type) {
     switch (type->kind()) {
+    case ir::TypeKind::Alias:
+        return llvm_type(type->as<ir::AliasType>()->aliased());
     case ir::TypeKind::Bool:
         return llvm::Type::getInt1Ty(*m_llvm_context);
     case ir::TypeKind::Function:
@@ -366,7 +369,7 @@ void LLVMGen::gen_block(const ir::BasicBlock *block) {
 
 void LLVMGen::gen_function(const ir::Function *function) {
     // If the function has no blocks, return early.
-    if (function->externed()) {
+    if (function->prototype()->externed()) {
         return;
     }
 

@@ -2,6 +2,15 @@
 
 namespace ir {
 
+const AliasType *TypeCache::alias_type(const Type *aliased, std::string &&name) const {
+    for (const auto &type : m_alias_types) {
+        if (type->aliased() == aliased && type->name() == name) {
+            return *type;
+        }
+    }
+    return *m_alias_types.emplace_back(new AliasType(this, aliased, std::move(name)));
+}
+
 const FunctionType *TypeCache::function_type(const Type *return_type, std::vector<const Type *> &&params) const {
     for (const auto &type : m_function_types) {
         if (type->return_type() == return_type && type->params() == params) {

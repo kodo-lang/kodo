@@ -9,6 +9,7 @@ add_executable(compiler
     ir/Function.cc
     ir/Instruction.cc
     ir/Instructions.cc
+    ir/Prototype.cc
     ir/TypeCache.cc
     ir/Types.cc
     ir/Value.cc

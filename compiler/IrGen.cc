@@ -6,6 +6,7 @@
 #include <ir/Function.hh>
 #include <ir/Instructions.hh>
 #include <ir/Program.hh>
+#include <ir/Prototype.hh>
 #include <ir/Types.hh>
 #include <support/Assert.hh>
 #include <support/Error.hh>
@@ -35,16 +36,10 @@ public:
 
 class Scope {
     const Scope *const m_parent;
-    std::unordered_map<std::string, const ir::Type *> m_types;
-    std::unordered_map<const ir::Type *, const std::string *> m_types_reverse;
     std::unordered_map<std::string_view, ir::Value *> m_vars;
 
 public:
     explicit Scope(const Scope *parent) : m_parent(parent) {}
-
-    const ir::Type *find_type(const std::string &name);
-    const std::string &find_type_reverse(const ir::Type *type);
-    void put_type(std::string name, const ir::Type *type);
 
     ir::Value *find_var(std::string_view name);
     void put_var(std::string_view name, ir::Value *value);
@@ -70,10 +65,10 @@ public:
     IrGen();
 
     ir::Value *create_call(const ast::CallExpr *, ir::Value *, ir::Value *);
+    ir::Prototype *create_prototype(const ast::FunctionDecl *);
     void create_store(const ast::Node *, ir::Value *, ir::Value *);
     ir::Function *find_function(const std::string &);
     ir::Function *find_function(const ast::Symbol *);
-    ir::Function *find_or_create_function(bool externed, const ast::Symbol *, const ir::FunctionType *);
     ir::Value *get_member_ptr(ir::Value *, int);
     const ir::Type *get_type(const ast::Node *, const std::string &);
 
@@ -113,29 +108,6 @@ public:
     Box<ir::Program> program() { return std::move(m_program); }
 };
 
-const ir::Type *Scope::find_type(const std::string &name) {
-    for (const auto *scope = this; scope != nullptr; scope = scope->m_parent) {
-        if (scope->m_types.contains(name)) {
-            return scope->m_types.at(name);
-        }
-    }
-    return nullptr;
-}
-
-const std::string &Scope::find_type_reverse(const ir::Type *type) {
-    for (const auto *scope = this; scope != nullptr; scope = scope->m_parent) {
-        if (scope->m_types_reverse.contains(type)) {
-            return *scope->m_types_reverse.at(type);
-        }
-    }
-    ENSURE_NOT_REACHED();
-}
-
-void Scope::put_type(std::string name, const ir::Type *type) {
-    const auto *moved_name = &m_types.emplace(std::move(name), type).first->first;
-    m_types_reverse.emplace(type, moved_name);
-}
-
 ir::Value *Scope::find_var(std::string_view name) {
     for (const auto *scope = this; scope != nullptr; scope = scope->m_parent) {
         if (scope->m_vars.contains(name)) {
@@ -169,6 +141,26 @@ ir::Value *IrGen::create_call(const ast::CallExpr *call_expr, ir::Value *callee,
     return m_block->append<ir::CallInst>(callee, std::move(args));
 }
 
+ir::Prototype *IrGen::create_prototype(const ast::FunctionDecl *function_decl) {
+    // Create function type by first converting return type, then adding `*this` param if needed and finally, converting
+    // the rest of the params.
+    const auto *return_type = gen_type(function_decl->return_type());
+    std::vector<const ir::Type *> params;
+    if (function_decl->instance()) {
+        ASSERT(function_decl->name()->parts().size() == 2);
+        const auto *container_type = get_type(function_decl, function_decl->name()->parts()[0])->as<ir::StructType>();
+        params.push_back(m_program->pointer_type(container_type, false));
+    }
+    for (const auto *ast_param : function_decl->args()) {
+        params.push_back(gen_type(ast_param->type()));
+    }
+
+    // Name of the actual function is the last identifier part of the symbol.
+    const auto &name = function_decl->name()->parts().back();
+    const auto *function_type = m_program->function_type(return_type, std::move(params));
+    return new ir::Prototype(function_decl->externed(), name, function_type);
+}
+
 void IrGen::create_store(const ast::Node *node, ir::Value *ptr, ir::Value *val) {
     auto *store = m_block->append<ir::StoreInst>(ptr, val);
     store->set_line(node->line());
@@ -199,15 +191,6 @@ ir::Function *IrGen::find_function(const ast::Symbol *name) {
     return find_function(mangle(name));
 }
 
-ir::Function *IrGen::find_or_create_function(bool externed, const ast::Symbol *name, const ir::FunctionType *type) {
-    auto mangled_name = mangle(name);
-    if (auto *function = find_function(mangled_name)) {
-        ASSERT(function->type() == type);
-        return function;
-    }
-    return m_program->append_function(externed, std::move(mangled_name), type);
-}
-
 ir::Value *IrGen::get_member_ptr(ir::Value *ptr, int index) {
     std::vector<ir::Value *> indices;
     indices.reserve(2);
@@ -217,8 +200,12 @@ ir::Value *IrGen::get_member_ptr(ir::Value *ptr, int index) {
 }
 
 const ir::Type *IrGen::get_type(const ast::Node *node, const std::string &name) {
-    if (const auto *type = m_scope_stack.peek().find_type(name)) {
-        return type;
+    auto it =
+        std::find_if(m_program->alias_types().begin(), m_program->alias_types().end(), [&name](const auto &alias) {
+            return alias->name() == name;
+        });
+    if (it != m_program->alias_types().end()) {
+        return **it;
     }
     print_error(node, "no type named '{}' in current context", name);
     return m_program->invalid_type();
@@ -347,12 +334,13 @@ ir::Value *IrGen::gen_cast_expr(const ast::CastExpr *cast_expr) {
 }
 
 ir::Value *IrGen::gen_construct_expr(const ast::ConstructExpr *construct_expr) {
-    const auto *type = get_type(construct_expr, construct_expr->name())->as<ir::StructType>();
-    ASSERT(construct_expr->args().size() == type->fields().size());
+    const auto *type = get_type(construct_expr, construct_expr->name());
+    const auto *struct_type = ir::Type::base_as<ir::StructType>(type);
+    ASSERT(construct_expr->args().size() == struct_type->fields().size());
     auto *tmp_var = m_function->append_var(type, true);
     for (int i = 0; const auto *arg : construct_expr->args()) {
         auto *lea = get_member_ptr(tmp_var, i);
-        lea->set_type(m_program->pointer_type(type->fields()[i++].type(), true));
+        lea->set_type(m_program->pointer_type(struct_type->fields()[i++].type(), true));
         create_store(construct_expr, lea, gen_expr(arg));
     }
     if (m_deref_state == DerefState::DontDeref) {
@@ -375,13 +363,13 @@ ir::Value *IrGen::gen_member_expr(const ast::MemberExpr *member_expr) {
     if (const auto *ptr_type = type->as_or_null<ir::PointerType>()) {
         type = ptr_type->pointee_type();
     }
-    const auto *struct_type = type->as<ir::StructType>();
     if (member_expr->is_pointer()) {
         lhs = m_block->append<ir::LoadInst>(lhs);
     }
+    const auto [name, struct_type] = ir::Type::expand_alias<ir::StructType>(type);
     if (const auto *call_expr = member_expr->rhs()->as_or_null<ast::CallExpr>()) {
-        auto *callee =
-            find_function(m_scope_stack.peek().find_type_reverse(struct_type) + '_' + call_expr->name()->parts()[0]);
+        // TODO: Create call to prototype and let concrete implementer fix it.
+        auto *callee = find_function(name + '_' + call_expr->name()->parts()[0]);
         return create_call(call_expr, callee, lhs);
     }
     const auto *rhs = member_expr->rhs()->as<ast::Symbol>();
@@ -392,8 +380,7 @@ ir::Value *IrGen::gen_member_expr(const ast::MemberExpr *member_expr) {
                                return field.name() == rhs_name;
                            });
     if (it == struct_type->fields().end()) {
-        const auto &struct_type_name = m_scope_stack.peek().find_type_reverse(struct_type);
-        print_error(member_expr, "struct '{}' has no member named '{}'", struct_type_name, rhs_name);
+        print_error(member_expr, "struct '{}' has no member named '{}'", name, rhs_name);
         return ir::ConstantNull::get(*m_program);
     }
     int index = std::distance(struct_type->fields().begin(), it);
@@ -407,7 +394,7 @@ ir::Value *IrGen::gen_member_expr(const ast::MemberExpr *member_expr) {
 
 ir::Value *IrGen::gen_num_lit(const ast::NumLit *num_lit) {
     // `+ 1` for signed bit.
-//    int bit_width = static_cast<int>(std::ceil(std::log2(std::max(1UL, num_lit->value())))) + 1;
+    //    int bit_width = static_cast<int>(std::ceil(std::log2(std::max(1UL, num_lit->value())))) + 1;
     return ir::ConstantInt::get(m_program->invalid_type(), num_lit->value());
 }
 
@@ -558,7 +545,7 @@ void IrGen::gen_function_decl(const ast::FunctionDecl *function_decl) {
     std::vector<const ir::Type *> params;
     if (function_decl->instance()) {
         ASSERT(function_decl->name()->parts().size() == 2);
-        const auto *container_type = get_type(function_decl, function_decl->name()->parts()[0])->as<ir::StructType>();
+        const auto *container_type = get_type(function_decl, function_decl->name()->parts()[0]);
         params.push_back(m_program->pointer_type(container_type, false));
     }
     for (const auto *ast_param : function_decl->args()) {
@@ -567,12 +554,11 @@ void IrGen::gen_function_decl(const ast::FunctionDecl *function_decl) {
 
     // Create new function.
     const auto *function_type = m_program->function_type(return_type, std::move(params));
-//    m_function = find_or_create_function(function_decl->externed(), function_decl->name(), function_type);
-    m_function = m_program->append_function(function_decl->externed(), mangle(function_decl->name()), function_type);
+    auto *prototype =
+        new ir::Prototype(function_decl->externed(), function_decl->name()->parts().back(), function_type);
+    m_function = m_program->append_function(prototype, mangle(function_decl->name()), function_type);
 
-    // TODO: Make some kind of Prototype class that doesn't contain the three lists in Function. This will also prevent
-    //       bad access to these lists on externed functions.
-    if (m_function->externed()) {
+    if (prototype->externed()) {
         return;
     }
 
@@ -619,7 +605,8 @@ void IrGen::gen_function_decl(const ast::FunctionDecl *function_decl) {
 
 void IrGen::gen_type_decl(const ast::TypeDecl *type_decl) {
     const auto *type = gen_type(type_decl->type());
-    m_scope_stack.peek().put_type(type_decl->name(), type);
+    auto name = type_decl->name();
+    m_program->alias_type(type, std::move(name));
 }
 
 void IrGen::gen_decl(const ast::Node *decl) {

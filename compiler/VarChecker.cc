@@ -55,7 +55,7 @@ void VarChecker::run(ir::Function *function) {
             }
             // Ignore structs for now.
             // TODO: Work for structs.
-            if (var->var_type()->is<ir::StructType>()) {
+            if (ir::Type::base(var->var_type())->is<ir::StructType>()) {
                 continue;
             }
             for (auto *reaching_val : rda->reaching_values(load)) {

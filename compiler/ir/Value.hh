@@ -17,6 +17,7 @@ enum class ValueKind {
     Instruction,
     LocalVar,
     MemoryPhi,
+    Prototype,
 };
 
 class Value : public Castable<Value, ValueKind, true> {

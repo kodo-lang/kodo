@@ -1,13 +1,13 @@
 #pragma once
 
 #include <ir/BasicBlock.hh>
+#include <ir/Prototype.hh>
 #include <ir/Type.hh>
 #include <ir/Value.hh>
 #include <support/List.hh>
 #include <support/ListNode.hh>
 
 #include <string>
-#include <utility>
 
 namespace ir {
 
@@ -39,7 +39,7 @@ public:
 };
 
 class Function : public Value, public ListNode {
-    const bool m_externed;
+    const Prototype *const m_prototype;
     // Lists must be in this order to ensure instructions are freed before arguments and local vars.
     List<Argument> m_args;
     List<LocalVar> m_vars;
@@ -51,7 +51,7 @@ public:
     iterator begin() const { return m_blocks.begin(); }
     iterator end() const { return m_blocks.end(); }
 
-    Function(bool externed, std::string mangled_name, const FunctionType *type);
+    Function(const Prototype *prototype, std::string mangled_name, const FunctionType *type);
     Function(const Function &) = delete;
     Function(Function &&) = delete;
     ~Function() override = default;
@@ -64,7 +64,7 @@ public:
     LocalVar *append_var(const Type *type, bool is_mutable);
     void remove_var(LocalVar *var);
 
-    bool externed() const { return m_externed; }
+    const Prototype *prototype() const { return m_prototype; }
     const List<Argument> &args() const { return m_args; }
     const List<LocalVar> &vars() const { return m_vars; }
     BasicBlock *entry() const;
