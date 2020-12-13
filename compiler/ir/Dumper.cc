@@ -178,6 +178,8 @@ void FunctionDumper::visit(CastInst *cast) {
             return "int_to_ptr";
         case CastOp::PtrToInt:
             return "ptr_to_int";
+        case CastOp::Reinterpret:
+            return "reinterpret";
         case CastOp::SignExtend:
             return "sext";
         case CastOp::Truncate:

@@ -90,6 +90,7 @@ public:
 enum class CastOp {
     IntToPtr,
     PtrToInt,
+    Reinterpret,
     SignExtend,
     Truncate,
     ZeroExtend,
