@@ -22,7 +22,6 @@ public:
 
     AsmExpr(int line, std::string instruction) : Node(KIND, line), m_instruction(std::move(instruction)) {}
 
-    void accept(Visitor *visitor) const override;
     void add_clobber(std::string clobber) { m_clobbers.push_back(std::move(clobber)); }
     void add_input(std::string input, const Node *expr) { m_inputs.emplace_back(std::move(input), expr); }
     void add_output(std::string output, const Node *expr) { m_outputs.emplace_back(std::move(output), expr); }
@@ -41,8 +40,6 @@ public:
     static constexpr auto KIND = NodeKind::AssignExpr;
 
     AssignExpr(int line, const Node *lhs, const Node *rhs) : Node(KIND, line), m_lhs(lhs), m_rhs(rhs) {}
-
-    void accept(Visitor *visitor) const override;
 
     const Node *lhs() const { return *m_lhs; }
     const Node *rhs() const { return *m_rhs; }
@@ -71,8 +68,6 @@ public:
     BinExpr(int line, BinOp op, const Node *lhs, const Node *rhs)
         : Node(KIND, line), m_op(op), m_lhs(lhs), m_rhs(rhs) {}
 
-    void accept(Visitor *visitor) const override;
-
     BinOp op() const { return m_op; }
     const Node *lhs() const { return *m_lhs; }
     const Node *rhs() const { return *m_rhs; }
@@ -86,7 +81,6 @@ public:
 
     explicit Block(int line) : Node(KIND, line) {}
 
-    void accept(Visitor *visitor) const override;
     void add_stmt(const Node *stmt) { m_stmts.insert(m_stmts.end(), stmt); }
 
     // TODO: Remove this.
@@ -107,7 +101,6 @@ public:
 
     CallExpr(int line, const Symbol *name) : Node(KIND, line), m_name(name) {}
 
-    void accept(Visitor *visitor) const override;
     void add_arg(const Node *arg) { m_args.insert(m_args.end(), arg); }
 
     const Symbol *name() const { return *m_name; }
@@ -122,8 +115,6 @@ public:
     static constexpr auto KIND = NodeKind::CastExpr;
 
     CastExpr(int line, const Node *type, const Node *val) : Node(KIND, line), m_type(type), m_val(val) {}
-
-    void accept(Visitor *visitor) const override;
 
     const Node *type() const { return *m_type; }
     const Node *val() const { return *m_val; }
@@ -140,8 +131,6 @@ public:
     ConstDecl(int line, std::string name, const Node *type, const Node *init_val)
         : Node(KIND, line), m_name(std::move(name)), m_type(type), m_init_val(init_val) {}
 
-    void accept(Visitor *visitor) const override;
-
     const std::string &name() const { return m_name; }
     const Node *type() const { return *m_type; }
     const Node *init_val() const { return *m_init_val; }
@@ -156,7 +145,6 @@ public:
 
     ConstructExpr(int line, std::string name) : Node(KIND, line), m_name(std::move(name)) {}
 
-    void accept(Visitor *visitor) const override;
     void add_arg(const Node *arg) { m_args.insert(m_args.end(), arg); }
 
     const std::string &name() const { return m_name; }
@@ -175,8 +163,6 @@ public:
     DeclStmt(int line, std::string name, const Node *type, const Node *init_val, bool is_mutable)
         : Node(KIND, line), m_name(std::move(name)), m_type(type), m_init_val(init_val), m_is_mutable(is_mutable) {}
 
-    void accept(Visitor *visitor) const override;
-
     const std::string &name() const { return m_name; }
     const Node *type() const { return *m_type; }
     const Node *init_val() const { return *m_init_val; }
@@ -193,8 +179,6 @@ public:
 
     FunctionArg(int line, std::string name, const Node *type, bool is_mutable)
         : Node(KIND, line), m_name(std::move(name)), m_type(type), m_is_mutable(is_mutable) {}
-
-    void accept(Visitor *visitor) const override;
 
     const std::string &name() const { return m_name; }
     const Node *type() const { return *m_type; }
@@ -215,7 +199,6 @@ public:
     FunctionDecl(int line, const Symbol *name, bool externed, bool instance)
         : Node(KIND, line), m_name(name), m_externed(externed), m_instance(instance) {}
 
-    void accept(Visitor *visitor) const override;
     void set_block(const Block *block) { m_block = block; }
     void set_return_type(const Node *return_type) { m_return_type = return_type; }
 
@@ -241,8 +224,6 @@ public:
 
     IfStmt(int line, const Node *expr, const Block *block) : Node(KIND, line), m_expr(expr), m_block(block) {}
 
-    void accept(Visitor *visitor) const override;
-
     const Node *expr() const { return *m_expr; }
     const Block *block() const { return *m_block; }
 };
@@ -254,8 +235,6 @@ public:
     static constexpr auto KIND = NodeKind::ImportStmt;
 
     ImportStmt(int line, std::string path) : Node(KIND, line), m_path(std::move(path)) {}
-
-    void accept(Visitor *visitor) const override;
 
     const std::string &path() const { return m_path; }
 };
@@ -271,8 +250,6 @@ public:
     MemberExpr(int line, const Node *lhs, const Node *rhs, bool is_pointer)
         : Node(KIND, line), m_lhs(lhs), m_rhs(rhs), m_is_pointer(is_pointer) {}
 
-    void accept(Visitor *visitor) const override;
-
     const Node *lhs() const { return *m_lhs; }
     const Node *rhs() const { return *m_rhs; }
     bool is_pointer() const { return m_is_pointer; }
@@ -285,8 +262,6 @@ public:
     static constexpr auto KIND = NodeKind::NumLit;
 
     NumLit(int line, std::uint64_t value) : Node(KIND, line), m_value(value) {}
-
-    void accept(Visitor *visitor) const override;
 
     std::uint64_t value() const { return m_value; }
 };
@@ -301,8 +276,6 @@ public:
     PointerType(int line, const Node *pointee_type, bool is_mutable)
         : Node(KIND, line), m_pointee_type(pointee_type), m_is_mutable(is_mutable) {}
 
-    void accept(Visitor *visitor) const override;
-
     const Node *pointee_type() const { return *m_pointee_type; }
     bool is_mutable() const { return m_is_mutable; }
 };
@@ -315,8 +288,6 @@ public:
 
     RetStmt(int line, const Node *val) : Node(KIND, line), m_val(val) {}
 
-    void accept(Visitor *visitor) const override;
-
     const Node *val() const { return *m_val; }
 };
 
@@ -327,8 +298,6 @@ public:
     static constexpr auto KIND = NodeKind::Root;
 
     Root() : Node(KIND, 0) {}
-
-    void accept(Visitor *visitor) const override;
 
     void add(const Node *decl) {
         m_decls.insert(m_decls.end(), decl);
@@ -350,8 +319,6 @@ public:
 
     StringLit(int line, std::string value) : Node(KIND, line), m_value(std::move(value)) {}
 
-    void accept(Visitor *visitor) const override;
-
     const std::string &value() const { return m_value; }
 };
 
@@ -365,8 +332,6 @@ public:
     StructField(int line, std::string name, const Node *type)
         : Node(KIND, line), m_name(std::move(name)), m_type(type) {}
 
-    void accept(Visitor *visitor) const override;
-
     const std::string &name() const { return m_name; }
     const Node *type() const { return *m_type; }
 };
@@ -379,8 +344,6 @@ public:
     static constexpr auto KIND = NodeKind::StructType;
 
     explicit StructType(int line) : Node(KIND, line) {}
-
-    void accept(Visitor *visitor) const override;
 
     template <typename... Args>
     void add_field(Args &&... args) {
@@ -403,8 +366,6 @@ public:
 
     Symbol(int line, std::vector<std::string> &&parts) : Node(KIND, line), m_parts(std::move(parts)) {}
 
-    void accept(Visitor *visitor) const override;
-
     const std::vector<std::string> &parts() const { return m_parts; }
 };
 
@@ -415,8 +376,6 @@ public:
     static constexpr auto KIND = NodeKind::TraitType;
 
     explicit TraitType(int line) : Node(KIND, line) {}
-
-    void accept(Visitor *visitor) const override;
 
     void add_function(const FunctionDecl *decl) {
         m_functions.insert(m_functions.end(), decl);
@@ -433,8 +392,6 @@ public:
     static constexpr auto KIND = NodeKind::TypeDecl;
 
     TypeDecl(int line, std::string name, const Node *type) : Node(KIND, line), m_name(std::move(name)), m_type(type) {}
-
-    void accept(Visitor *visitor) const override;
 
     const std::string &name() const { return m_name; }
     const Node *type() const { return *m_type; }
@@ -453,8 +410,6 @@ public:
     static constexpr auto KIND = NodeKind::UnaryExpr;
 
     UnaryExpr(int line, UnaryOp op, const Node *val) : Node(KIND, line), m_op(op), m_val(val) {}
-
-    void accept(Visitor *visitor) const override;
 
     UnaryOp op() const { return m_op; }
     const Node *val() const { return *m_val; }

@@ -1,8 +1,6 @@
 add_executable(compiler
     analyses/ControlFlowAnalysis.cc
     analyses/ReachingDefAnalysis.cc
-    ast/Dumper.cc
-    ast/Nodes.cc
     ir/BasicBlock.cc
     ir/Constants.cc
     ir/Dumper.cc

@@ -6,8 +6,6 @@
 
 namespace ast {
 
-class Visitor;
-
 enum class NodeKind {
     AsmExpr,
     AssignExpr,
@@ -44,8 +42,6 @@ protected:
     Node(NodeKind kind, int line) : m_kind(kind), m_line(line) {}
 
 public:
-    virtual void accept(Visitor *visitor) const = 0;
-
     NodeKind kind() const { return m_kind; }
     int line() const { return m_line; }
 };
