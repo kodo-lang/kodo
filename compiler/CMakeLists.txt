@@ -1,4 +1,4 @@
-add_executable(compiler
+add_executable(kodoc
     analyses/ControlFlowAnalysis.cc
     analyses/ReachingDefAnalysis.cc
     ir/BasicBlock.cc
@@ -29,10 +29,11 @@ add_executable(compiler
     TypeChecker.cc
     VarChecker.cc)
 configure_file(Config.hh.in Config.hh)
-target_compile_definitions(compiler PRIVATE ${LLVM_DEFINITIONS})
-target_compile_features(compiler PRIVATE cxx_std_20)
-target_include_directories(compiler PRIVATE
+target_compile_definitions(kodoc PRIVATE ${LLVM_DEFINITIONS})
+target_compile_features(kodoc PRIVATE cxx_std_20)
+target_include_directories(kodoc PRIVATE
     .
     ${CMAKE_CURRENT_BINARY_DIR}
     ${LLVM_INCLUDE_DIRS})
-target_link_libraries(compiler PRIVATE fmt::fmt LLVM)
+target_link_libraries(kodoc PRIVATE fmt::fmt LLVM)
+install(TARGETS kodoc RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
