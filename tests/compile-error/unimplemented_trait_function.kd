@@ -1,0 +1,9 @@
+type Foo = trait {
+    fn foo(*this);
+};
+
+type Bar = struct(Foo) {};
+
+fn main(): i32 {
+    return 0;
+}

@@ -1,0 +1,20 @@
+type Foo = trait {
+    fn foo(*this): i32;
+};
+
+type Bar = struct(Foo) {
+    num: i32;
+};
+
+fn Bar::foo(*this): i32 {
+    return this->num;
+}
+
+fn baz(let foo: *Foo): i32 {
+    return foo->foo();
+}
+
+fn main(): i32 {
+    let bar = Bar{5};
+    return baz(&bar) + bar.foo();
+}

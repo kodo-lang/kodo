@@ -29,6 +29,8 @@ run_test "compile-error/type_errors.kd" 1 "error: 'test' requires 2 arguments, b
 error: cannot implicitly cast from 'i32' to '*mut i32' on line 8
 error: cannot implicitly cast from '*i32' to 'i32' on line 8
  note: Aborting due to previous errors"
+run_test "compile-error/unimplemented_trait_function.kd" 1 "error: struct 'Bar' must implement 'Foo::foo'
+ note: Aborting due to previous errors"
 run_test "compile-error/unknown_symbols.kd" 1 "error: no symbol named 'bar' in current context on line 2
 error: no function named 'test' in current context on line 2
  note: Aborting due to previous errors"
@@ -38,6 +40,7 @@ error: use of possibly uninitialised variable 'c' on line 8
 
 # Expecting success.
 run_test "success/basic_struct.kd" 3 ""
+run_test "success/basic_trait.kd" 10 ""
 run_test "success/comparison.kd" 1 ""
 run_test "success/complex_expression.kd" 55 ""
 run_test "success/complex_struct.kd" 24 ""
