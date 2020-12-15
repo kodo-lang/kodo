@@ -6,9 +6,8 @@
 
 namespace ir {
 
-BasicBlock::iterator BasicBlock::position(const Instruction *inst) const {
-    // TODO: No need to find!
-    return std::find(m_instructions.begin(), m_instructions.end(), inst);
+BasicBlock::iterator BasicBlock::position(Instruction *inst) const {
+    return BasicBlock::iterator(inst);
 }
 
 BasicBlock::iterator BasicBlock::remove(Instruction *inst) {

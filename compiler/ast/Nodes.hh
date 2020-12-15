@@ -299,9 +299,7 @@ public:
 
     Root() : Node(KIND, 0) {}
 
-    void add(const Node *decl) {
-        m_decls.insert(m_decls.end(), decl);
-    }
+    void add(const Node *decl) { m_decls.insert(m_decls.end(), decl); }
 
     template <typename T, typename... Args>
     T *add(Args &&... args) {
@@ -350,9 +348,7 @@ public:
         m_fields.emplace<StructField>(m_fields.end(), std::forward<Args>(args)...);
     }
 
-    void add_implementing(const Node *name) {
-        m_implementing.insert(m_implementing.end(), name);
-    }
+    void add_implementing(const Node *name) { m_implementing.insert(m_implementing.end(), name); }
 
     const List<const StructField> &fields() const { return m_fields; }
     const List<const Node> &implementing() const { return m_implementing; }
@@ -377,9 +373,7 @@ public:
 
     explicit TraitType(int line) : Node(KIND, line) {}
 
-    void add_function(const FunctionDecl *decl) {
-        m_functions.insert(m_functions.end(), decl);
-    }
+    void add_function(const FunctionDecl *decl) { m_functions.insert(m_functions.end(), decl); }
 
     const List<const FunctionDecl> &functions() const { return m_functions; }
 };

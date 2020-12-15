@@ -7,7 +7,7 @@
 extern bool g_error;
 
 template <typename T>
-concept HasLine = requires (const T *t) {
+concept HasLine = requires(const T *t) {
     static_cast<int>(t->line());
 };
 

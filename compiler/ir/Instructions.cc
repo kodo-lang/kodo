@@ -326,10 +326,7 @@ void PhiInst::accept(Visitor *visitor) {
 
 void PhiInst::add_incoming(BasicBlock *block, Value *value) {
     block->add_user(this);
-    // TODO: Proper undef value.
-    if (value != nullptr) {
-        value->add_user(this);
-    }
+    value->add_user(this);
     m_incoming[block] = value;
 }
 

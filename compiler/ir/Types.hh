@@ -10,8 +10,6 @@
 
 namespace ir {
 
-// TODO: Cleanup const-correctness.
-
 struct InvalidType : public Type {
     static constexpr auto KIND = TypeKind::Invalid;
 
@@ -95,8 +93,8 @@ public:
 };
 
 class PointerType : public Type {
-    const Type *m_pointee_type;
-    bool m_is_mutable;
+    const Type *const m_pointee_type;
+    const bool m_is_mutable;
 
 public:
     static constexpr auto KIND = TypeKind::Pointer;

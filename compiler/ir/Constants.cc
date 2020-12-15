@@ -12,6 +12,7 @@
 namespace ir {
 namespace {
 
+// TODO: Proper constant cache.
 std::vector<Box<ConstantArray>> s_constant_arrays;
 std::unordered_map<std::pair<const Type *, std::size_t>, ConstantInt, PairHash> s_constant_ints;
 std::unordered_map<const Type *, ConstantNull> s_constant_nulls;

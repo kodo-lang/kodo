@@ -12,8 +12,6 @@ namespace ir {
 class ArrayType;
 class Program;
 
-// TODO: Hide constructors?
-
 class ConstantArray : public Constant {
     // TODO: Make this `Constant *` instead of `Value *` when functions are constants.
     const std::vector<Value *> m_elems;
@@ -23,8 +21,7 @@ public:
     static ConstantArray *get(const ArrayType *type, std::vector<Value *> &&elems);
     static ConstantArray *get(std::vector<Value *> &&elems);
 
-    ConstantArray(const Type *type, std::vector<Value *> &&elems)
-        : Constant(KIND, type), m_elems(std::move(elems)) {}
+    ConstantArray(const Type *type, std::vector<Value *> &&elems) : Constant(KIND, type), m_elems(std::move(elems)) {}
 
     Constant *clone(const Type *type) const override;
 
@@ -68,8 +65,7 @@ public:
     const std::string &value() const { return m_value; }
 };
 
-class Undef : public Constant {
-public:
+struct Undef : public Constant {
     static constexpr auto KIND = ConstantKind::Undef;
     static Undef *get(const Type *type);
 

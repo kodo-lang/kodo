@@ -31,9 +31,7 @@ public:
         return m_globals.emplace<GlobalVariable>(m_globals.end(), std::forward<Args>(args)...);
     }
 
-    void append_prototype(Prototype *prototype) {
-        return m_prototypes.insert(m_prototypes.end(), prototype);
-    }
+    void append_prototype(Prototype *prototype) { return m_prototypes.insert(m_prototypes.end(), prototype); }
 
     template <typename Ty, typename... Args>
     Ty *make(Args &&... args) requires std::derived_from<Ty, Type> {

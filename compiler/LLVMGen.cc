@@ -262,8 +262,8 @@ llvm::Value *LLVMGen::gen_inline_asm(const ir::InlineAsmInst *inline_asm) {
 
 llvm::Value *LLVMGen::gen_lea(const ir::LeaInst *lea) {
     auto *ptr = llvm_value(lea->ptr());
-    // TODO: Size is already known here.
     std::vector<llvm::Value *> indices;
+    indices.reserve(lea->indices().size());
     for (auto *index : lea->indices()) {
         indices.push_back(llvm_value(index));
     }

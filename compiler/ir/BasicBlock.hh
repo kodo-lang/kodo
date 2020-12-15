@@ -55,7 +55,7 @@ public:
     template <typename Inst, typename... Args>
     Inst *append(Args &&... args) requires std::derived_from<Inst, Instruction>;
 
-    iterator position(const Instruction *inst) const;
+    iterator position(Instruction *inst) const;
 
     /// @return The iterator of the next instruction.
     iterator remove(Instruction *inst);
