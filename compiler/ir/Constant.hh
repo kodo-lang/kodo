@@ -7,10 +7,11 @@
 namespace ir {
 
 enum class ConstantKind {
+    Array,
     Int,
     Null,
     String,
-    Struct,
+    Undef,
 };
 
 class Constant : public Value {

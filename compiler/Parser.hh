@@ -23,6 +23,7 @@ class Parser {
     void parse_stmt(ast::Block *);
     ast::Node *parse_type();
     ast::Block *parse_block();
+    ast::FunctionDecl *parse_function_decl(bool force_no_body);
 
 public:
     explicit Parser(Lexer *lexer) : m_lexer(lexer) {}

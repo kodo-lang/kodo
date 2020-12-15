@@ -125,7 +125,7 @@ void ReachingDefAnalyser::run(ir::Function *function) {
             } else if (auto *load = inst->as_or_null<ir::LoadInst>()) {
                 // TODO: pop_or_null helper function.
                 auto &def_stack = def_stacks[load->ptr()];
-                auto *reaching_def = !def_stack.empty() ? def_stack.peek() : nullptr;
+                auto *reaching_def = !def_stack.empty() ? def_stack.peek() : ir::Undef::get(load->type());
                 rda->put_reaching_def(load, reaching_def);
             } else if (auto *store = inst->as_or_null<ir::StoreInst>()) {
                 def_stacks[store->ptr()].push(store->val());
@@ -136,7 +136,7 @@ void ReachingDefAnalyser::run(ir::Function *function) {
             for (auto *phi : memory_phis[succ]) {
                 // TODO: pop_or_null helper function.
                 auto &def_stack = def_stacks[phi->var()];
-                auto *incoming = !def_stack.empty() ? def_stack.peek() : nullptr;
+                auto *incoming = !def_stack.empty() ? def_stack.peek() : ir::Undef::get(phi->var()->type());
                 phi->add_incoming(block, incoming);
             }
         }

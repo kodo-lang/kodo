@@ -14,6 +14,7 @@ enum class ValueKind {
     BasicBlock,
     Constant,
     Function,
+    GlobalVariable,
     Instruction,
     LocalVar,
     MemoryPhi,

@@ -1,6 +1,8 @@
 #pragma once
 
+#include <ir/Prototype.hh>
 #include <ir/Type.hh>
+#include <support/List.hh>
 
 #include <string>
 #include <utility>
@@ -29,10 +31,26 @@ public:
         : Type(cache, KIND), m_aliased(aliased), m_name(std::move(name)) {}
 
     bool equals_weak(const Type *other) const override;
-    std::string to_string() const override { return m_name; }
+    std::string to_string() const override;
 
     const Type *aliased() const { return m_aliased; }
     const std::string &name() const { return m_name; }
+};
+
+class ArrayType : public Type {
+    const Type *const m_element_type;
+    const std::size_t m_length;
+
+public:
+    static constexpr auto KIND = TypeKind::Array;
+
+    ArrayType(const TypeCache *cache, const Type *element_type, std::size_t length)
+        : Type(cache, KIND), m_element_type(element_type), m_length(length) {}
+
+    std::string to_string() const override;
+
+    const Type *element_type() const { return m_element_type; }
+    std::size_t length() const { return m_length; }
 };
 
 struct BoolType : public Type {
@@ -86,6 +104,7 @@ public:
     PointerType(const TypeCache *cache, const Type *pointee_type, bool is_mutable)
         : Type(cache, KIND), m_pointee_type(pointee_type), m_is_mutable(is_mutable) {}
 
+    bool equals_weak(const Type *other) const override;
     std::string to_string() const override;
 
     const Type *pointee_type() const { return m_pointee_type; }
@@ -107,17 +126,37 @@ public:
 
 class StructType : public Type {
     std::vector<StructField> m_fields;
+    std::vector<const Type *> m_implementing;
+    mutable List<Prototype> m_prototypes;
 
 public:
     static constexpr auto KIND = TypeKind::Struct;
 
-    StructType(const TypeCache *cache, std::vector<StructField> &&fields)
-        : Type(cache, KIND), m_fields(std::move(fields)) {}
+    explicit StructType(const TypeCache *cache) : Type(cache, KIND) {}
 
+    void add_field(const std::string &name, const Type *type) { m_fields.emplace_back(name, type); };
+    void add_implementing(const Type *type) { m_implementing.push_back(type); }
+    void add_prototype(Prototype *prototype) const { m_prototypes.insert(m_prototypes.end(), prototype); }
     int size_in_bytes() const override;
     std::string to_string() const override;
 
     const std::vector<StructField> &fields() const { return m_fields; }
+    const std::vector<const Type *> &implementing() const { return m_implementing; }
+    const List<Prototype> &prototypes() const { return m_prototypes; }
+};
+
+class TraitType : public Type {
+    List<Prototype> m_prototypes;
+
+public:
+    static constexpr auto KIND = TypeKind::Trait;
+
+    explicit TraitType(const TypeCache *cache) : Type(cache, KIND) {}
+
+    void add_prototype(Prototype *prototype) { m_prototypes.insert(m_prototypes.end(), prototype); }
+    std::string to_string() const override;
+
+    const List<Prototype> &prototypes() const { return m_prototypes; }
 };
 
 struct VoidType : public Type {

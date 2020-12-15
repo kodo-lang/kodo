@@ -65,16 +65,17 @@ public:
     IrGen();
 
     ir::Value *create_call(const ast::CallExpr *, ir::Value *, ir::Value *);
-    ir::Prototype *create_prototype(const ast::FunctionDecl *);
+    ir::Prototype *create_prototype(const ast::FunctionDecl *, const ir::Type * = nullptr);
     void create_store(const ast::Node *, ir::Value *, ir::Value *);
-    ir::Function *find_function(const std::string &);
-    ir::Function *find_function(const ast::Symbol *);
+    ir::Prototype *find_prototype(const ir::Type *, const std::string &);
     ir::Value *get_member_ptr(ir::Value *, int);
     const ir::Type *get_type(const ast::Node *, const std::string &);
+    const ir::Type *get_containing_type(const ast::Node *, const ast::Symbol *);
 
     const ir::Type *gen_base_type(const ast::Symbol *);
     const ir::Type *gen_pointer_type(const ast::PointerType *);
     const ir::Type *gen_struct_type(const ast::StructType *);
+    const ir::Type *gen_trait_type(const ast::TraitType *);
     const ir::Type *gen_type(const ast::Node *);
 
     ir::Value *gen_address_of(const ast::Node *);
@@ -126,6 +127,19 @@ IrGen::IrGen() {
     m_scope_stack.emplace(/* parent */ nullptr);
 }
 
+std::string mangle(const ast::Symbol *name) {
+    // TODO: This can be easily broken to make duplicate functions.
+    std::string mangled_name;
+    for (bool first = true; const auto &part : name->parts()) {
+        if (!first) {
+            mangled_name += "::";
+        }
+        first = false;
+        mangled_name += part;
+    }
+    return std::move(mangled_name);
+}
+
 ir::Value *IrGen::create_call(const ast::CallExpr *call_expr, ir::Value *callee, ir::Value *this_arg) {
     std::vector<ir::Value *> args;
     if (this_arg != nullptr) {
@@ -135,30 +149,38 @@ ir::Value *IrGen::create_call(const ast::CallExpr *call_expr, ir::Value *callee,
         args.push_back(gen_expr(ast_arg));
     }
     if (callee == nullptr) {
-        print_error(call_expr, "no function named '{}' in current context", call_expr->name()->parts()[0]);
-        return ir::ConstantNull::get(*m_program);
+        print_error(call_expr, "no function named '{}' in current context", mangle(call_expr->name()));
+        return ir::ConstantNull::get(m_program->invalid_type());
     }
     return m_block->append<ir::CallInst>(callee, std::move(args));
 }
 
-ir::Prototype *IrGen::create_prototype(const ast::FunctionDecl *function_decl) {
+ir::Prototype *IrGen::create_prototype(const ast::FunctionDecl *function_decl, const ir::Type *containing_type) {
+    if (containing_type == nullptr) {
+        containing_type = get_containing_type(function_decl, function_decl->name());
+    }
+
     // Create function type by first converting return type, then adding `*this` param if needed and finally, converting
     // the rest of the params.
     const auto *return_type = gen_type(function_decl->return_type());
     std::vector<const ir::Type *> params;
     if (function_decl->instance()) {
-        ASSERT(function_decl->name()->parts().size() == 2);
-        const auto *container_type = get_type(function_decl, function_decl->name()->parts()[0])->as<ir::StructType>();
-        params.push_back(m_program->pointer_type(container_type, false));
+        ASSERT(containing_type != nullptr);
+        params.push_back(m_program->pointer_type(containing_type, false));
     }
     for (const auto *ast_param : function_decl->args()) {
         params.push_back(gen_type(ast_param->type()));
     }
 
-    // Name of the actual function is the last identifier part of the symbol.
     const auto &name = function_decl->name()->parts().back();
     const auto *function_type = m_program->function_type(return_type, std::move(params));
-    return new ir::Prototype(function_decl->externed(), name, function_type);
+    auto *prototype = new ir::Prototype(function_decl->externed(), name, function_type);
+    if (containing_type == nullptr) {
+        m_program->append_prototype(prototype);
+    } else if (const auto *struct_type = ir::Type::base_as<ir::StructType>(containing_type)) {
+        struct_type->add_prototype(prototype);
+    }
+    return prototype;
 }
 
 void IrGen::create_store(const ast::Node *node, ir::Value *ptr, ir::Value *val) {
@@ -166,29 +188,23 @@ void IrGen::create_store(const ast::Node *node, ir::Value *ptr, ir::Value *val) 
     store->set_line(node->line());
 }
 
-std::string mangle(const ast::Symbol *name) {
-    std::string mangled_name;
-    for (bool first = true; const auto &part : name->parts()) {
-        if (!first) {
-            mangled_name += '_';
-        }
-        first = false;
-        mangled_name += part;
+ir::Prototype *IrGen::find_prototype(const ir::Type *containing_type, const std::string &name) {
+    const List<ir::Prototype> *prototype_list = nullptr;
+    if (containing_type == nullptr) {
+        prototype_list = &m_program->prototypes();
+    } else if (const auto *struct_type = ir::Type::base_as<ir::StructType>(containing_type)) {
+        prototype_list = &struct_type->prototypes();
+    } else if (const auto *trait_type = ir::Type::base_as<ir::TraitType>(containing_type)) {
+        prototype_list = &trait_type->prototypes();
+    } else {
+        ENSURE_NOT_REACHED();
     }
-    return std::move(mangled_name);
-}
-
-ir::Function *IrGen::find_function(const std::string &name) {
-    for (auto *function : **m_program) {
-        if (function->name() == name) {
-            return function;
+    for (auto *prototype : *prototype_list) {
+        if (prototype->name() == name) {
+            return prototype;
         }
     }
     return nullptr;
-}
-
-ir::Function *IrGen::find_function(const ast::Symbol *name) {
-    return find_function(mangle(name));
 }
 
 ir::Value *IrGen::get_member_ptr(ir::Value *ptr, int index) {
@@ -209,6 +225,14 @@ const ir::Type *IrGen::get_type(const ast::Node *node, const std::string &name) 
     }
     print_error(node, "no type named '{}' in current context", name);
     return m_program->invalid_type();
+}
+
+const ir::Type *IrGen::get_containing_type(const ast::Node *node, const ast::Symbol *symbol) {
+    const ir::Type *containing_type = nullptr;
+    for (int i = 0; i < symbol->parts().size() - 1; i++) {
+        containing_type = get_type(node, symbol->parts()[i]);
+    }
+    return containing_type;
 }
 
 const ir::Type *IrGen::gen_base_type(const ast::Symbol *symbol) {
@@ -236,11 +260,24 @@ const ir::Type *IrGen::gen_pointer_type(const ast::PointerType *pointer_type) {
 }
 
 const ir::Type *IrGen::gen_struct_type(const ast::StructType *struct_type) {
-    std::vector<ir::StructField> fields;
+    auto *type = m_program->make<ir::StructType>();
     for (const auto *struct_field : struct_type->fields()) {
-        fields.emplace_back(struct_field->name(), gen_type(struct_field->type()));
+        type->add_field(struct_field->name(), gen_type(struct_field->type()));
     }
-    return m_program->struct_type(std::move(fields));
+    for (const auto *ast_trait : struct_type->implementing()) {
+        const auto *symbol = ast_trait->as<ast::Symbol>();
+        ASSERT(symbol->parts().size() == 1);
+        type->add_implementing(get_type(struct_type, symbol->parts().back()));
+    }
+    return type;
+}
+
+const ir::Type *IrGen::gen_trait_type(const ast::TraitType *ast_type) {
+    auto *type = m_program->make<ir::TraitType>();
+    for (const auto *function_decl : ast_type->functions()) {
+        type->add_prototype(create_prototype(function_decl, type));
+    }
+    return type;
 }
 
 const ir::Type *IrGen::gen_type(const ast::Node *node) {
@@ -254,6 +291,8 @@ const ir::Type *IrGen::gen_type(const ast::Node *node) {
         return gen_pointer_type(node->as<ast::PointerType>());
     case ast::NodeKind::StructType:
         return gen_struct_type(node->as<ast::StructType>());
+    case ast::NodeKind::TraitType:
+        return gen_trait_type(node->as<ast::TraitType>());
     default:
         ENSURE_NOT_REACHED();
     }
@@ -322,7 +361,8 @@ ir::Value *IrGen::gen_bin_expr(const ast::BinExpr *bin_expr) {
 }
 
 ir::Value *IrGen::gen_call_expr(const ast::CallExpr *call_expr) {
-    auto *callee = find_function(call_expr->name());
+    const auto *containing_type = get_containing_type(call_expr, call_expr->name());
+    auto *callee = find_prototype(containing_type, call_expr->name()->parts().back());
     return create_call(call_expr, callee, nullptr);
 }
 
@@ -368,10 +408,21 @@ ir::Value *IrGen::gen_member_expr(const ast::MemberExpr *member_expr) {
     }
     const auto [name, struct_type] = ir::Type::expand_alias<ir::StructType>(type);
     if (const auto *call_expr = member_expr->rhs()->as_or_null<ast::CallExpr>()) {
-        // TODO: Create call to prototype and let concrete implementer fix it.
-        auto *callee = find_function(name + '_' + call_expr->name()->parts()[0]);
+        // TODO: Further cleanup here.
+        const auto &callee_name = call_expr->name()->parts().back();
+        if (const auto *trait_type = ir::Type::base_as<ir::TraitType>(type)) {
+            for (auto *prototype : trait_type->prototypes()) {
+                if (prototype->name() == callee_name) {
+                    return create_call(call_expr, prototype, lhs);
+                }
+            }
+            print_error(call_expr, "trait '{}' has no function named '{}'", name, callee_name);
+            return ir::ConstantNull::get(m_program->invalid_type());
+        }
+        auto *callee = find_prototype(ir::Type::base(type), call_expr->name()->parts().back());
         return create_call(call_expr, callee, lhs);
     }
+    ASSERT(struct_type != nullptr);
     const auto *rhs = member_expr->rhs()->as<ast::Symbol>();
     ASSERT(rhs->parts().size() == 1);
     const auto &rhs_name = rhs->parts()[0];
@@ -381,7 +432,7 @@ ir::Value *IrGen::gen_member_expr(const ast::MemberExpr *member_expr) {
                            });
     if (it == struct_type->fields().end()) {
         print_error(member_expr, "struct '{}' has no member named '{}'", name, rhs_name);
-        return ir::ConstantNull::get(*m_program);
+        return ir::ConstantNull::get(m_program->invalid_type());
     }
     int index = std::distance(struct_type->fields().begin(), it);
     auto *lea = get_member_ptr(lhs, index);
@@ -409,7 +460,7 @@ ir::Value *IrGen::gen_symbol(const ast::Symbol *symbol) {
     auto *var = m_scope_stack.peek().find_var(name);
     if (var == nullptr) {
         print_error(symbol, "no symbol named '{}' in current context", name);
-        return ir::ConstantNull::get(*m_program);
+        return ir::ConstantNull::get(m_program->invalid_type());
     }
     if (m_deref_state == DerefState::DontDeref || var->is<ir::Constant>()) {
         return var;
@@ -539,25 +590,9 @@ void IrGen::gen_const_decl(const ast::ConstDecl *const_decl) {
 }
 
 void IrGen::gen_function_decl(const ast::FunctionDecl *function_decl) {
-    // Create function type by first converting return type, then adding `*this` param if needed and finally, converting
-    // the rest of the params.
-    const auto *return_type = gen_type(function_decl->return_type());
-    std::vector<const ir::Type *> params;
-    if (function_decl->instance()) {
-        ASSERT(function_decl->name()->parts().size() == 2);
-        const auto *container_type = get_type(function_decl, function_decl->name()->parts()[0]);
-        params.push_back(m_program->pointer_type(container_type, false));
-    }
-    for (const auto *ast_param : function_decl->args()) {
-        params.push_back(gen_type(ast_param->type()));
-    }
-
-    // Create new function.
-    const auto *function_type = m_program->function_type(return_type, std::move(params));
-    auto *prototype =
-        new ir::Prototype(function_decl->externed(), function_decl->name()->parts().back(), function_type);
+    auto *prototype = create_prototype(function_decl);
+    const auto *function_type = prototype->type()->as<ir::FunctionType>();
     m_function = m_program->append_function(prototype, mangle(function_decl->name()), function_type);
-
     if (prototype->externed()) {
         return;
     }
@@ -596,7 +631,7 @@ void IrGen::gen_function_decl(const ast::FunctionDecl *function_decl) {
 
     // Insert implicit return if needed.
     auto *return_block = *(--m_function->end());
-    if (return_type->is<ir::VoidType>() &&
+    if (prototype->return_type()->is<ir::VoidType>() &&
         (return_block->empty() || return_block->terminator()->kind() != ir::InstKind::Ret)) {
         // TODO: Special return void instruction?
         return_block->append<ir::RetInst>(nullptr);

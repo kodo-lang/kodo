@@ -13,7 +13,13 @@ namespace {
 bool is_promotable(ir::LocalVar *var) {
     for (auto *user : var->users()) {
         auto *inst = user->as_or_null<ir::Instruction>();
+        if (inst == nullptr) {
+            continue;
+        }
         if (inst->as_or_null<ir::CallInst>() != nullptr) {
+            return false;
+        }
+        if (inst->as_or_null<ir::CastInst>() != nullptr) {
             return false;
         }
         // TODO: Better inline asm output handling.
@@ -23,7 +29,7 @@ bool is_promotable(ir::LocalVar *var) {
         if (inst->as_or_null<ir::LeaInst>() != nullptr) {
             return false;
         }
-        auto *store = inst != nullptr ? inst->as_or_null<ir::StoreInst>() : nullptr;
+        auto *store = inst->as_or_null<ir::StoreInst>();
         if (store != nullptr && store->ptr() != var) {
             return false;
         }

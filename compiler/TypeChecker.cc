@@ -88,26 +88,39 @@ ir::Value *Checker::build_coerce_cast(ir::Value *value, const ir::Type *type, ir
     return m_block->insert<ir::CastInst>(m_insert_pos, op, type, value);
 }
 
-ir::Value *Checker::coerce(ir::Value *value, const ir::Type *type) {
-    ASSERT(!type->is<ir::InvalidType>());
-    if (value->type()->equals_weak(type)) {
+ir::Value *Checker::coerce(ir::Value *value, const ir::Type *rhs) {
+    ASSERT(!rhs->is<ir::InvalidType>());
+    const auto *lhs = value->type();
+    if (lhs->equals_weak(rhs)) {
         return value;
     }
-    if (value->type()->is<ir::InvalidType>()) {
-        return build_coerce_cast(value, type, ir::CastOp::SignExtend);
+    if (lhs->is<ir::InvalidType>()) {
+        return build_coerce_cast(value, rhs, ir::CastOp::SignExtend);
     }
-    if (const auto *from = value->type()->as_or_null<ir::IntType>()) {
-        if (const auto *to = type->as_or_null<ir::IntType>()) {
+    if (const auto *from = lhs->as_or_null<ir::IntType>()) {
+        if (const auto *to = rhs->as_or_null<ir::IntType>()) {
             if (from->bit_width() < to->bit_width()) {
-                return build_coerce_cast(value, type, ir::CastOp::SignExtend);
+                return build_coerce_cast(value, rhs, ir::CastOp::SignExtend);
             }
         }
     }
-    if (const auto *from = value->type()->as_or_null<ir::PointerType>()) {
-        if (const auto *to = type->as_or_null<ir::PointerType>()) {
-            if (from->pointee_type()->equals_weak(to->pointee_type()) && from->is_mutable()) {
+    if (const auto *from = lhs->as_or_null<ir::PointerType>()) {
+        if (const auto *to = rhs->as_or_null<ir::PointerType>()) {
+            const auto *from_pointee = from->pointee_type();
+            const auto *to_pointee = to->pointee_type();
+            if (from_pointee->equals_weak(to_pointee) && from->is_mutable()) {
                 ASSERT(!to->is_mutable());
                 return value;
+            }
+            if (const auto *struct_type = ir::Type::base_as<ir::StructType>(from_pointee)) {
+                if (const auto *trait_type = ir::Type::base_as<ir::TraitType>(to_pointee)) {
+                    for (const auto *implementing : struct_type->implementing()) {
+                        if (implementing->equals_weak(trait_type)) {
+                            // TODO: Don't need this when not translating to LLVM.
+                            return build_coerce_cast(value, rhs, ir::CastOp::Reinterpret);
+                        }
+                    }
+                }
             }
         }
     }
@@ -116,8 +129,8 @@ ir::Value *Checker::coerce(ir::Value *value, const ir::Type *type) {
         inst = m_instruction;
     }
     ENSURE(inst != nullptr);
-    print_error(inst, "cannot implicitly cast from '{}' to '{}'", value->type()->to_string(), type->to_string());
-    return ir::ConstantNull::get(m_program);
+    print_error(inst, "cannot implicitly cast from '{}' to '{}'", lhs->to_string(), rhs->to_string());
+    return ir::ConstantNull::get(m_program->invalid_type());
 }
 
 void Checker::check(ir::Function *function) {

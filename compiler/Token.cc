@@ -78,6 +78,8 @@ std::string tok_str(TokenKind kind) {
         return "-";
     case TokenKind::This:
         return "this";
+    case TokenKind::Trait:
+        return "trait";
     case TokenKind::Type:
         return "type";
     case TokenKind::Var:

@@ -15,4 +15,8 @@ const Type *Prototype::return_type() const {
     return type()->as<FunctionType>()->return_type();
 }
 
+const std::vector<const Type *> &Prototype::params() const {
+    return type()->as<FunctionType>()->params();
+}
+
 } // namespace ir

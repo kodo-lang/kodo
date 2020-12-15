@@ -42,6 +42,7 @@ enum class TokenKind {
     Struct,
     Sub,
     This,
+    Trait,
     Type,
     Var,
 };

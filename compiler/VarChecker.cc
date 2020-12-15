@@ -1,6 +1,7 @@
 #include <VarChecker.hh>
 
 #include <analyses/ReachingDefAnalysis.hh>
+#include <ir/Constants.hh>
 #include <ir/Function.hh>
 #include <ir/Instructions.hh>
 #include <ir/Types.hh>
@@ -59,7 +60,8 @@ void VarChecker::run(ir::Function *function) {
                 continue;
             }
             for (auto *reaching_val : rda->reaching_values(load)) {
-                if (reaching_val == nullptr) {
+                auto *constant = reaching_val->as_or_null<ir::Constant>();
+                if (constant != nullptr && constant->as_or_null<ir::Undef>() != nullptr) {
                     print_error(load, "use of possibly uninitialised variable '{}'", var->name());
                 }
             }

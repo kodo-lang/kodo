@@ -23,14 +23,18 @@ bool LocalVar::is_mutable() const {
     return type()->as<PointerType>()->is_mutable();
 }
 
-Function::Function(const Prototype *prototype, std::string mangled_name, const FunctionType *type)
+Function::Function(Prototype *prototype, std::string mangled_name, const FunctionType *type)
     : Value(KIND), m_prototype(prototype) {
     set_name(std::move(mangled_name));
-    set_type(type);
+    set_type(type->cache()->pointer_type(type, false));
 }
 
 Argument *Function::append_arg(bool is_mutable) {
     return m_args.emplace<Argument>(m_args.end(), is_mutable);
+}
+
+Argument *Function::insert_arg(Argument *arg, bool is_mutable) {
+    return m_args.emplace<Argument>(++decltype(m_args)::iterator(arg), is_mutable);
 }
 
 BasicBlock *Function::append_block() {
@@ -43,6 +47,11 @@ LocalVar *Function::append_var(const Type *type, bool is_mutable) {
     return m_vars.emplace<LocalVar>(m_vars.end(), type, is_mutable);
 }
 
+void Function::remove_arg(Argument *arg) {
+    ASSERT(arg->users().empty());
+    m_args.erase(ListIterator<Argument>(arg));
+}
+
 void Function::remove_var(LocalVar *var) {
     ASSERT(var->users().empty());
     m_vars.erase(ListIterator<LocalVar>(var));
@@ -53,8 +62,12 @@ BasicBlock *Function::entry() const {
     return *m_blocks.begin();
 }
 
+const FunctionType *Function::function_type() const {
+    return type()->as<PointerType>()->pointee_type()->as<FunctionType>();
+}
+
 const Type *Function::return_type() const {
-    return type()->as<FunctionType>()->return_type();
+    return function_type()->return_type();
 }
 
 } // namespace ir

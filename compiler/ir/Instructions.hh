@@ -12,6 +12,7 @@ namespace ir {
 
 class BasicBlock;
 class Function;
+class FunctionType;
 
 enum class BinaryOp {
     Add,
@@ -85,6 +86,7 @@ public:
     Value *callee() const { return m_callee; }
     std::vector<Value *> &args() { return m_args; }
     const std::vector<Value *> &args() const { return m_args; }
+    const FunctionType *callee_function_type() const;
 };
 
 enum class CastOp {

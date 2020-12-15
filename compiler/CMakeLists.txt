@@ -7,6 +7,7 @@ add_executable(compiler
     ir/Constants.cc
     ir/Dumper.cc
     ir/Function.cc
+    ir/GlobalVariable.cc
     ir/Instruction.cc
     ir/Instructions.cc
     ir/Prototype.cc
@@ -19,6 +20,7 @@ add_executable(compiler
     support/Error.cc
     CharStream.cc
     Compiler.cc
+    ConcreteImplementer.cc
     IrGen.cc
     Lexer.cc
     LLVMGen.cc

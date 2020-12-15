@@ -201,6 +201,7 @@ ast::CastExpr *Parser::parse_cast_expr() {
 }
 
 ast::ConstructExpr *Parser::parse_construct_expr(const ast::Symbol *name) {
+    // TODO: Memory leak here! Make ConstructExpr own the full Symbol.
     ASSERT(name->parts().size() == 1);
     auto *construct_expr = new ast::ConstructExpr(m_lexer->line(), name->parts()[0]);
     m_lexer->next();
@@ -366,6 +367,13 @@ ast::Node *Parser::parse_type() {
     }
     if (consume(TokenKind::Struct)) {
         auto *type = new ast::StructType(line);
+        if (consume(TokenKind::LParen)) {
+            while (m_lexer->has_next() && m_lexer->peek().kind != TokenKind::RParen) {
+                type->add_implementing(parse_symbol());
+                consume(TokenKind::Comma);
+            }
+            expect(TokenKind::RParen);
+        }
         expect(TokenKind::LBrace);
         while (m_lexer->has_next()) {
             if (m_lexer->peek().kind == TokenKind::RBrace) {
@@ -375,6 +383,18 @@ ast::Node *Parser::parse_type() {
             expect(TokenKind::Colon);
             type->add_field(m_lexer->line(), std::move(std::get<std::string>(name.data)), parse_type());
             expect(TokenKind::Semi);
+        }
+        expect(TokenKind::RBrace);
+        return type;
+    }
+    if (consume(TokenKind::Trait)) {
+        auto *type = new ast::TraitType(line);
+        expect(TokenKind::LBrace);
+        while (m_lexer->has_next()) {
+            if (m_lexer->peek().kind == TokenKind::RBrace) {
+                break;
+            }
+            type->add_function(parse_function_decl(true));
         }
         expect(TokenKind::RBrace);
         return type;
@@ -393,6 +413,42 @@ ast::Block *Parser::parse_block() {
     }
     expect(TokenKind::RBrace);
     return block;
+}
+
+ast::FunctionDecl *Parser::parse_function_decl(bool force_no_body) {
+    bool externed = consume(TokenKind::Extern).has_value();
+    expect(TokenKind::Fn);
+    auto *name = parse_symbol();
+    expect(TokenKind::LParen);
+    bool instance = consume(TokenKind::Mul).has_value();
+    if (instance) {
+        expect(TokenKind::This);
+        consume(TokenKind::Comma);
+    }
+    auto *decl = new ast::FunctionDecl(m_lexer->line(), name, externed, instance);
+    while (m_lexer->peek().kind != TokenKind::RParen) {
+        // TODO: `is_mutable = expect(TokenKind::Let, TokenKind::Var).kind == TokenKind::Var`.
+        bool is_mutable = consume(TokenKind::Var).has_value();
+        if (!is_mutable) {
+            expect(TokenKind::Let);
+        }
+        auto arg_name = expect(TokenKind::Identifier);
+        expect(TokenKind::Colon);
+        decl->add_arg(m_lexer->line(), std::move(std::get<std::string>(arg_name.data)), parse_type(), is_mutable);
+        consume(TokenKind::Comma);
+    }
+    expect(TokenKind::RParen);
+    if (consume(TokenKind::Colon)) {
+        decl->set_return_type(parse_type());
+    } else {
+        decl->set_return_type(new ast::Symbol(m_lexer->line(), {"void"}));
+    }
+    if (externed || force_no_body) {
+        expect(TokenKind::Semi);
+    } else {
+        decl->set_block(parse_block());
+    }
+    return decl;
 }
 
 Box<ast::Root> Parser::parse() {
@@ -421,38 +477,7 @@ Box<ast::Root> Parser::parse() {
             root->add<ast::TypeDecl>(m_lexer->line(), std::move(std::get<std::string>(name.data)), type);
             continue;
         }
-        bool externed = consume(TokenKind::Extern).has_value();
-        expect(TokenKind::Fn);
-        auto *name = parse_symbol();
-        expect(TokenKind::LParen);
-        bool instance = consume(TokenKind::Mul).has_value();
-        if (instance) {
-            expect(TokenKind::This);
-            consume(TokenKind::Comma);
-        }
-        auto *func = root->add<ast::FunctionDecl>(m_lexer->line(), name, externed, instance);
-        while (m_lexer->peek().kind != TokenKind::RParen) {
-            // TODO: `is_mutable = expect(TokenKind::Let, TokenKind::Var).kind == TokenKind::Var`.
-            bool is_mutable = consume(TokenKind::Var).has_value();
-            if (!is_mutable) {
-                expect(TokenKind::Let);
-            }
-            auto arg_name = expect(TokenKind::Identifier);
-            expect(TokenKind::Colon);
-            func->add_arg(m_lexer->line(), std::move(std::get<std::string>(arg_name.data)), parse_type(), is_mutable);
-            consume(TokenKind::Comma);
-        }
-        expect(TokenKind::RParen);
-        if (consume(TokenKind::Colon)) {
-            func->set_return_type(parse_type());
-        } else {
-            func->set_return_type(new ast::Symbol(m_lexer->line(), {"void"}));
-        }
-        if (externed) {
-            expect(TokenKind::Semi);
-            continue;
-        }
-        func->set_block(parse_block());
+        root->add(parse_function_decl(false));
     }
     return std::move(root);
 }

@@ -35,6 +35,7 @@ public:
     void visit(const StructField *) override;
     void visit(const StructType *) override;
     void visit(const Symbol *) override;
+    void visit(const TraitType *) override;
     void visit(const TypeDecl *) override;
     void visit(const UnaryExpr *) override;
 };
@@ -216,6 +217,8 @@ void Dumper::visit(const Symbol *symbol) {
     }
     std::cout << ')';
 }
+
+void Dumper::visit(const TraitType *) {}
 
 void Dumper::visit(const TypeDecl *type_decl) {
     std::cout << "TypeDecl(";

@@ -18,16 +18,20 @@
 namespace ir {
 namespace {
 
-class FunctionDumper : public Visitor {
+class DumperVisitor : public Visitor {
     std::unordered_map<const BasicBlock *, std::size_t> m_block_map;
+    std::unordered_map<const Value *, std::size_t> m_arg_map;
     std::unordered_map<const Value *, std::size_t> m_stack_map;
     std::unordered_map<const Value *, std::size_t> m_value_map;
 
     std::string printable_block(const BasicBlock *block);
+    std::string printable_constant(const Constant *constant);
     std::string printable_value(const Value *value, bool no_type = false);
 
 public:
+    void dump(const AliasType *alias);
     void dump(const Function *function);
+    void dump(const GlobalVariable *global);
     void visit(BinaryInst *) override;
     void visit(BranchInst *) override;
     void visit(CallInst *) override;
@@ -43,34 +47,41 @@ public:
     void visit(RetInst *) override;
 };
 
-std::string printable_constant(const Constant *constant) {
-    switch (constant->kind()) {
-    case ConstantKind::Int:
-        return std::to_string(constant->as<ConstantInt>()->value());
-    case ConstantKind::Null:
-        return "null";
-    case ConstantKind::String:
-        return constant->as<ConstantString>()->value();
-    default:
-        ENSURE_NOT_REACHED();
-    }
-}
-
-std::string FunctionDumper::printable_block(const BasicBlock *block) {
+std::string DumperVisitor::printable_block(const BasicBlock *block) {
     if (!m_block_map.contains(block)) {
         m_block_map.emplace(block, m_block_map.size());
     }
     return 'L' + std::to_string(m_block_map.at(block));
 }
 
-std::string FunctionDumper::printable_value(const Value *value, bool no_type) {
-    // TODO: Proper undefined value.
-    if (value == nullptr) {
+std::string DumperVisitor::printable_constant(const Constant *constant) {
+    switch (constant->kind()) {
+    case ConstantKind::Array: {
+        std::string ret = "[";
+        for (bool first = true; auto *elem : constant->as<ConstantArray>()->elems()) {
+            if (!first) {
+                ret += ", ";
+            }
+            first = false;
+            ret += printable_value(elem);
+        }
+        ret += "]";
+        return std::move(ret);
+    }
+    case ConstantKind::Int:
+        return std::to_string(constant->as<ConstantInt>()->value());
+    case ConstantKind::Null:
+        return "null";
+    case ConstantKind::String:
+        return constant->as<ConstantString>()->value();
+    case ConstantKind::Undef:
         return "undef";
+    default:
+        ENSURE_NOT_REACHED();
     }
-    if (const auto *function = value->as_or_null<Function>()) {
-        return '@' + function->name();
-    }
+}
+
+std::string DumperVisitor::printable_value(const Value *value, bool no_type) {
     std::string ret;
     if (!no_type) {
         ret += value->type()->to_string() + ' ';
@@ -79,14 +90,18 @@ std::string FunctionDumper::printable_value(const Value *value, bool no_type) {
         ret += printable_constant(constant);
         return std::move(ret);
     }
+    if (value->is<Function>() || value->is<GlobalVariable>()) {
+        ret += '@' + value->name();
+        return std::move(ret);
+    }
     ret += '%';
-    // TODO: Remove LocalVar check when debug info is split (since local vars won't have names anymore).
-    if (value->has_name() && !value->is<LocalVar>()) {
+    // TODO: Remove Argument and LocalVar check when debug info is split (since they won't have names anymore).
+    if (value->has_name() && !value->is<Argument>() && !value->is<LocalVar>()) {
         ret += value->name();
         return std::move(ret);
     }
-    auto &map = value->is<LocalVar>() ? m_stack_map : m_value_map;
-    ret += value->is<LocalVar>() ? 's' : 'v';
+    auto &map = value->is<Argument>() ? m_arg_map : value->is<LocalVar>() ? m_stack_map : m_value_map;
+    ret += value->is<Argument>() ? 'a' : value->is<LocalVar>() ? 's' : 'v';
     if (!map.contains(value)) {
         map.emplace(value, map.size());
     }
@@ -94,8 +109,16 @@ std::string FunctionDumper::printable_value(const Value *value, bool no_type) {
     return std::move(ret);
 }
 
-void FunctionDumper::dump(const Function *function) {
-    fmt::print("fn {}(", printable_value(function));
+void DumperVisitor::dump(const AliasType *alias) {
+    fmt::print("type {} = {}\n", alias->name(), alias->aliased()->to_string());
+}
+
+void DumperVisitor::dump(const Function *function) {
+    m_block_map.clear();
+    m_arg_map.clear();
+    m_stack_map.clear();
+    m_value_map.clear();
+    fmt::print("fn {}(", printable_value(function, true));
     for (bool first = true; const auto *arg : function->args()) {
         if (!first) {
             fmt::print(", ");
@@ -137,7 +160,13 @@ void FunctionDumper::dump(const Function *function) {
     fmt::print("}}\n");
 }
 
-void FunctionDumper::visit(BinaryInst *binary) {
+void DumperVisitor::dump(const GlobalVariable *global) {
+    // TODO: Print @gn on unnamed global.
+    ASSERT(global->has_name());
+    fmt::print("const @{} = {}\n", global->name(), printable_value(global->initialiser(), true));
+}
+
+void DumperVisitor::visit(BinaryInst *binary) {
     switch (binary->op()) {
     case BinaryOp::Add:
         fmt::print("add ");
@@ -155,12 +184,12 @@ void FunctionDumper::visit(BinaryInst *binary) {
     fmt::print("{}, {}", printable_value(binary->lhs()), printable_value(binary->rhs()));
 }
 
-void FunctionDumper::visit(BranchInst *branch) {
+void DumperVisitor::visit(BranchInst *branch) {
     fmt::print("br {}", printable_block(branch->dst()));
 }
 
-void FunctionDumper::visit(CallInst *call) {
-    fmt::print("call {} {}(", call->type()->to_string(), printable_value(call->callee()));
+void DumperVisitor::visit(CallInst *call) {
+    fmt::print("call {} {}(", call->type()->to_string(), printable_value(call->callee(), true));
     for (bool first = true; auto *arg : call->args()) {
         if (!first) {
             fmt::print(", ");
@@ -171,7 +200,7 @@ void FunctionDumper::visit(CallInst *call) {
     fmt::print(")");
 }
 
-void FunctionDumper::visit(CastInst *cast) {
+void DumperVisitor::visit(CastInst *cast) {
     auto cast_op_string = [](CastOp op) {
         switch (op) {
         case CastOp::IntToPtr:
@@ -194,7 +223,7 @@ void FunctionDumper::visit(CastInst *cast) {
                cast_op_string(cast->op()));
 }
 
-void FunctionDumper::visit(CompareInst *compare) {
+void DumperVisitor::visit(CompareInst *compare) {
     fmt::print("cmp_");
     switch (compare->op()) {
     case CompareOp::LessThan:
@@ -207,17 +236,17 @@ void FunctionDumper::visit(CompareInst *compare) {
     fmt::print("{}, {}", printable_value(compare->lhs()), printable_value(compare->rhs()));
 }
 
-void FunctionDumper::visit(CondBranchInst *cond_branch) {
+void DumperVisitor::visit(CondBranchInst *cond_branch) {
     fmt::print("br {}, {}, {}", printable_value(cond_branch->cond()), printable_block(cond_branch->true_dst()),
                printable_block(cond_branch->false_dst()));
 }
 
-void FunctionDumper::visit(CopyInst *copy) {
+void DumperVisitor::visit(CopyInst *copy) {
     fmt::print("copy {} -> {} * {}", printable_value(copy->src()), printable_value(copy->dst()),
                printable_value(copy->len()));
 }
 
-void FunctionDumper::visit(InlineAsmInst *inline_asm) {
+void DumperVisitor::visit(InlineAsmInst *inline_asm) {
     fmt::print("asm {} \"{}\"", inline_asm->type()->to_string(), inline_asm->instruction());
     for (const auto &clobber : inline_asm->clobbers()) {
         fmt::print(", clobber({})", clobber);
@@ -230,18 +259,18 @@ void FunctionDumper::visit(InlineAsmInst *inline_asm) {
     }
 }
 
-void FunctionDumper::visit(LeaInst *lea) {
+void DumperVisitor::visit(LeaInst *lea) {
     fmt::print("lea {}, {}", lea->type()->to_string(), printable_value(lea->ptr()));
     for (auto *index : lea->indices()) {
         fmt::print(", {}", printable_value(index));
     }
 }
 
-void FunctionDumper::visit(LoadInst *load) {
+void DumperVisitor::visit(LoadInst *load) {
     fmt::print("load {}", printable_value(load->ptr()));
 }
 
-void FunctionDumper::visit(PhiInst *phi) {
+void DumperVisitor::visit(PhiInst *phi) {
     fmt::print("phi (");
     for (bool first = true; auto [block, value] : phi->incoming()) {
         if (!first) {
@@ -253,11 +282,11 @@ void FunctionDumper::visit(PhiInst *phi) {
     fmt::print(")");
 }
 
-void FunctionDumper::visit(StoreInst *store) {
+void DumperVisitor::visit(StoreInst *store) {
     fmt::print("store {}, {}", printable_value(store->ptr()), printable_value(store->val()));
 }
 
-void FunctionDumper::visit(RetInst *ret) {
+void DumperVisitor::visit(RetInst *ret) {
     if (ret->val() == nullptr) {
         fmt::print("ret void");
         return;
@@ -268,13 +297,16 @@ void FunctionDumper::visit(RetInst *ret) {
 } // namespace
 
 void Dumper::run(Program *program) {
+    DumperVisitor visitor;
     for (const auto &alias : program->alias_types()) {
-        fmt::print("type {} = {};\n", alias->name(), alias->aliased()->to_string());
+        visitor.dump(*alias);
     }
-}
-
-void Dumper::run(Function *function) {
-    FunctionDumper().dump(function);
+    for (const auto *global : program->globals()) {
+        visitor.dump(global);
+    }
+    for (auto *function : *program) {
+        visitor.dump(function);
+    }
 }
 
 } // namespace ir

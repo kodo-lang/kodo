@@ -25,6 +25,7 @@ public:
 
     bool externed() const { return m_externed; }
     const Type *return_type() const;
+    const std::vector<const Type *> &params() const;
 };
 
 } // namespace ir

@@ -330,6 +330,10 @@ public:
 
     void accept(Visitor *visitor) const override;
 
+    void add(const Node *decl) {
+        m_decls.insert(m_decls.end(), decl);
+    }
+
     template <typename T, typename... Args>
     T *add(Args &&... args) {
         return m_decls.emplace<T>(m_decls.end(), std::forward<Args>(args)...);
@@ -369,6 +373,7 @@ public:
 
 class StructType : public Node {
     List<const StructField> m_fields;
+    List<const Node> m_implementing;
 
 public:
     static constexpr auto KIND = NodeKind::StructType;
@@ -382,7 +387,12 @@ public:
         m_fields.emplace<StructField>(m_fields.end(), std::forward<Args>(args)...);
     }
 
+    void add_implementing(const Node *name) {
+        m_implementing.insert(m_implementing.end(), name);
+    }
+
     const List<const StructField> &fields() const { return m_fields; }
+    const List<const Node> &implementing() const { return m_implementing; }
 };
 
 class Symbol : public Node {
@@ -396,6 +406,23 @@ public:
     void accept(Visitor *visitor) const override;
 
     const std::vector<std::string> &parts() const { return m_parts; }
+};
+
+class TraitType : public Node {
+    List<const FunctionDecl> m_functions;
+
+public:
+    static constexpr auto KIND = NodeKind::TraitType;
+
+    explicit TraitType(int line) : Node(KIND, line) {}
+
+    void accept(Visitor *visitor) const override;
+
+    void add_function(const FunctionDecl *decl) {
+        m_functions.insert(m_functions.end(), decl);
+    }
+
+    const List<const FunctionDecl> &functions() const { return m_functions; }
 };
 
 class TypeDecl : public Node {

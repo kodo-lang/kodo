@@ -39,7 +39,7 @@ public:
 };
 
 class Function : public Value, public ListNode {
-    const Prototype *const m_prototype;
+    Prototype *const m_prototype;
     // Lists must be in this order to ensure instructions are freed before arguments and local vars.
     List<Argument> m_args;
     List<LocalVar> m_vars;
@@ -51,7 +51,7 @@ public:
     iterator begin() const { return m_blocks.begin(); }
     iterator end() const { return m_blocks.end(); }
 
-    Function(const Prototype *prototype, std::string mangled_name, const FunctionType *type);
+    Function(Prototype *prototype, std::string mangled_name, const FunctionType *type);
     Function(const Function &) = delete;
     Function(Function &&) = delete;
     ~Function() override = default;
@@ -60,14 +60,17 @@ public:
     Function &operator=(Function &&) = delete;
 
     Argument *append_arg(bool is_mutable);
+    Argument *insert_arg(Argument *arg, bool is_mutable);
     BasicBlock *append_block();
     LocalVar *append_var(const Type *type, bool is_mutable);
+    void remove_arg(Argument *arg);
     void remove_var(LocalVar *var);
 
-    const Prototype *prototype() const { return m_prototype; }
+    Prototype *prototype() const { return m_prototype; }
     const List<Argument> &args() const { return m_args; }
     const List<LocalVar> &vars() const { return m_vars; }
     BasicBlock *entry() const;
+    const FunctionType *function_type() const;
     const Type *return_type() const;
 };
 

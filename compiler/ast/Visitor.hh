@@ -24,6 +24,7 @@ class StringLit;
 class StructField;
 class StructType;
 class Symbol;
+class TraitType;
 class TypeDecl;
 class UnaryExpr;
 
@@ -50,6 +51,7 @@ struct Visitor {
     virtual void visit(const StructField *) = 0;
     virtual void visit(const StructType *) = 0;
     virtual void visit(const Symbol *) = 0;
+    virtual void visit(const TraitType *) = 0;
     virtual void visit(const TypeDecl *) = 0;
     virtual void visit(const UnaryExpr *) = 0;
 };

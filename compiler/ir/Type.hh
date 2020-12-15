@@ -11,11 +11,13 @@ class TypeCache;
 enum class TypeKind {
     Invalid,
     Alias,
+    Array,
     Bool,
     Function,
     Int,
     Pointer,
     Struct,
+    Trait,
     Void,
 };
 

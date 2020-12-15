@@ -11,6 +11,15 @@ const AliasType *TypeCache::alias_type(const Type *aliased, std::string &&name) 
     return *m_alias_types.emplace_back(new AliasType(this, aliased, std::move(name)));
 }
 
+const ArrayType *TypeCache::array_type(const Type *element_type, std::size_t length) const {
+    std::pair<const Type *, std::size_t> pair(element_type, length);
+    if (!m_array_types.contains(pair)) {
+        m_array_types.emplace(std::piecewise_construct, std::forward_as_tuple(pair),
+                              std::forward_as_tuple(this, element_type, length));
+    }
+    return &m_array_types.at(pair);
+}
+
 const FunctionType *TypeCache::function_type(const Type *return_type, std::vector<const Type *> &&params) const {
     for (const auto &type : m_function_types) {
         if (type->return_type() == return_type && type->params() == params) {
@@ -36,15 +45,6 @@ const PointerType *TypeCache::pointer_type(const Type *pointee, bool is_mutable)
                                 std::forward_as_tuple(this, pointee, is_mutable));
     }
     return &m_pointer_types.at(pair);
-}
-
-const StructType *TypeCache::struct_type(std::vector<StructField> &&fields) const {
-    for (const auto &type : m_struct_types) {
-        if (type->fields() == fields) {
-            return *type;
-        }
-    }
-    return *m_struct_types.emplace_back(new StructType(this, std::move(fields)));
 }
 
 } // namespace ir

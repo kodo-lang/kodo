@@ -5,12 +5,32 @@
 #include <cstdint>
 #include <string>
 #include <utility>
+#include <vector>
 
 namespace ir {
 
+class ArrayType;
 class Program;
 
 // TODO: Hide constructors?
+
+class ConstantArray : public Constant {
+    // TODO: Make this `Constant *` instead of `Value *` when functions are constants.
+    const std::vector<Value *> m_elems;
+
+public:
+    static constexpr auto KIND = ConstantKind::Array;
+    static ConstantArray *get(const ArrayType *type, std::vector<Value *> &&elems);
+    static ConstantArray *get(std::vector<Value *> &&elems);
+
+    ConstantArray(const Type *type, std::vector<Value *> &&elems)
+        : Constant(KIND, type), m_elems(std::move(elems)) {}
+
+    Constant *clone(const Type *type) const override;
+
+    const std::vector<Value *> &elems() const { return m_elems; }
+};
+
 class ConstantInt : public Constant {
     const std::size_t m_value;
 
@@ -27,9 +47,9 @@ public:
 
 struct ConstantNull : public Constant {
     static constexpr auto KIND = ConstantKind::Null;
-    static ConstantNull *get(const Program *program);
+    static ConstantNull *get(const Type *type);
 
-    ConstantNull() noexcept : Constant(KIND, nullptr) {}
+    explicit ConstantNull(const Type *type) : Constant(KIND, type) {}
 
     Constant *clone(const Type *type) const override;
 };
@@ -46,6 +66,16 @@ public:
     Constant *clone(const Type *type) const override;
 
     const std::string &value() const { return m_value; }
+};
+
+class Undef : public Constant {
+public:
+    static constexpr auto KIND = ConstantKind::Undef;
+    static Undef *get(const Type *type);
+
+    explicit Undef(const Type *type) : Constant(KIND, type) {}
+
+    Constant *clone(const Type *type) const override;
 };
 
 } // namespace ir

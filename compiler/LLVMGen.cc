@@ -33,11 +33,13 @@ class LLVMGen {
 public:
     explicit LLVMGen(llvm::LLVMContext *llvm_context);
 
+    llvm::ArrayType *llvm_array_type(const ir::ArrayType *);
     llvm::FunctionType *llvm_function_type(const ir::FunctionType *);
     llvm::StructType *llvm_struct_type(const ir::StructType *);
     llvm::Type *llvm_type(const ir::Type *);
     llvm::Value *llvm_value(const ir::Value *);
 
+    llvm::Value *gen_constant_array(const ir::ConstantArray *);
     llvm::Value *gen_constant_int(const ir::ConstantInt *);
     llvm::Value *gen_constant_string(const ir::ConstantString *);
 
@@ -57,11 +59,12 @@ public:
 
     llvm::Value *gen_argument(const ir::Argument *);
     llvm::Value *gen_constant(const ir::Constant *);
+    llvm::Value *gen_function(const ir::Function *);
+    llvm::Value *gen_global(const ir::GlobalVariable *);
     llvm::Value *gen_instruction(const ir::Instruction *);
     llvm::Value *gen_value(const ir::Value *);
 
     void gen_block(const ir::BasicBlock *);
-    void gen_function(const ir::Function *);
     void gen_program(const ir::Program *);
 
     std::unique_ptr<llvm::Module> module() { return std::move(m_llvm_module); }
@@ -69,6 +72,10 @@ public:
 
 LLVMGen::LLVMGen(llvm::LLVMContext *llvm_context) : m_llvm_context(llvm_context), m_llvm_builder(*llvm_context) {
     m_llvm_module = std::make_unique<llvm::Module>("main", *m_llvm_context);
+}
+
+llvm::ArrayType *LLVMGen::llvm_array_type(const ir::ArrayType *array_type) {
+    return llvm::ArrayType::get(llvm_type(array_type->element_type()), array_type->length());
 }
 
 llvm::FunctionType *LLVMGen::llvm_function_type(const ir::FunctionType *function_type) {
@@ -93,6 +100,8 @@ llvm::Type *LLVMGen::llvm_type(const ir::Type *type) {
     switch (type->kind()) {
     case ir::TypeKind::Alias:
         return llvm_type(type->as<ir::AliasType>()->aliased());
+    case ir::TypeKind::Array:
+        return llvm_array_type(type->as<ir::ArrayType>());
     case ir::TypeKind::Bool:
         return llvm::Type::getInt1Ty(*m_llvm_context);
     case ir::TypeKind::Function:
@@ -103,6 +112,7 @@ llvm::Type *LLVMGen::llvm_type(const ir::Type *type) {
         return llvm::PointerType::get(llvm_type(type->as<ir::PointerType>()->pointee_type()), 0);
     case ir::TypeKind::Struct:
         return llvm_struct_type(type->as<ir::StructType>());
+    case ir::TypeKind::Trait:
     case ir::TypeKind::Void:
         return llvm::Type::getVoidTy(*m_llvm_context);
     default:
@@ -119,6 +129,16 @@ llvm::Value *LLVMGen::llvm_value(const ir::Value *value) {
         llvm_value->setName(value->name());
     }
     return llvm_value;
+}
+
+llvm::Value *LLVMGen::gen_constant_array(const ir::ConstantArray *constant_array) {
+    auto *llvm_type = llvm_array_type(constant_array->type()->as<ir::ArrayType>());
+    std::vector<llvm::Constant *> llvm_array_elems;
+    llvm_array_elems.reserve(constant_array->elems().size());
+    for (auto *elem : constant_array->elems()) {
+        llvm_array_elems.push_back(llvm::cast<llvm::Constant>(llvm_value(elem)));
+    }
+    return llvm::ConstantArray::get(llvm_type, llvm_array_elems);
 }
 
 llvm::Value *LLVMGen::gen_constant_int(const ir::ConstantInt *constant_int) {
@@ -148,11 +168,11 @@ llvm::Value *LLVMGen::gen_binary(const ir::BinaryInst *binary) {
 
 llvm::Value *LLVMGen::gen_call(const ir::CallInst *call) {
     std::vector<llvm::Value *> args;
-    for (auto *arg : call->args()) {
+    for (const auto *arg : call->args()) {
         args.push_back(llvm_value(arg));
     }
-    auto *callee = m_llvm_module->getFunction(call->callee()->name());
-    return m_llvm_builder.CreateCall(callee, args);
+    auto *callee = llvm_value(call->callee());
+    return m_llvm_builder.CreateCall(llvm_function_type(call->callee_function_type()), callee, args);
 }
 
 llvm::Value *LLVMGen::gen_cast(const ir::CastInst *cast) {
@@ -247,6 +267,9 @@ llvm::Value *LLVMGen::gen_lea(const ir::LeaInst *lea) {
     for (auto *index : lea->indices()) {
         indices.push_back(llvm_value(index));
     }
+    if (indices.size() == 1) {
+        ptr = m_llvm_builder.CreateBitCast(ptr, llvm_type(lea->type()));
+    }
     return m_llvm_builder.CreateInBoundsGEP(ptr, indices);
 }
 
@@ -298,13 +321,66 @@ llvm::Value *LLVMGen::gen_argument(const ir::Argument *argument) {
 
 llvm::Value *LLVMGen::gen_constant(const ir::Constant *constant) {
     switch (constant->kind()) {
+    case ir::ConstantKind::Array:
+        return gen_constant_array(constant->as<ir::ConstantArray>());
     case ir::ConstantKind::Int:
         return gen_constant_int(constant->as<ir::ConstantInt>());
+    case ir::ConstantKind::Null:
+        return llvm::ConstantPointerNull::get(llvm::cast<llvm::PointerType>(llvm_type(constant->type())));
     case ir::ConstantKind::String:
         return gen_constant_string(constant->as<ir::ConstantString>());
+    case ir::ConstantKind::Undef:
+        return llvm::UndefValue::get(llvm_type(constant->type()));
     default:
         ENSURE_NOT_REACHED();
     }
+}
+
+llvm::Value *LLVMGen::gen_function(const ir::Function *function) {
+    m_llvm_function = m_llvm_module->getFunction(function->name());
+    if (m_llvm_function == nullptr) {
+        std::vector<llvm::Type *> llvm_params;
+        for (const auto *param : function->prototype()->params()) {
+            llvm_params.push_back(llvm_type(param));
+        }
+
+        auto *function_type = llvm_function_type(function->function_type());
+        m_llvm_function =
+            llvm::Function::Create(function_type, llvm::Function::ExternalLinkage, function->name(), *m_llvm_module);
+    }
+
+    // If the function has no blocks, return early.
+    if (function->prototype()->externed()) {
+        ASSERT(m_llvm_function->empty());
+        return m_llvm_function;
+    }
+
+    m_llvm_block = llvm::BasicBlock::Create(*m_llvm_context, "vars", m_llvm_function);
+    m_llvm_builder.SetInsertPoint(m_llvm_block);
+    for (const auto *block : *function) {
+        auto *llvm_block = llvm::BasicBlock::Create(*m_llvm_context, "", m_llvm_function);
+        m_block_map.emplace(block, llvm_block);
+    }
+
+    for (int i = 0; const auto *arg : function->args()) {
+        m_arg_map.emplace(arg, m_llvm_function->getArg(i++));
+    }
+    for (const auto *var : function->vars()) {
+        auto *alloca = m_llvm_builder.CreateAlloca(llvm_type(var->var_type()));
+        m_value_map.emplace(var, alloca);
+    }
+    for (const auto *block : *function) {
+        gen_block(block);
+    }
+    return m_llvm_function;
+}
+
+llvm::Value *LLVMGen::gen_global(const ir::GlobalVariable *global) {
+    auto *llvm_initialiser = llvm::cast<llvm::Constant>(llvm_value(global->initialiser()));
+    auto *llvm_global = new llvm::GlobalVariable(*m_llvm_module, llvm_initialiser->getType(), true,
+                                                 llvm::GlobalValue::PrivateLinkage, llvm_initialiser, global->name());
+    llvm_global->setUnnamedAddr(llvm::GlobalValue::UnnamedAddr::Global);
+    return llvm_global;
 }
 
 llvm::Value *LLVMGen::gen_instruction(const ir::Instruction *instruction) {
@@ -351,6 +427,10 @@ llvm::Value *LLVMGen::gen_value(const ir::Value *value) {
         return gen_argument(value->as<ir::Argument>());
     case ir::ValueKind::Constant:
         return gen_constant(value->as<ir::Constant>());
+    case ir::ValueKind::Function:
+        return gen_function(value->as<ir::Function>());
+    case ir::ValueKind::GlobalVariable:
+        return gen_global(value->as<ir::GlobalVariable>());
     case ir::ValueKind::Instruction:
         return gen_instruction(value->as<ir::Instruction>());
     default:
@@ -369,50 +449,9 @@ void LLVMGen::gen_block(const ir::BasicBlock *block) {
     }
 }
 
-void LLVMGen::gen_function(const ir::Function *function) {
-    // If the function has no blocks, return early.
-    if (function->prototype()->externed()) {
-        return;
-    }
-
-    m_llvm_function = m_llvm_module->getFunction(function->name());
-    ASSERT(m_llvm_function != nullptr);
-
-    m_llvm_block = llvm::BasicBlock::Create(*m_llvm_context, "vars", m_llvm_function);
-    m_llvm_builder.SetInsertPoint(m_llvm_block);
-    for (const auto *block : *function) {
-        auto *llvm_block = llvm::BasicBlock::Create(*m_llvm_context, "", m_llvm_function);
-        m_block_map.emplace(block, llvm_block);
-    }
-
-    for (int i = 0; const auto *arg : function->args()) {
-        m_arg_map.emplace(arg, m_llvm_function->getArg(i++));
-    }
-    for (const auto *var : function->vars()) {
-        auto *alloca = m_llvm_builder.CreateAlloca(llvm_type(var->var_type()));
-        m_value_map.emplace(var, alloca);
-    }
-    for (const auto *block : *function) {
-        gen_block(block);
-    }
-}
-
 void LLVMGen::gen_program(const ir::Program *program) {
     for (auto *function : *program) {
-        std::vector<llvm::Type *> arg_types;
-        for (const auto *arg : function->args()) {
-            ASSERT(arg->has_type());
-            arg_types.push_back(llvm_type(arg->type()));
-        }
-
-        if (auto *existing = m_llvm_module->getFunction(function->name())) {
-            ASSERT(existing->empty());
-        }
-        auto *function_type = llvm_function_type(function->type()->as<ir::FunctionType>());
-        llvm::Function::Create(function_type, llvm::Function::ExternalLinkage, function->name(), *m_llvm_module);
-    }
-    for (auto *function : *program) {
-        gen_function(function);
+        llvm_value(function);
     }
 }
 

@@ -70,7 +70,7 @@ CallInst::CallInst(BasicBlock *parent, Value *callee, std::vector<Value *> args)
         arg->add_user(this);
     }
     m_callee->add_user(this);
-    set_type(callee->type()->as<FunctionType>()->return_type());
+    set_type(callee_function_type()->return_type());
 }
 
 CallInst::~CallInst() {
@@ -93,6 +93,13 @@ void CallInst::replace_uses_of_with(Value *orig, Value *repl) {
         REPL_VALUE(arg)
     }
     REPL_VALUE(m_callee)
+}
+
+const FunctionType *CallInst::callee_function_type() const {
+    if (const auto *pointer_type = m_callee->type()->as_or_null<PointerType>()) {
+        return pointer_type->pointee_type()->as<FunctionType>();
+    }
+    return m_callee->type()->as<FunctionType>();
 }
 
 CastInst::CastInst(BasicBlock *parent, CastOp op, const Type *type, Value *val)

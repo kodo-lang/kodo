@@ -31,6 +31,7 @@ enum class NodeKind {
     StructField,
     StructType,
     Symbol,
+    TraitType,
     TypeDecl,
     UnaryExpr,
 };
