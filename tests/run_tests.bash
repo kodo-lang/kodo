@@ -9,8 +9,12 @@ run_test() {
     if [ $2 -ne $RET ] || [ "$3" != "$OUTPUT_STRIPPED" ]
     then
         printf "\u001b[31mFAILED\u001b[0m\n"
-        printf "%s" "$(echo "$OUTPUT" | sed 's/^/  /g')"
+        printf "%s" "$(echo "$OUTPUT" | sed 's/^//g')"
         printf "\u001b[0m"
+        if not [ -z "$OUTPUT" ]
+        then
+            printf "\n"
+        fi
     else
         printf "\u001b[32mOK\u001b[0m\n"
     fi
