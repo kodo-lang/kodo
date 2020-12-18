@@ -29,6 +29,7 @@ int main(int argc, char **argv) {
     args::Value<bool> dump_ast_opt(false);
     args::Value<bool> dump_ir_opt(false);
     args::Value<bool> dump_llvm_opt(false);
+    args::Value<bool> freestanding(false);
     args::Value<bool> verify_llvm_opt(true);
     std::string mode_string;
     std::string input_file;
@@ -37,6 +38,7 @@ int main(int argc, char **argv) {
     args_parser.add_option("dump-ast", &dump_ast_opt);
     args_parser.add_option("dump-ir", &dump_ir_opt);
     args_parser.add_option("dump-llvm", &dump_llvm_opt);
+    args_parser.add_option("freestanding", &freestanding);
     args_parser.add_option("verify-llvm", &verify_llvm_opt);
     args_parser.parse(argc, argv);
 
@@ -46,7 +48,7 @@ int main(int argc, char **argv) {
     }
 
     Compiler compiler;
-    auto program = compiler.compile(input_file);
+    auto program = compiler.compile(input_file, freestanding.present_or_true());
 
     PassManager pass_manager;
     pass_manager.add<TypeChecker>();

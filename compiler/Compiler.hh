@@ -15,5 +15,5 @@ class Compiler {
     void add_code(const std::string &path);
 
 public:
-    Box<ir::Program> compile(const std::string &main_path);
+    Box<ir::Program> compile(const std::string &main_path, bool freestanding);
 };
