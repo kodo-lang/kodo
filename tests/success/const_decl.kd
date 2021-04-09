@@ -1,4 +1,4 @@
-const CONST_NUM = 5;
+const CONST_NUM: i32 = 5;
 
 fn main(): i32 {
     return CONST_NUM + 15;

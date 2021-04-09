@@ -84,7 +84,12 @@ std::string DumperVisitor::printable_constant(const Constant *constant) {
 std::string DumperVisitor::printable_value(const Value *value, bool no_type) {
     std::string ret;
     if (!no_type) {
-        ret += value->type()->to_string() + ' ';
+        // TODO: Remove!
+        if (value->type() == nullptr) {
+            ret += "<badtype> ";
+        } else {
+            ret += value->type()->to_string() + ' ';
+        }
     }
     if (const auto *constant = value->as_or_null<Constant>()) {
         ret += printable_constant(constant);

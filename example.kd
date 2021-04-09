@@ -1,13 +1,8 @@
-import "std/io.kd";
-
 fn main(): i32 {
-    let out_file = File::open_write("file.txt");
-    out_file.write("Hello, world!", 13);
-    out_file.close();
-    let in_file = File::open_read("file.txt");
-    let map = in_file.create_map();
-    sys_write(1, map.ptr, map.len);
-    map.destroy();
-    in_file.close();
+    var foo: i32 = 5;
+    foo = 6;
+    let addr = cast<*mut u8>(753664);
+    *addr = 65;
+    *cast<*mut u8>(753664) = 65;
     return 0;
 }

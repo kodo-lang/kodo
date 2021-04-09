@@ -51,15 +51,14 @@ class IrGen {
     ir::BasicBlock *m_block{nullptr};
     Stack<Scope> m_scope_stack;
 
-    enum class DerefState {
-        Deref,
-        DontDeref,
-    } m_deref_state{DerefState::Deref};
-
-    enum class MemberLoadState {
+    enum class LoadState {
         DontLoad,
         Load,
-    } m_member_load_state{MemberLoadState::Load};
+    };
+
+    LoadState m_deref_state{LoadState::Load};
+    LoadState m_member_load_state{LoadState::Load};
+    LoadState m_symbol_load_state{LoadState::Load};
 
 public:
     IrGen();
@@ -299,12 +298,17 @@ const ir::Type *IrGen::gen_type(const ast::Node *node) {
 }
 
 ir::Value *IrGen::gen_address_of(const ast::Node *expr) {
-    StateChanger deref_state_changer(m_deref_state, DerefState::DontDeref);
+    StateChanger symbol_load_state_changer(m_symbol_load_state, LoadState::DontLoad);
     return gen_expr(expr);
 }
 
 ir::Value *IrGen::gen_deref(const ast::Node *expr) {
-    return m_block->append<ir::LoadInst>(gen_expr(expr));
+    StateChanger symbol_load_state_changer(m_symbol_load_state, LoadState::Load);
+    auto *value = gen_expr(expr);
+    if (m_deref_state == LoadState::DontLoad) {
+        return value;
+    }
+    return m_block->append<ir::LoadInst>(value);
 }
 
 ir::Value *IrGen::gen_asm_expr(const ast::AsmExpr *asm_expr) {
@@ -318,7 +322,7 @@ ir::Value *IrGen::gen_asm_expr(const ast::AsmExpr *asm_expr) {
         inputs.emplace_back(input, gen_expr(*expr));
     }
     for (const auto &[output, expr] : asm_expr->outputs()) {
-        StateChanger deref_state_changer(m_deref_state, DerefState::DontDeref);
+        StateChanger symbol_load_state_change(m_symbol_load_state, LoadState::DontLoad);
         outputs.emplace_back(output, gen_expr(*expr));
     }
     auto *inline_asm = m_block->append<ir::InlineAsmInst>(asm_expr->instruction(), std::move(clobbers),
@@ -330,8 +334,9 @@ ir::Value *IrGen::gen_asm_expr(const ast::AsmExpr *asm_expr) {
 ir::Value *IrGen::gen_assign_expr(const ast::AssignExpr *assign_expr) {
     ir::Value *lhs = nullptr;
     {
-        StateChanger deref_state_changer(m_deref_state, DerefState::DontDeref);
-        StateChanger member_load_state_changer(m_member_load_state, MemberLoadState::DontLoad);
+        StateChanger deref_state_changer(m_deref_state, LoadState::DontLoad);
+        StateChanger member_load_state_changer(m_member_load_state, LoadState::DontLoad);
+        StateChanger symbol_load_state_changer(m_symbol_load_state, LoadState::DontLoad);
         lhs = gen_expr(assign_expr->lhs());
     }
     auto *rhs = gen_expr(assign_expr->rhs());
@@ -383,7 +388,7 @@ ir::Value *IrGen::gen_construct_expr(const ast::ConstructExpr *construct_expr) {
         lea->set_type(m_program->pointer_type(struct_type->fields()[i++].type(), true));
         create_store(construct_expr, lea, gen_expr(arg));
     }
-    if (m_deref_state == DerefState::DontDeref) {
+    if (m_deref_state == LoadState::DontLoad) {
         return tmp_var;
     }
     return m_block->append<ir::LoadInst>(tmp_var);
@@ -392,8 +397,8 @@ ir::Value *IrGen::gen_construct_expr(const ast::ConstructExpr *construct_expr) {
 ir::Value *IrGen::gen_member_expr(const ast::MemberExpr *member_expr) {
     ir::Value *lhs = nullptr;
     {
-        StateChanger deref_state_changer(m_deref_state, DerefState::DontDeref);
-        StateChanger member_load_state_changer(m_member_load_state, MemberLoadState::DontLoad);
+        StateChanger member_load_state_changer(m_member_load_state, LoadState::DontLoad);
+        StateChanger symbol_load_state_changer(m_symbol_load_state, LoadState::DontLoad);
         lhs = gen_expr(member_expr->lhs());
     }
     const auto *type = lhs->type();
@@ -437,7 +442,7 @@ ir::Value *IrGen::gen_member_expr(const ast::MemberExpr *member_expr) {
     int index = std::distance(struct_type->fields().begin(), it);
     auto *lea = get_member_ptr(lhs, index);
     lea->set_type(m_program->pointer_type(it->type(), true));
-    if (m_member_load_state == MemberLoadState::Load) {
+    if (m_member_load_state == LoadState::Load) {
         return m_block->append<ir::LoadInst>(lea);
     }
     return lea;
@@ -445,8 +450,8 @@ ir::Value *IrGen::gen_member_expr(const ast::MemberExpr *member_expr) {
 
 ir::Value *IrGen::gen_num_lit(const ast::NumLit *num_lit) {
     // `+ 1` for signed bit.
-    //    int bit_width = static_cast<int>(std::ceil(std::log2(std::max(1UL, num_lit->value())))) + 1;
-    return ir::ConstantInt::get(m_program->invalid_type(), num_lit->value());
+    int bit_width = static_cast<int>(std::ceil(std::log2(std::max(1UL, num_lit->value())))) + 1;
+    return ir::ConstantInt::get(m_program->int_type(bit_width, true), num_lit->value());
 }
 
 ir::Value *IrGen::gen_string_lit(const ast::StringLit *string_lit) {
@@ -462,7 +467,7 @@ ir::Value *IrGen::gen_symbol(const ast::Symbol *symbol) {
         print_error(symbol, "no symbol named '{}' in current context", name);
         return ir::ConstantNull::get(m_program->invalid_type());
     }
-    if (m_deref_state == DerefState::DontDeref || var->is<ir::Constant>()) {
+    if (m_symbol_load_state == LoadState::DontLoad || var->is<ir::Constant>()) {
         return var;
     }
     return m_block->append<ir::LoadInst>(var);
@@ -585,6 +590,10 @@ void IrGen::gen_const_decl(const ast::ConstDecl *const_decl) {
     if (!init_val->is<ir::Constant>()) {
         print_error(const_decl, "non-constant on right hand side of const declaration");
         return;
+    }
+    if (const_decl->type() != nullptr) {
+        const auto *type = gen_type(const_decl->type());
+        init_val = init_val->as<ir::Constant>()->clone(type);
     }
     m_scope_stack.peek().put_var(const_decl->name(), init_val);
 }

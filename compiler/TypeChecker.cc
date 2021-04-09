@@ -187,6 +187,10 @@ void Checker::visit(ir::CastInst *cast) {
         cast->set_op(ir::CastOp::ZeroExtend);
         return;
     }
+    if (val->type()->is<ir::IntType>() && cast->type()->is<ir::PointerType>()) {
+        cast->set_op(ir::CastOp::IntToPtr);
+        return;
+    }
     print_error(cast, "cannot cast from '{}' to '{}'", val->type()->to_string(), cast->type()->to_string());
 }
 

@@ -30,6 +30,7 @@ int main(int argc, char **argv) {
     args::Value<bool> dump_ir_opt(false);
     args::Value<bool> dump_llvm_opt(false);
     args::Value<bool> freestanding(false);
+    args::Value<std::string> output_file("");
     args::Value<bool> verify_llvm_opt(true);
     std::string mode_string;
     std::string input_file;
@@ -39,6 +40,7 @@ int main(int argc, char **argv) {
     args_parser.add_option("dump-ir", &dump_ir_opt);
     args_parser.add_option("dump-llvm", &dump_llvm_opt);
     args_parser.add_option("freestanding", &freestanding);
+    args_parser.add_option("output", &output_file);
     args_parser.add_option("verify-llvm", &verify_llvm_opt);
     args_parser.parse(argc, argv);
 
@@ -51,6 +53,9 @@ int main(int argc, char **argv) {
     auto program = compiler.compile(input_file, freestanding.present_or_true());
 
     PassManager pass_manager;
+    if (dump_ir_opt.present_or_true()) {
+        pass_manager.add<ir::Dumper>();
+    }
     pass_manager.add<TypeChecker>();
     pass_manager.add<VarChecker>();
     pass_manager.add<ConcreteImplementer>();
@@ -85,12 +90,13 @@ int main(int argc, char **argv) {
         Box<llvm::ExecutionEngine> engine(engine_builder.create());
         return engine->runFunctionAsMain(function, {}, nullptr);
     }
+    const char *output_name = output_file.present() ? output_file.value().c_str() : "out.o";
     llvm::TargetOptions options;
     const auto *target = &*llvm::TargetRegistry::targets().begin();
     Box<llvm::TargetMachine> machine(target->createTargetMachine(
-        llvm::sys::getDefaultTargetTriple(), llvm::sys::getHostCPUName(), "", options, llvm::Reloc::DynamicNoPIC));
+        llvm::sys::getDefaultTargetTriple(), llvm::sys::getHostCPUName(), "", options, llvm::Reloc::Static));
     std::error_code ec;
-    llvm::raw_fd_ostream output("out.o", ec, llvm::sys::fs::OF_None);
+    llvm::raw_fd_ostream output(output_name, ec, llvm::sys::fs::OF_None);
     llvm::legacy::PassManager pm;
     machine->addPassesToEmitFile(pm, output, nullptr, llvm::CodeGenFileType::CGFT_ObjectFile);
     pm.run(*module);

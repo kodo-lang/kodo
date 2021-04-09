@@ -21,7 +21,7 @@ run_test() {
 }
 
 # Expecting compile error.
-run_test "compile-error/bad_if.kd" 1 "error: cannot implicitly cast from 'i32' to 'bool' on line 2
+run_test "compile-error/bad_if.kd" 1 "error: cannot implicitly cast from 'i4' to 'bool' on line 2
  note: Aborting due to previous errors"
 run_test "compile-error/bad_mutability.kd" 1 "error: attempted assignment of immutable variable 'bar' on line 2
 error: attempted assignment of immutable variable 'foo' on line 7

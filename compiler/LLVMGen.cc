@@ -179,6 +179,8 @@ llvm::Value *LLVMGen::gen_cast(const ir::CastInst *cast) {
     auto *type = llvm_type(cast->type());
     auto *value = llvm_value(cast->val());
     switch (cast->op()) {
+    case ir::CastOp::IntToPtr:
+        return m_llvm_builder.CreateIntToPtr(value, type);
     case ir::CastOp::Reinterpret:
         return m_llvm_builder.CreateBitCast(value, type);
     case ir::CastOp::SignExtend:
